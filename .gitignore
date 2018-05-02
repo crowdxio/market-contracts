@@ -1,0 +1,10 @@
+node_modules/
+build/
+.DS_Store/
+.idea/
+.env/
+*allFiredEvents*
+*/**/*.abi
+*/**/*.bin
+scripts/**/*.js
+scripts/**/*.map
