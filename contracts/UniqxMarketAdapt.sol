@@ -20,7 +20,9 @@ contract UniqxMarketAdapt is NoOwner, Pausable {
 	uint public MARKET_FEE_NUM = 4;
 	uint public MARKET_FEE_DEN = 100;
 
-	event LogTokensPublished(uint []tokens);
+	event LogTokensPublished();
+	event LogTokensCancelled();
+	event LogTokenAcquired(uint tokenId);
 
 	enum TokenStatus {
 		Unknown,
@@ -134,6 +136,8 @@ contract UniqxMarketAdapt is NoOwner, Pausable {
 
 			tokens[_tokenIds[index]] = nftToken;
 		}
+
+		LogTokensPublished();
 	}
 
 	function cancel(uint [] _tokenIds) public whenNotPaused {
@@ -154,6 +158,8 @@ contract UniqxMarketAdapt is NoOwner, Pausable {
 			AdaptToken.transferFrom(address(this), nftToken.seller, _tokenIds[index]);
 			nftToken.status = TokenStatus.Cancelled;
 		}
+
+		LogTokensCancelled();
 	}
 
 	function acquire(uint _tokenId)
@@ -184,5 +190,7 @@ contract UniqxMarketAdapt is NoOwner, Pausable {
 
 		MARKET_FEES_MSIG.transfer(marketFee);
 		nftToken.seller.transfer(sellerDue);
+
+		LogTokenAcquired(_tokenId);
 	}
 }
