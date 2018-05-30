@@ -137,7 +137,7 @@ contract UniqxMarketAdapt is NoOwner, Pausable {
 			tokens[_tokenIds[index]] = nftToken;
 		}
 
-		LogTokensPublished();
+		emit LogTokensPublished();
 	}
 
 	function cancel(uint [] _tokenIds) public whenNotPaused {
@@ -159,7 +159,7 @@ contract UniqxMarketAdapt is NoOwner, Pausable {
 			nftToken.status = TokenStatus.Cancelled;
 		}
 
-		LogTokensCancelled();
+		emit LogTokensCancelled();
 	}
 
 	function acquire(uint _tokenId)
@@ -191,6 +191,6 @@ contract UniqxMarketAdapt is NoOwner, Pausable {
 		MARKET_FEES_MSIG.transfer(marketFee);
 		nftToken.seller.transfer(sellerDue);
 
-		LogTokenAcquired(_tokenId);
+		emit LogTokenAcquired(_tokenId);
 	}
 }
