@@ -91,9 +91,9 @@ contract UniqxMarketAdapt is NoOwner, Pausable {
 	function isSpenderApproved(address _spender, uint256 _tokenId) internal view returns (bool) {
 		address tokenOwner = AdaptToken.ownerOf(_tokenId);
 
-		return _spender == tokenOwner ||
-		AdaptToken.getApproved(_tokenId) == _spender ||
-		AdaptToken.isApprovedForAll(tokenOwner, _spender);
+		return (_spender == tokenOwner ||
+				AdaptToken.getApproved(_tokenId) == _spender ||
+				AdaptToken.isApprovedForAll(tokenOwner, _spender));
 	}
 
 	function publish(
