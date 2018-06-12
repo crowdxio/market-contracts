@@ -35,8 +35,8 @@ contract('estimate gas - ', function (rpc_accounts) {
 	it('should be able to mass mint adapt tokens', async function () {
 		let rec = await adapt.massMint(
 			ac.ADAPT_ADMIN,
-			'0x12345678',       // json hash
-			1,                  // start
+			'123',       // json hash
+			0,                  // start
 			tokesCount,         // count
 			{ from: ac.ADAPT_ADMIN }
 		).should.be.fulfilled;
@@ -51,6 +51,7 @@ contract('estimate gas - ', function (rpc_accounts) {
 
 		for (let i = 0; i < tokesCount; i++) {
 			tokens[i] = await adapt.tokenByIndex(i);
+			console.log('token: ', tokens[i].toString(10));
 			prices[i] = ether(1);
 			reservations[i] = 0x0;
 		}
@@ -70,6 +71,10 @@ contract('estimate gas - ', function (rpc_accounts) {
 		).should.be.fulfilled;
 
 		console.log('Publish complete - Gas Used = ' + rec.receipt.gasUsed);
+
+		let tokenStatus = await market.getTokenStatus(tokens[0]);
+
+		console.log('token status ', JSON.stringify(tokenStatus));
 	})
 });
 
