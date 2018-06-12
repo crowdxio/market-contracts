@@ -1,28 +1,34 @@
-import * as HDWalletProvider from 'truffle-hdwallet-provider';
 import * as Contract from 'truffle-contract';
-import * as fs from "fs";
-import * as path from "path";
-import * as Vars from './common';
+import * as vars from './common';
+import * as BigNumber from 'bignumber.js';
+import * as Web3 from 'web3';
 
+const ProviderEngine = require('web3-provider-engine');
+const RpcSubprovider = require('web3-provider-engine/subproviders/rpc');
+const WalletSubprovider = require('ethereumjs-wallet/provider-engine');
+const Wallet = require('ethereumjs-wallet');
+
+const wallet = Wallet.fromV3(require('./keys/deploy-operator.json'), '123456789');
+console.log('Address:', wallet.getAddressString());
+
+const engine = new ProviderEngine();
+const web3 = new Web3(engine);
+engine.addProvider(new RpcSubprovider({rpcUrl: vars.RPC_URL}));
+engine.addProvider(new WalletSubprovider(wallet, {}));
+engine.start();
 
 async function deploy() {
 
-
-	// TODO: set provider
-	let provider;
-
-	const UniqxMarketAdaptJson = require('../build/contracts/UniqxMarketAdapt.json');
-	let UniqxMarketAdapt = Contract(UniqxMarketAdaptJson);
-	UniqxMarketAdapt.setProvider(provider);
-
+	let UniqxMarketAdapt = Contract(vars.ContractUniqxMarketAdapt.json);
+	UniqxMarketAdapt.setProvider(web3.currentProvider);
 
 	let market = await UniqxMarketAdapt.new(
-		Vars.ac.MARKET_ADMIN,
-		Vars.ac.MARKET_FEES,
-		Vars.ADAPT_TOKEN_ADDRESS,
+		vars.ac.MARKET_ADMIN,
+		vars.ac.MARKET_FEES,
+		vars.ContractAdaptToken.address,
 		{
-			from: Vars.ac.DEPLOY_OPERATOR,
-			gas: 7000000
+			from: vars.ac.DEPLOY_OPERATOR,
+			gas: 4000000
 		}
 	);
 
