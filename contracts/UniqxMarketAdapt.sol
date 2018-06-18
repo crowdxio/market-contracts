@@ -1,11 +1,10 @@
 pragma solidity ^0.4.24;
 
-import "../zeppelin/contracts/ownership/Ownable.sol";
 import "../zeppelin/contracts/ownership/NoOwner.sol";
 import "../zeppelin/contracts/lifecycle/Pausable.sol";
-import "../zeppelin/contracts/math/SafeMath.sol";
+import {SafeMath} from "../zeppelin/contracts/math/SafeMath.sol";
 import "../zeppelin/contracts/token/ERC721/ERC721BasicToken.sol";
-import "../adapt/contracts/AdaptCollectibles.sol";
+import {AdaptCollectibles} from "../adapt/contracts/AdaptCollectibles.sol";
 
 contract UniqxMarketAdapt is NoOwner, Pausable {
 
