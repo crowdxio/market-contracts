@@ -121,7 +121,7 @@ contract UniqxMarketAdapt is NoOwner, Pausable {
 			address tokenOwner = AdaptToken.ownerOf(_tokenIds[index]);
 			AdaptToken.transferFrom(tokenOwner, address(this), _tokenIds[index]);
 
-			NftTokenOrder memory nftToken = NftTokenOrder({
+			NftTokenOrder memory order = NftTokenOrder({
 					makePrice: _prices[index],
 					makeTime: now,
 					settlePrice: 0,
@@ -132,10 +132,10 @@ contract UniqxMarketAdapt is NoOwner, Pausable {
 
 			if(_reservations[index] != address(0x0)) {
 				reservations[_tokenIds[index]] = _reservations[index];
-				nftToken.status = OrderStatus.Reserved;
+				order.status = OrderStatus.Reserved;
 			}
 
-			orders[_tokenIds[index]] = nftToken;
+			orders[_tokenIds[index]] = order;
 		}
 
 		emit LogOrdersCreated();
