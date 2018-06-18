@@ -5,7 +5,7 @@ import "../zeppelin/contracts/ownership/NoOwner.sol";
 import "../zeppelin/contracts/lifecycle/Pausable.sol";
 import "../zeppelin/contracts/math/SafeMath.sol";
 import "../zeppelin/contracts/token/ERC721/ERC721BasicToken.sol";
-import {AdaptCollectibles} from "../adapt/contracts/AdaptCollectibles.sol";
+import "../adapt/contracts/AdaptCollectibles.sol";
 
 contract UniqxMarketAdapt is NoOwner, Pausable {
 
@@ -13,7 +13,7 @@ contract UniqxMarketAdapt is NoOwner, Pausable {
 
 	address public MARKET_ADMIN_MSIG;
 	address public MARKET_FEES_MSIG;
-	AdaptCollectibles public AdaptToken;
+	AdaptCollectibles public ADAPT_TOKEN;
 
 	uint public RESERVATION_TIME = 3 days;
 
@@ -52,7 +52,7 @@ contract UniqxMarketAdapt is NoOwner, Pausable {
 
 		MARKET_ADMIN_MSIG = _marketAdmin;
 		MARKET_FEES_MSIG = _marketFees;
-		AdaptToken = AdaptCollectibles(_adaptContract);
+		ADAPT_TOKEN = AdaptCollectibles(_adaptContract);
 
 		transferOwnership(_marketAdmin);
 	}
@@ -90,11 +90,11 @@ contract UniqxMarketAdapt is NoOwner, Pausable {
 	}
 
 	function isSpenderApproved(address _spender, uint256 _tokenId) internal view returns (bool) {
-		address tokenOwner = AdaptToken.ownerOf(_tokenId);
+		address tokenOwner = ADAPT_TOKEN.ownerOf(_tokenId);
 
 		return (_spender == tokenOwner ||
-				AdaptToken.getApproved(_tokenId) == _spender ||
-				AdaptToken.isApprovedForAll(tokenOwner, _spender));
+				ADAPT_TOKEN.getApproved(_tokenId) == _spender ||
+				ADAPT_TOKEN.isApprovedForAll(tokenOwner, _spender));
 	}
 
 	function make(
@@ -118,8 +118,8 @@ contract UniqxMarketAdapt is NoOwner, Pausable {
 			require(isSpenderApproved(msg.sender, _tokenIds[index]));
 
 			// take temporary custody of the token
-			address tokenOwner = AdaptToken.ownerOf(_tokenIds[index]);
-			AdaptToken.transferFrom(tokenOwner, address(this), _tokenIds[index]);
+			address tokenOwner = ADAPT_TOKEN.ownerOf(_tokenIds[index]);
+			ADAPT_TOKEN.transferFrom(tokenOwner, address(this), _tokenIds[index]);
 
 			NftTokenOrder memory order = NftTokenOrder({
 					makePrice: _prices[index],
@@ -154,9 +154,9 @@ contract UniqxMarketAdapt is NoOwner, Pausable {
 				order.status == OrderStatus.Reserved
 			);
 			// token must still be in temporary custody of the market
-			require(AdaptToken.ownerOf(_tokenIds[index]) == address(this));
+			require(ADAPT_TOKEN.ownerOf(_tokenIds[index]) == address(this));
 
-			AdaptToken.transferFrom(address(this), order.maker, _tokenIds[index]);
+			ADAPT_TOKEN.transferFrom(address(this), order.maker, _tokenIds[index]);
 			order.status = OrderStatus.Cancelled;
 		}
 
@@ -186,8 +186,8 @@ contract UniqxMarketAdapt is NoOwner, Pausable {
 		uint makerDue = msg.value.sub(marketFee);
 
 		order.status = OrderStatus.Settled;
-		AdaptToken.setTokenMetadata(_tokenId, now, msg.value);
-		AdaptToken.transferFrom(address(this), msg.sender, _tokenId);
+		ADAPT_TOKEN.setTokenMetadata(_tokenId, now, msg.value);
+		ADAPT_TOKEN.transferFrom(address(this), msg.sender, _tokenId);
 
 		MARKET_FEES_MSIG.transfer(marketFee);
 		order.maker.transfer(makerDue);
