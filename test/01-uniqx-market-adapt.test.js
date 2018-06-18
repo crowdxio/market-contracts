@@ -7,7 +7,7 @@ import wei from "./helpers/wei";
 
 
 const UniqxMarketAdapt = artifacts.require("../contracts/UniqxMarketAdapt.sol");
-const AdaptToken = artifacts.require("../adapt/contracts/Collectibles.sol");
+const AdaptToken = artifacts.require("../adapt/contracts/AdaptCollectibles.sol");
 
 contract('Market - a simple walk-through the functionality', function (rpc_accounts) {
 

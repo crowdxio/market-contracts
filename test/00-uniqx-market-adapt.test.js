@@ -4,7 +4,7 @@ import {
 import ether from "./helpers/ether";
 
 const UniqxMarketAdapt = artifacts.require("../contracts/UniqxMarketAdapt.sol");
-const AdaptToken = artifacts.require("../adapt/contracts/Collectibles.sol");
+const AdaptToken = artifacts.require("../adapt/contracts/AdaptCollectibles.sol");
 
 contract('estimate gas - ', function (rpc_accounts) {
 
@@ -63,7 +63,7 @@ contract('estimate gas - ', function (rpc_accounts) {
 			{ from: ac.ADAPT_ADMIN }
 		).should.be.fulfilled;
 
-		let rec = await market.publish(
+		let rec = await market.make(
 			tokens,
 			prices,
 			reservations,
@@ -72,7 +72,7 @@ contract('estimate gas - ', function (rpc_accounts) {
 
 		console.log('Publish complete - Gas Used = ' + rec.receipt.gasUsed);
 
-		let tokenStatus = await market.getTokenStatus(tokens[0]);
+		let tokenStatus = await market.getOrderStatus(tokens[0]);
 
 		console.log('token status ', JSON.stringify(tokenStatus));
 	})
