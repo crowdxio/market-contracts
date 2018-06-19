@@ -45,6 +45,6 @@
 		"ethereumjs-testrpc-sc": "^6.1.2",
 		"ganache-cli": "6.1.0",
 		"solidity-coverage": "^0.4.14",
-		"truffle": "4.1.7"
+		"truffle": "4.1.11"
 	}
 }
