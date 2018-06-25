@@ -1,0 +1,354 @@
+import {
+	accounts, assert, should, BigNumber, Bluebird
+} from './common/common';
+import EVMRevert from "../zeppelin/test/helpers/EVMRevert";
+import ether from "./helpers/ether";
+import expectEvent from "./helpers/expectEvent";
+
+const UniqxMarketERC721Instant = artifacts.require("../contracts/UniqxMarketERC721Instant.sol");
+const ERC721Token = artifacts.require("../adapt/contracts/AdaptCollectibles.sol");
+
+contract('testing the functionality - ', function (rpc_accounts) {
+
+	const ac = accounts(rpc_accounts);
+	let erc721Token, market;
+	let tokesCount = 10;
+	let tokens = [];
+	let prices = [];
+
+	const pGetBalance = Bluebird.promisify(web3.eth.getBalance);
+	const pSendTransaction = Bluebird.promisify(web3.eth.sendTransaction);
+
+	it('should be able to deploy the smart contracts', async () => {
+
+		market = await UniqxMarketERC721Instant.new(
+			ac.MARKET_ADMIN_MSIG,
+			ac.MARKET_FEES_MSIG,
+			{ from: ac.OPERATOR, gas: 7000000 }
+		).should.be.fulfilled;
+
+		console.log("UNIQX successfully deployed at address " + market.address);
+	});
+
+	it('should be able to register an ERC721 contract', async () => {
+
+		erc721Token = await ERC721Token.new(
+			ac.ADAPT_OWNER,
+			ac.ADAPT_ADMIN,
+			{ from: ac.OPERATOR, gas: 7000000 }
+		).should.be.fulfilled;
+
+		console.log("ERC721 test contract deployed at address " + erc721Token.address);
+
+
+		const { logs } = await market.registerContract(
+			erc721Token.address,
+			{ from: ac.MARKET_ADMIN_MSIG , gas: 7000000 }
+		).should.be.fulfilled;
+
+		expectEvent.inLogs(logs, 'RegisterContract');
+
+		console.log("ERC721 contract " + market.address + " sucessfully registered");
+	});
+
+	it('should not be able to register a duplicate contract', async () => {
+		await market.registerContract(
+			erc721Token.address,
+			{ from: ac.MARKET_ADMIN_MSIG , gas: 7000000 }
+		).should.be.rejectedWith(EVMRevert);
+	});
+
+	it('should not allow other than admin to register a contract', async () => {
+		const token = await ERC721Token.new(
+			ac.ADAPT_OWNER,
+			ac.ADAPT_ADMIN,
+			{ from: ac.OPERATOR, gas: 7000000 }
+		).should.be.fulfilled;
+
+		await market.registerContract(
+			token.address,
+			{ from: ac.ACCOUNT1 , gas: 7000000 }
+		).should.be.rejectedWith(EVMRevert);
+	});
+
+
+	it('should be able to unregister contract', async () => {
+		const token = await ERC721Token.new(
+			ac.ADAPT_OWNER,
+			ac.ADAPT_ADMIN,
+			{from: ac.OPERATOR, gas: 7000000}
+		).should.be.fulfilled;
+
+		await market.registerContract(
+			token.address,
+			{ from: ac.MARKET_ADMIN_MSIG , gas: 7000000 }
+		).should.be.fulfilled;
+
+		const { logs } = await market.unregisterContract(
+			token.address,
+			{ from: ac.MARKET_ADMIN_MSIG , gas: 7000000 }
+		).should.be.fulfilled;
+
+		expectEvent.inLogs(logs, 'UnregisterContract');
+	});
+
+    it('should not allow other than admin to unregister a contract', async () => {
+        const token = await ERC721Token.new(
+            ac.ADAPT_OWNER,
+            ac.ADAPT_ADMIN,
+            { from: ac.OPERATOR, gas: 7000000 }
+        ).should.be.fulfilled;
+
+        await market.registerContract(
+            token.address,
+            { from: ac.MARKET_ADMIN_MSIG , gas: 7000000 }
+        ).should.be.fulfilled;
+
+	    await market.unregisterContract(
+		    token.address,
+		    { from: ac.ACCOUNT1 , gas: 7000000 }
+	    ).should.be.rejectedWith(EVMRevert);
+    });
+
+	it('should be able to disallow orders', async () => {
+		const { logs } = await market.disallowOrders({from: ac.MARKET_ADMIN_MSIG}
+		).should.be.fulfilled;
+
+		expectEvent.inLogs(logs, 'DisallowOrders');
+	});
+
+    it('should be able to mass mint new tokens', async function () {
+		await erc721Token.massMint(
+			ac.ADAPT_ADMIN,
+			'123',			// json hash
+			0,				// start
+			tokesCount,		// count
+			{ from: ac.ADAPT_ADMIN }
+		).should.be.fulfilled;
+	});
+
+	it('should be able to enable the market to transfer tokens', async function () {
+		for (let i = 0; i < tokesCount; i++) {
+			tokens[i] = await erc721Token.tokenByIndex(i);
+			console.log('token: ', tokens[i].toString(10));
+			prices[i] = ether(1);
+		}
+
+		// approve market to transfer all erc721 tokens hold by admin
+		await erc721Token.setApprovalForAll(
+			market.address,
+			true,
+			{ from: ac.ADAPT_ADMIN }
+		).should.be.fulfilled;
+	});
+
+	it('should not able to make oreder when disallowed', async () => {
+		await market.makeOrder(
+			erc721Token.address,
+			tokens,
+			prices,
+			{ from: ac.ADAPT_ADMIN, gas: 7000000 }
+		).should.be.rejectedWith(EVMRevert);
+	});
+
+	it('should be able to allow orders', async () => {
+		const { logs } = await market.allowOrders({ from: ac.MARKET_ADMIN_MSIG , gas: 7000000 }
+		).should.be.fulfilled;
+
+		expectEvent.inLogs(logs, 'AllowOrders');
+	});
+
+	it('should be able to make multiple orders in one transaction', async () => {
+		const { logs } = await market.makeOrder(
+			erc721Token.address,
+			tokens,
+			prices,
+			{ from: ac.ADAPT_ADMIN , gas: 7000000 }
+		).should.be.fulfilled;
+
+		expectEvent.inLogs(logs, 'LogOrdersCreated');
+
+		for (let i = 0; i < tokens.length; i++) {
+			let tokenStatus = await market.getOrderStatus(erc721Token.address, tokens[i]);
+			assert.equal(tokenStatus, 1);
+		}
+	});
+
+	it('should not be able to make an order twice', async () => {
+		const { logs } = await market.makeOrder(
+			erc721Token.address,
+			[ tokens[0] ],
+			[ 1.5 ],
+			{ from: ac.ADAPT_ADMIN , gas: 7000000 }
+		).should.be.rejectedWith(EVMRevert);
+	});
+
+	it('should be able to cancel order', async () => {
+		const { logs } = await market.cancelOrder(
+			erc721Token.address,
+			[ tokens[0] ],
+			{ from: ac.ADAPT_ADMIN , gas: 7000000 }
+		).should.be.fulfilled;
+
+		const tokenStatus = await market.getOrderStatus(erc721Token.address, tokens[0]);
+		assert.equal(tokenStatus, 0);
+
+		expectEvent.inLogs(logs, 'LogOrdersCanceled');
+	});
+
+	it('should be able to take order', async () => {
+		const balanceMarketFees1 = await pGetBalance(ac.MARKET_FEES_MSIG);
+		const balanceAdaptAdmin1 = await pGetBalance(ac.ADAPT_ADMIN);
+
+		const { logs } = await market.takeOrder(
+			erc721Token.address,
+			[ tokens[1] ],
+			{ from: ac.BUYER1 , gas: 7000000, value: ether(1) }
+		).should.be.fulfilled;
+
+		const tokenStatus = await market.getOrderStatus(erc721Token.address, tokens[1]);
+		assert.equal(tokenStatus, 0);
+
+		expectEvent.inLogs(logs, 'LogOrderSettled');
+
+		const ownerOfToken = await erc721Token.ownerOf(tokens[1]);
+		assert.equal(ownerOfToken, ac.BUYER1, 'BUYER1 should now be the owner of token');
+
+		const balanceMarketFees2 = await pGetBalance(ac.MARKET_FEES_MSIG);
+		const balanceAdaptAdmin2 = await pGetBalance(ac.ADAPT_ADMIN);
+
+		const marketFeesShouldBe = ether(1).mul(1).div(100);
+		const marketBalanceShouldBe = balanceMarketFees1.add(marketFeesShouldBe);
+
+		const sellerFeesShouldBe = ether(1).sub(marketFeesShouldBe);
+		const sellerBalanceShouldBe = balanceAdaptAdmin1.add(sellerFeesShouldBe);
+
+		console.log('balanceMarketFees2', balanceMarketFees2.toString(10));
+		console.log('marketBalanceShouldBe', marketBalanceShouldBe.toString(10));
+
+		console.log('balanceAdaptAdmin2', balanceAdaptAdmin2.toString(10));
+		console.log('sellerBalanceShouldBe', sellerBalanceShouldBe.toString(10));
+
+		balanceMarketFees2.should.be.bignumber.equal(marketBalanceShouldBe);
+		balanceAdaptAdmin2.should.be.bignumber.equal(sellerBalanceShouldBe);
+	});
+
+	it('should not be able to take order if price is lower than the asked price', async () => {
+		await market.takeOrder(
+			erc721Token.address,
+			[ tokens[2] ],
+			{ from: ac.ADAPT_ADMIN , gas: 7000000, value: ether(0.99) }
+		).should.be.rejectedWith(EVMRevert);
+
+		const tokenStatus = await market.getOrderStatus(erc721Token.address, tokens[2]);
+		assert.equal(tokenStatus, 1, 'The order should remain in \'Created\' state');
+	});
+
+	it('should be able to change an order', async () => {
+		const { logs } = await market.makeOrder(
+			erc721Token.address,
+			[ tokens[0] ],
+			[ 1 ],
+			{ from: ac.ADAPT_ADMIN , gas: 7000000 }
+		).should.be.fulfilled;
+
+		await market.changeOrder(
+			erc721Token.address,
+			[ tokens[0] ],
+			[ 2 ],
+			{ from: ac.ADAPT_ADMIN , gas: 7000000 }
+		).should.be.fulfilled;
+
+		const orderInfo = await market.getOrderInfo(erc721Token.address, tokens[0]);
+
+		expectEvent.inLogs(logs, 'LogOrdersChanged');
+
+		orderInfo[0].should.be.bignumber.equal(1); // 'Created' status
+		orderInfo[1].should.be.bignumber.equal(2);  // price
+	});
+
+	it('should be able to make an order if the market was not apporved for the seller', async () => {
+		const { logs } = await market.takeOrder(
+			erc721Token.address,
+			[ tokens[3] ],
+			{ from: ac.BUYER1 , gas: 7000000, value: ether(1) }
+		).should.be.fulfilled;
+
+		const tokenStatus = await market.getOrderStatus(erc721Token.address, tokens[3]);
+		assert.equal(tokenStatus, 0);
+
+		expectEvent.inLogs(logs, 'LogOrderSettled');
+
+		const ownerOfToken = await erc721Token.ownerOf(tokens[1]);
+		assert.equal(ownerOfToken, ac.BUYER1, 'BUYER1 should now be the owner of token');
+
+		await market.makeOrder(
+			erc721Token.address,
+			[ tokens[3] ],
+			[ 1.5 ],
+			{ from: ac.BUYER1 , gas: 7000000 }
+		).should.be.rejectedWith(EVMRevert);
+	});
+
+	it('should be able to make an order for a token which was taken before', async () => {
+		// approve the market to transfer the tokens owned by ac.BUYER1
+		await erc721Token.setApprovalForAll(
+			market.address,
+			true,
+			{ from: ac.BUYER1 }
+		).should.be.fulfilled;
+
+		const { logs } = await market.makeOrder(
+			erc721Token.address,
+			[ tokens[3] ],
+			[ 1.5 ],
+			{ from: ac.BUYER1 , gas: 7000000 }
+		).should.be.fulfilled;
+
+		expectEvent.inLogs(logs, 'LogOrderSettled');
+	});
+
+	it('should be able to change the market fee', async () => {
+		const { logs } = await market.setPercentageFee(
+			erc721Token.address,
+			275, // set the fee to 2.75%
+			1000,
+			{ from: ac.MARKET_ADMIN_MSIG , gas: 7000000 }
+		).should.be.fulfilled;
+
+		expectEvent.inLogs(logs, 'SetPercentageFee');
+	});
+
+	it('should not allow other than admin to change the market fee', async () => {
+		const { logs } = await market.setPercentageFee(
+			erc721Token.address,
+			1, // set the fee to 2.75%
+			100,
+			{ from: ac.BUYER1 , gas: 7000000 }
+		).should.be.rejectedWith(EVMRevert);
+
+	});
+
+	it('should the new market fee be calculated according to the new value', async () => {
+		const balanceMarketFees1 = await pGetBalance(ac.MARKET_FEES_MSIG);
+
+		const { logs } = await market.takeOrder(
+			erc721Token.address,
+			[ tokens[4] ],
+			{ from: ac.BUYER2 , gas: 7000000, value: ether(1) }
+		).should.be.fulfilled;
+
+
+		const balanceMarketFees2 = await pGetBalance(ac.MARKET_FEES_MSIG);
+
+		const marketFeesShouldBe = ether(1).mul(275).div(1000);
+		const marketBalanceShouldBe = balanceMarketFees1.add(marketFeesShouldBe);
+
+		console.log('balanceMarketFees2', balanceMarketFees2.toString(10));
+		console.log('marketBalanceShouldBe', marketBalanceShouldBe.toString(10));
+
+		balanceMarketFees2.should.be.bignumber.equal(marketBalanceShouldBe);
+	});
+});
+
+
