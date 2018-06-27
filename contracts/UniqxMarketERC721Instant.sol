@@ -17,8 +17,7 @@ contract UniqxMarketERC721Instant is NoOwner, Pausable {
 
 	enum OrderStatus {
 		Unknown,
-		Created,
-		Cancelled
+		Created
 	}
 
 	struct OrderInfo {
@@ -33,12 +32,12 @@ contract UniqxMarketERC721Instant is NoOwner, Pausable {
 		ERC721Token TOKEN;
 		mapping(uint => OrderInfo) orders;
 	}
-	
+
 	mapping(address => UniqxMarketContract) contracts;
 
 	event AllowOrders();
   	event DisallowOrders();
-	
+
 	event RegisterContract(address _contract);
   	event UnregisterContract(address _contract);
 
@@ -75,7 +74,7 @@ contract UniqxMarketERC721Instant is NoOwner, Pausable {
 		require(ordersAllowed);
 		_;
 	}
-	
+
 	function allowOrders() onlyAdmin whenOrdersNotAllowed public {
 		ordersAllowed = true;
 		emit AllowOrders();
@@ -85,7 +84,7 @@ contract UniqxMarketERC721Instant is NoOwner, Pausable {
 		ordersAllowed = false;
 		emit DisallowOrders();
 	}
-	
+
 	constructor(address _marketAdmin, address _marketFees) public {
 
 		MARKET_ADMIN_MSIG = _marketAdmin;
@@ -145,7 +144,7 @@ contract UniqxMarketERC721Instant is NoOwner, Pausable {
 		return marketContract.orders[_tokenId].status;
 	}
 
-	function getOrderInfo(address _contract, uint _tokenId) public view 
+	function getOrderInfo(address _contract, uint _tokenId) public view
 		returns (
 			OrderStatus _status,
 			uint _makePrice,
@@ -172,14 +171,11 @@ contract UniqxMarketERC721Instant is NoOwner, Pausable {
 
 		require(contracts[_contract].registered);
 		UniqxMarketContract storage marketContract = contracts[_contract];
-		
+
 		for(uint index=0; index<_tokenIds.length; index++) {
 			// token must not be published on the market
 			OrderInfo storage existingOrder = marketContract.orders[_tokenIds[index]];
-			require(
-				existingOrder.status == OrderStatus.Unknown ||
-				existingOrder.status == OrderStatus.Cancelled
-			);
+			require(existingOrder.status != OrderStatus.Created);
 
 			// make sure the maker is approved to sell this item
 			require(isSpenderApproved(_contract, msg.sender, _tokenIds[index]));
@@ -219,7 +215,6 @@ contract UniqxMarketERC721Instant is NoOwner, Pausable {
 			require(marketContract.TOKEN.ownerOf(_tokenIds[index]) == address(this));
 
 			marketContract.TOKEN.transferFrom(address(this), order.maker, _tokenIds[index]);
-			order.status = OrderStatus.Cancelled;
 
 			delete marketContract.orders[_tokenIds[index]];
 		}
