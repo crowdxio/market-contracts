@@ -8,3 +8,4 @@ build/
 */**/*.bin
 scripts/**/*.js
 scripts/**/*.map
+*.swp

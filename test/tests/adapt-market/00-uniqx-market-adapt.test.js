@@ -1,10 +1,10 @@
 import {
 	accounts, assert, should, BigNumber, Bluebird
-} from './common/common';
-import ether from "./helpers/ether";
+} from '../../common/common';
+import ether from "../../helpers/ether";
 
-const UniqxMarketAdapt = artifacts.require("../contracts/UniqxMarketAdapt.sol");
-const AdaptToken = artifacts.require("../adapt/contracts/AdaptCollectibles.sol");
+const UniqxMarketAdapt = artifacts.require("../../../contracts/UniqxMarketAdapt.sol");
+const AdaptToken = artifacts.require("../../../adapt/contracts/AdaptCollectibles.sol");
 
 contract('estimate gas - ', function (rpc_accounts) {
 

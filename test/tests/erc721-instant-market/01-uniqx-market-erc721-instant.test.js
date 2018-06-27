@@ -1,12 +1,13 @@
 import {
 	accounts, assert, should, BigNumber, Bluebird
-} from './common/common';
-import EVMRevert from "../zeppelin/test/helpers/EVMRevert";
-import ether from "./helpers/ether";
-import expectEvent from "./helpers/expectEvent";
+} from '../../common/common';
+import ether from "../../helpers/ether";
+import expectEvent from "../../helpers/expectEvent";
+import EVMRevert from "../../../zeppelin/test/helpers/EVMRevert";
 
-const UniqxMarketERC721Instant = artifacts.require("../contracts/UniqxMarketERC721Instant.sol");
-const ERC721Token = artifacts.require("../adapt/contracts/AdaptCollectibles.sol");
+
+const UniqxMarketERC721Instant = artifacts.require("../../contracts/UniqxMarketERC721Instant.sol");
+const ERC721Token = artifacts.require("../../../adapt/contracts/AdaptCollectibles.sol");
 
 contract('testing the functionality - ', function (rpc_accounts) {
 
