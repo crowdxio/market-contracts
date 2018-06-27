@@ -135,7 +135,9 @@ contract('estimate gas - ', function (rpc_accounts) {
 		const tokenStatus = await market.getOrderStatus(erc721Token.address, tokens[0]);
 		assert.equal(tokenStatus, 0);
 
-		expectEvent.inLogs(rec.logs, 'LogOrdersCanceled');
+
+		const event = rec.logs.find(e => e.event === 'LogOrdersCreated');
+		await expectEvent.inLogs(rec.logs, 'LogOrdersCancelled');
 
 		console.log('cancelOrder() - Gas Used = ' + rec.receipt.gasUsed);
 	});
@@ -148,7 +150,7 @@ contract('estimate gas - ', function (rpc_accounts) {
 			{ from: ac.ADAPT_ADMIN , gas: 7000000 }
 		).should.be.fulfilled;
 
-		expectEvent.inLogs(rec.logs, 'LogOrdersCreated');
+		await expectEvent.inLogs(rec.logs, 'LogOrdersCreated');
 
 		for (let i = 0; i < tokens.length; i++) {
 			const tokenStatus = await market.getOrderStatus(erc721Token.address, tokens[i]);
@@ -165,7 +167,7 @@ contract('estimate gas - ', function (rpc_accounts) {
 			{ from: ac.BUYER1 , gas: 7000000, value: ether(1) }
 		).should.be.fulfilled;
 
-		expectEvent.inLogs(rec.logs, 'LogOrderSettled');
+		await expectEvent.inLogs(rec.logs, 'LogOrderSettled');
 
 		console.log('takeOrder() - Gas Used = ' + rec.receipt.gasUsed);
 	});
@@ -181,7 +183,7 @@ contract('estimate gas - ', function (rpc_accounts) {
 
 		const orderInfo = await market.getOrderInfo(erc721Token.address, tokens[2]);
 
-		expectEvent.inLogs(rec.logs, 'LogOrdersChanged');
+		await expectEvent.inLogs(rec.logs, 'LogOrdersChanged');
 
 		orderInfo[0].should.be.bignumber.equal(1); // 'Created' status
 		orderInfo[1].should.be.bignumber.equal(2);  // price
@@ -197,7 +199,7 @@ contract('estimate gas - ', function (rpc_accounts) {
 			{ from: ac.MARKET_ADMIN_MSIG , gas: 7000000 }
 		).should.be.fulfilled;
 
-		expectEvent.inLogs(rec.logs, 'SetPercentageFee');
+		await expectEvent.inLogs(rec.logs, 'SetPercentageFee');
 
 		console.log('setPercentageFee() - Gas Used = ' + rec.receipt.gasUsed);
 	});

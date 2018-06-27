@@ -47,7 +47,7 @@ contract('testing the functionality - ', function (rpc_accounts) {
 			{ from: ac.MARKET_ADMIN_MSIG , gas: 7000000 }
 		).should.be.fulfilled;
 
-		expectEvent.inLogs(logs, 'RegisterContract');
+		await expectEvent.inLogs(logs, 'RegisterContract');
 
 		console.log("ERC721 contract " + market.address + " sucessfully registered");
 	});
@@ -90,7 +90,7 @@ contract('testing the functionality - ', function (rpc_accounts) {
 			{ from: ac.MARKET_ADMIN_MSIG , gas: 7000000 }
 		).should.be.fulfilled;
 
-		expectEvent.inLogs(logs, 'UnregisterContract');
+		await expectEvent.inLogs(logs, 'UnregisterContract');
 	});
 
     it('should not allow other than admin to unregister a contract', async () => {
@@ -115,7 +115,7 @@ contract('testing the functionality - ', function (rpc_accounts) {
 		const { logs } = await market.disallowOrders({from: ac.MARKET_ADMIN_MSIG}
 		).should.be.fulfilled;
 
-		expectEvent.inLogs(logs, 'DisallowOrders');
+		await expectEvent.inLogs(logs, 'DisallowOrders');
 	});
 
     it('should be able to mass mint new tokens', async function () {
@@ -156,7 +156,7 @@ contract('testing the functionality - ', function (rpc_accounts) {
 		const { logs } = await market.allowOrders({ from: ac.MARKET_ADMIN_MSIG , gas: 7000000 }
 		).should.be.fulfilled;
 
-		expectEvent.inLogs(logs, 'AllowOrders');
+		await expectEvent.inLogs(logs, 'AllowOrders');
 	});
 
 	it('should be able to make multiple orders in one transaction', async () => {
@@ -167,11 +167,15 @@ contract('testing the functionality - ', function (rpc_accounts) {
 			{ from: ac.ADAPT_ADMIN , gas: 7000000 }
 		).should.be.fulfilled;
 
-		expectEvent.inLogs(logs, 'LogOrdersCreated');
+		await expectEvent.inLogs(logs, 'LogOrdersCreated');
 
 		for (let i = 0; i < tokens.length; i++) {
 			let tokenStatus = await market.getOrderStatus(erc721Token.address, tokens[i]);
-			assert.equal(tokenStatus, 1);
+
+			assert.equal(tokenStatus, 1, 'Order should be in \'Created\' State');
+
+			const ownerToken = await erc721Token.ownerOf(tokens[i]);
+			assert.equal(ownerToken, market.address, 'MARKET should tmp own the token');
 		}
 	});
 
@@ -179,22 +183,28 @@ contract('testing the functionality - ', function (rpc_accounts) {
 		const { logs } = await market.makeOrder(
 			erc721Token.address,
 			[ tokens[0] ],
-			[ 1.5 ],
+			[ ether(1.5) ],
 			{ from: ac.ADAPT_ADMIN , gas: 7000000 }
 		).should.be.rejectedWith(EVMRevert);
 	});
 
 	it('should be able to cancel order', async () => {
+		const ownerToken1 = await erc721Token.ownerOf(tokens[0]);
+		assert.equal(ownerToken1, market.address, 'MARKET should tmp own the token');
+
 		const { logs } = await market.cancelOrder(
 			erc721Token.address,
 			[ tokens[0] ],
 			{ from: ac.ADAPT_ADMIN , gas: 7000000 }
 		).should.be.fulfilled;
 
+		await expectEvent.inLogs(logs, 'LogOrdersCancelled');
+
 		const tokenStatus = await market.getOrderStatus(erc721Token.address, tokens[0]);
 		assert.equal(tokenStatus, 0);
 
-		expectEvent.inLogs(logs, 'LogOrdersCanceled');
+		const ownerToken2 = await erc721Token.ownerOf(tokens[0]);
+		assert.equal(ownerToken2, ac.ADAPT_ADMIN, 'ADAPT_ADMIN should now own the item');
 	});
 
 	it('should be able to take order', async () => {
@@ -210,7 +220,7 @@ contract('testing the functionality - ', function (rpc_accounts) {
 		const tokenStatus = await market.getOrderStatus(erc721Token.address, tokens[1]);
 		assert.equal(tokenStatus, 0);
 
-		expectEvent.inLogs(logs, 'LogOrderSettled');
+		await expectEvent.inLogs(logs, 'LogOrderSettled');
 
 		const ownerOfToken = await erc721Token.ownerOf(tokens[1]);
 		assert.equal(ownerOfToken, ac.BUYER1, 'BUYER1 should now be the owner of token');
@@ -246,14 +256,14 @@ contract('testing the functionality - ', function (rpc_accounts) {
 	});
 
 	it('should be able to change an order', async () => {
-		const { logs } = await market.makeOrder(
+		await market.makeOrder(
 			erc721Token.address,
 			[ tokens[0] ],
-			[ 1 ],
+			[ ether(1) ],
 			{ from: ac.ADAPT_ADMIN , gas: 7000000 }
 		).should.be.fulfilled;
 
-		await market.changeOrder(
+		const { logs } = await market.changeOrder(
 			erc721Token.address,
 			[ tokens[0] ],
 			[ 2 ],
@@ -262,13 +272,13 @@ contract('testing the functionality - ', function (rpc_accounts) {
 
 		const orderInfo = await market.getOrderInfo(erc721Token.address, tokens[0]);
 
-		expectEvent.inLogs(logs, 'LogOrdersChanged');
+		await expectEvent.inLogs(logs, 'LogOrdersChanged');
 
 		orderInfo[0].should.be.bignumber.equal(1); // 'Created' status
 		orderInfo[1].should.be.bignumber.equal(2);  // price
 	});
 
-	it('should be able to make an order if the market was not apporved for the seller', async () => {
+	it('should not be able to make an order if the market was not apporved for the seller', async () => {
 		const { logs } = await market.takeOrder(
 			erc721Token.address,
 			[ tokens[3] ],
@@ -278,7 +288,7 @@ contract('testing the functionality - ', function (rpc_accounts) {
 		const tokenStatus = await market.getOrderStatus(erc721Token.address, tokens[3]);
 		assert.equal(tokenStatus, 0);
 
-		expectEvent.inLogs(logs, 'LogOrderSettled');
+		await expectEvent.inLogs(logs, 'LogOrderSettled');
 
 		const ownerOfToken = await erc721Token.ownerOf(tokens[1]);
 		assert.equal(ownerOfToken, ac.BUYER1, 'BUYER1 should now be the owner of token');
@@ -286,7 +296,7 @@ contract('testing the functionality - ', function (rpc_accounts) {
 		await market.makeOrder(
 			erc721Token.address,
 			[ tokens[3] ],
-			[ 1.5 ],
+			[ ether(1.5) ],
 			{ from: ac.BUYER1 , gas: 7000000 }
 		).should.be.rejectedWith(EVMRevert);
 	});
@@ -302,11 +312,11 @@ contract('testing the functionality - ', function (rpc_accounts) {
 		const { logs } = await market.makeOrder(
 			erc721Token.address,
 			[ tokens[3] ],
-			[ 1.5 ],
+			[ ether(1.5) ],
 			{ from: ac.BUYER1 , gas: 7000000 }
 		).should.be.fulfilled;
 
-		expectEvent.inLogs(logs, 'LogOrderSettled');
+		await expectEvent.inLogs(logs, 'LogOrdersCreated');
 	});
 
 	it('should be able to change the market fee', async () => {
@@ -317,7 +327,7 @@ contract('testing the functionality - ', function (rpc_accounts) {
 			{ from: ac.MARKET_ADMIN_MSIG , gas: 7000000 }
 		).should.be.fulfilled;
 
-		expectEvent.inLogs(logs, 'SetPercentageFee');
+		await expectEvent.inLogs(logs, 'SetPercentageFee');
 	});
 
 	it('should not allow other than admin to change the market fee', async () => {
@@ -330,7 +340,7 @@ contract('testing the functionality - ', function (rpc_accounts) {
 
 	});
 
-	it('should the new market fee be calculated according to the new value', async () => {
+	it('should the market fee be calculated according to the new value', async () => {
 		const balanceMarketFees1 = await pGetBalance(ac.MARKET_FEES_MSIG);
 
 		const { logs } = await market.takeOrder(

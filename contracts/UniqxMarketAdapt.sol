@@ -19,8 +19,8 @@ contract UniqxMarketAdapt is NoOwner, Pausable {
 	uint public MARKET_FEE_NUM = 4;
 	uint public MARKET_FEE_DEN = 100;
 
-	event LogOrdersCreated();
-	event LogOrdersCancelled();
+	event LogOrdersCreated(uint[] _tokens);
+	event LogOrdersCancelled(uint[] _tokens);
 	event LogOrderSettled(uint tokenId);
 
 	enum OrderStatus {
@@ -137,7 +137,7 @@ contract UniqxMarketAdapt is NoOwner, Pausable {
 			orders[_tokenIds[index]] = order;
 		}
 
-		emit LogOrdersCreated();
+		emit LogOrdersCreated(_tokenIds);
 	}
 
 	function cancel(uint [] _tokenIds) public whenNotPaused {
@@ -159,7 +159,7 @@ contract UniqxMarketAdapt is NoOwner, Pausable {
 			order.status = OrderStatus.Cancelled;
 		}
 
-		emit LogOrdersCancelled();
+		emit LogOrdersCancelled(_tokenIds);
 	}
 
 	function take(uint _tokenId)

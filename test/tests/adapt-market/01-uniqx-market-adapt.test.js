@@ -3,6 +3,8 @@ import {
 	accounts, assert, should, BigNumber, Bluebird
 } from '../../common/common';
 import ether from "../../helpers/ether";
+import expectEvent from "../../helpers/expectEvent";
+import EVMRevert from "../../../zeppelin/test/helpers/EVMRevert";
 
 const UniqxMarketAdapt = artifacts.require("../../../contracts/UniqxMarketAdapt.sol");
 const AdaptToken = artifacts.require("../../../adapt/contracts/AdaptCollectibles.sol");
@@ -63,7 +65,7 @@ contract('Market - a simple walk-through the functionality', function (rpc_accou
 
 		console.log('token1', token1.toString(16));
 		console.log('token2', token2.toString(16));
-	})
+	});
 
 	it('should be able permission the market for all items in ADAPT', async () => {
 		await adapt.setApprovalForAll(
@@ -71,11 +73,11 @@ contract('Market - a simple walk-through the functionality', function (rpc_accou
 			true,
 			{from: ac.ADAPT_ADMIN}
 		).should.be.fulfilled;
-	})
+	});
 
 	it('should be able to create an order on the market', async () => {
 
-		let rec = await market.make(
+		const { logs } = await market.make(
 			[token1, token2],
 			[ether(1), ether(2)],
 			[0x0, 0x0],
@@ -85,17 +87,21 @@ contract('Market - a simple walk-through the functionality', function (rpc_accou
 
 		let ownerToken1 = await adapt.ownerOf(token1);
 		assert.equal(ownerToken1, market.address, 'MARKET should tmp own the token');
-	})
+
+		await expectEvent.inLogs(logs, 'LogOrdersCreated');
+	});
 
 	it('should be able to fulfill a valid take request', async () => {
 
 		let balanceMarketFees1 = await pGetBalance(ac.MARKET_FEES_MSIG);
 		let balanceAdaptAdmin1 = await pGetBalance(ac.ADAPT_ADMIN);
 
-		let rec = await market.take(
+		const { logs } = await market.take(
 			token1,
 			{from: ac.BUYER1, value: ether(1)}
 		).should.be.fulfilled;
+
+		await expectEvent.inLogs(logs, 'LogOrderSettled');
 
 		let ownerToken1 = await adapt.ownerOf(token1);
 		assert.equal(ownerToken1, ac.BUYER1, 'BUYER1 should now be the owner of token1');
@@ -117,21 +123,38 @@ contract('Market - a simple walk-through the functionality', function (rpc_accou
 
 		balanceMarketFees2.should.be.bignumber.equal(marketBalanceShouldBe);
 		balanceAdaptAdmin2.should.be.bignumber.equal(sellerBalanceShouldBe);
-	})
+	});
+
+	it('should disallow to publish a token which was sold', async () => {
+		await adapt.setApprovalForAll(
+			market.address,
+			true,
+			{ from: ac.BUYER1 }
+		).should.be.fulfilled;
+
+		await market.make(
+			[ token1 ],
+			[ ether(1) ],
+			[0x0, 0x0],
+			{from: ac.ADAPT_ADMIN}
+		).should.be.rejectedWith(EVMRevert);
+	});
 
 	it('should be able to cancel a published token from the market', async () => {
 
 		let ownerToken2 = await adapt.ownerOf(token2);
 		assert.equal(ownerToken2, market.address, 'MARKET should tmp own the token');
 
-		let rec = await market.cancel(
+		const { logs } = await market.cancel(
 			[token2],
 			{from: ac.ADAPT_ADMIN}
 		).should.be.fulfilled;
 
+		await expectEvent.inLogs(logs, 'LogOrdersCancelled');
+
 		ownerToken2 = await adapt.ownerOf(token2);
 		assert.equal(ownerToken2, ac.ADAPT_ADMIN, 'ADAPT_ADMIN should now own the item');
-	})
+	});
 });
 
 
