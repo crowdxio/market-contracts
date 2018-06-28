@@ -193,7 +193,6 @@ contract('estimate gas - ', function (rpc_accounts) {
 
 	it('should be able to change the market fee', async () => {
 		const rec = await market.setPercentageFee(
-			erc721Token.address,
 			275, // set the fee to 2.75%
 			1000,
 			{ from: ac.MARKET_ADMIN_MSIG , gas: 7000000 }

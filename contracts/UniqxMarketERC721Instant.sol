@@ -44,7 +44,6 @@ contract UniqxMarketERC721Instant is NoOwner, Pausable {
   	event UnregisterContract(address _contract);
 
 	event SetPercentageFee(
-		address indexed _contract,
 		uint _marketFeeNum,
 		uint _marketFeeDen
 	);
@@ -110,13 +109,13 @@ contract UniqxMarketERC721Instant is NoOwner, Pausable {
 		emit UnregisterContract(_contract);
 	}
 
-	function setPercentageFee(address _contract, uint _marketFeeNum, uint _marketFeeDen)
+	function setPercentageFee(uint _marketFeeNum, uint _marketFeeDen)
 	public onlyOwner {
 
 		marketFeeNum = _marketFeeNum;
 		marketFeeDen = _marketFeeDen;
 
-		emit SetPercentageFee(_contract, _marketFeeNum, _marketFeeDen);
+		emit SetPercentageFee(_marketFeeNum, _marketFeeDen);
 	}
 
 	function isSpenderApproved(address _contract, address _spender, uint256 _tokenId)

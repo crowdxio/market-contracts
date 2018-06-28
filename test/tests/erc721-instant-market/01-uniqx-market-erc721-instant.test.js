@@ -321,8 +321,7 @@ contract('testing the functionality - ', function (rpc_accounts) {
 
 	it('should be able to change the market fee', async () => {
 		const { logs } = await market.setPercentageFee(
-			erc721Token.address,
-			275, // set the fee to 2.75%
+			275, // set the fee to 2.7%
 			1000,
 			{ from: ac.MARKET_ADMIN_MSIG , gas: 7000000 }
 		).should.be.fulfilled;
@@ -332,8 +331,7 @@ contract('testing the functionality - ', function (rpc_accounts) {
 
 	it('should not allow other than admin to change the market fee', async () => {
 		const { logs } = await market.setPercentageFee(
-			erc721Token.address,
-			1, // set the fee to 2.75%
+			1,
 			100,
 			{ from: ac.BUYER1 , gas: 7000000 }
 		).should.be.rejectedWith(EVMRevert);
