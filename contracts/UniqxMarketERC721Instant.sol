@@ -31,7 +31,6 @@ contract UniqxMarketERC721Instant is NoOwner, Pausable {
 
 	struct UniqxMarketContract {
 		bool registered;
-		ERC721Token TOKEN;
 		mapping(uint => OrderInfo) orders;
 	}
 
@@ -92,8 +91,7 @@ contract UniqxMarketERC721Instant is NoOwner, Pausable {
 		require(!contracts[_contract].registered);
 
 		UniqxMarketContract memory newMarketContract = UniqxMarketContract({
-			registered: true,
-			TOKEN: ERC721Token(_contract)
+			registered: true
 		});
 
 		contracts[_contract] = newMarketContract;
@@ -122,13 +120,13 @@ contract UniqxMarketERC721Instant is NoOwner, Pausable {
 	internal view returns (bool) {
 
 		require(contracts[_contract].registered);
-		UniqxMarketContract storage marketContract = contracts[_contract];
 
-		address tokenOwner = marketContract.TOKEN.ownerOf(_tokenId);
+		ERC721Token token = ERC721Token(_contract);
+		address tokenOwner = token.ownerOf(_tokenId);
 
 		return (_spender == tokenOwner ||
-				marketContract.TOKEN.getApproved(_tokenId) == _spender ||
-				marketContract.TOKEN.isApprovedForAll(tokenOwner, _spender));
+				token.getApproved(_tokenId) == _spender ||
+				token.isApprovedForAll(tokenOwner, _spender));
 	}
 
 	function getOrderStatus(address _contract, uint _tokenId) public view
@@ -177,8 +175,9 @@ contract UniqxMarketERC721Instant is NoOwner, Pausable {
 			require(isSpenderApproved(_contract, msg.sender, _tokenIds[index]));
 
 			// take temporary custody of the token
-			address tokenOwner = marketContract.TOKEN.ownerOf(_tokenIds[index]);
-			marketContract.TOKEN.transferFrom(tokenOwner, address(this), _tokenIds[index]);
+			ERC721Token token = ERC721Token(_contract);
+			address tokenOwner = token.ownerOf(_tokenIds[index]);
+			token.transferFrom(tokenOwner, address(this), _tokenIds[index]);
 
 			OrderInfo memory order = OrderInfo({
 					makePrice: _prices[index],
@@ -209,10 +208,11 @@ contract UniqxMarketERC721Instant is NoOwner, Pausable {
 			require(order.status == OrderStatus.Created);
 
 			// token must still be in temporary custody of the market
-			require(marketContract.TOKEN.ownerOf(_tokenIds[index]) == address(this));
+			ERC721Token token = ERC721Token(_contract);
+			require(token.ownerOf(_tokenIds[index]) == address(this));
 
 			// TODO: transfer back to the original owner instead of the maker
-			marketContract.TOKEN.transferFrom(address(this), order.maker, _tokenIds[index]);
+			token.transferFrom(address(this), order.maker, _tokenIds[index]);
 
 			delete marketContract.orders[_tokenIds[index]];
 		}
@@ -238,7 +238,8 @@ contract UniqxMarketERC721Instant is NoOwner, Pausable {
 			require(order.status == OrderStatus.Created);
 
 			// token must still be in temporary custody of the market
-			require(marketContract.TOKEN.ownerOf(_tokenIds[index]) == address(this));
+			ERC721Token token = ERC721Token(_contract);
+			require(token.ownerOf(_tokenIds[index]) == address(this));
 
 			order.makePrice = _prices[index];
 		}
@@ -263,7 +264,8 @@ contract UniqxMarketERC721Instant is NoOwner, Pausable {
 		uint marketFee = msg.value.mul(marketFeeNum).div(marketFeeDen);
 		uint makerDue = msg.value.sub(marketFee);
 
-		marketContract.TOKEN.transferFrom(address(this), msg.sender, _tokenId);
+		ERC721Token token = ERC721Token(_contract);
+		token.transferFrom(address(this), msg.sender, _tokenId);
 
 		MARKET_FEES_MSIG.transfer(marketFee);
 		order.maker.transfer(makerDue);
