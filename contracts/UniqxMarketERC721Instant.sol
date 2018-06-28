@@ -246,30 +246,40 @@ contract UniqxMarketERC721Instant is NoOwner, Pausable, ReentrancyGuard {
 		emit LogOrdersChanged(_contract, _tokenIds);
 	}
 
-	function takeOrder(address _contract, uint _tokenId)
+	function takeOrders(address _contract, uint [] _tokenIds)
 	public payable whenNotPaused nonReentrant {
 
 		require(contracts[_contract].registered);
 		UniqxMarketContract storage marketContract = contracts[_contract];
 
-		OrderInfo storage order = marketContract.orders[_tokenId];
+		uint _ordersValue = msg.value;
+		for(uint index=0; index<_tokenIds.length; index++) {
 
-		// token must still be published on the market
-		require(order.status == OrderStatus.Created);
+			OrderInfo storage order = marketContract.orders[_tokenIds[index]];
 
-		// the amount of ETH forwarded is higher than make price
-		require(msg.value >= order.makePrice);
+			// token must still be published on the market
+			require(order.status == OrderStatus.Created);
 
-		uint marketFee = msg.value.mul(marketFeeNum).div(marketFeeDen);
-		uint makerDue = msg.value.sub(marketFee);
+			// the amount of ETH forwarded is higher than make price
+			require(_ordersValue >= order.makePrice);
 
-		ERC721Token token = ERC721Token(_contract);
-		token.transferFrom(address(this), msg.sender, _tokenId);
+			uint marketFee = order.makePrice.mul(marketFeeNum).div(marketFeeDen);
+			uint makerDue = order.makePrice.sub(marketFee);
 
-		MARKET_FEES_MSIG.transfer(marketFee);
-		order.maker.transfer(makerDue);
+			_ordersValue = _ordersValue.sub(order.makePrice);
 
-		emit LogOrderSettled(_contract, _tokenId, order.makePrice, order.maker, msg.sender);
-		delete marketContract.orders[_tokenId];
+			ERC721Token token = ERC721Token(_contract);
+			token.transferFrom(address(this), msg.sender, _tokenIds[index]);
+
+			MARKET_FEES_MSIG.transfer(marketFee);
+			order.maker.transfer(makerDue);
+
+			emit LogOrderSettled(_contract, _tokenIds[index], order.makePrice, order.maker, msg.sender);
+
+			delete marketContract.orders[_tokenIds[index]];
+		}
+
+		// the bundled value should match the price of all orders
+		require(_ordersValue == 0);
 	}
 }

@@ -21,7 +21,12 @@ contract UniqxMarketAdapt is NoOwner, Pausable, ReentrancyGuard {
 
 	event LogOrdersCreated(uint[] _tokens);
 	event LogOrdersCancelled(uint[] _tokens);
-	event LogOrderSettled(uint tokenId);
+	event LogOrderSettled(
+		uint _tokenId,
+		uint _price,
+		address _maker,
+		address _taker
+	);
 
 	enum OrderStatus {
 		Unknown,
@@ -95,7 +100,7 @@ contract UniqxMarketAdapt is NoOwner, Pausable, ReentrancyGuard {
 				ADAPT_TOKEN.isApprovedForAll(tokenOwner, _spender));
 	}
 
-	function make(
+	function makeOrders(
 			uint [] _tokenIds,
 			uint [] _prices,
 			address[] _reservations)
@@ -139,7 +144,7 @@ contract UniqxMarketAdapt is NoOwner, Pausable, ReentrancyGuard {
 		emit LogOrdersCreated(_tokenIds);
 	}
 
-	function cancel(uint [] _tokenIds) public whenNotPaused nonReentrant {
+	function cancelOrders(uint [] _tokenIds) public whenNotPaused nonReentrant {
 
 		for(uint index=0; index<_tokenIds.length; index++) {
 			NftTokenOrder storage order = orders[_tokenIds[index]];
@@ -161,35 +166,43 @@ contract UniqxMarketAdapt is NoOwner, Pausable, ReentrancyGuard {
 		emit LogOrdersCancelled(_tokenIds);
 	}
 
-	function take(uint _tokenId)
+	function takeOrders(uint [] _tokenIds)
 		public payable whenNotPaused nonReentrant {
 
-		NftTokenOrder storage order = orders[_tokenId];
+		uint _ordersValue = msg.value;
+		for(uint index=0; index<_tokenIds.length; index++) {
+			NftTokenOrder storage order = orders[_tokenIds[index]];
 
-		// token must still be published on the market
-		require(
-			order.status == OrderStatus.Created ||
-			order.status == OrderStatus.Reserved
-		);
-		// the amount of ETH forwarded is higher than make price
-		require(msg.value >= order.makePrice);
+			// token must still be published on the market
+			require(
+				order.status == OrderStatus.Created ||
+				order.status == OrderStatus.Reserved
+			);
+			// the amount of ETH forwarded is higher than make price
+			require(_ordersValue >= order.makePrice);
 
-		// the token must be reserved for the current buyer
-		if(order.status == OrderStatus.Reserved &&
+			// the token must be reserved for the current buyer
+			if(order.status == OrderStatus.Reserved &&
 			order.makeTime + RESERVATION_TIME > now ) {
-			require(msg.sender == reservations[_tokenId]);
+				require(msg.sender == reservations[_tokenIds[index]]);
+			}
+
+			uint marketFee = order.makePrice.mul(MARKET_FEE_NUM).div(MARKET_FEE_DEN);
+			uint makerDue = order.makePrice.sub(marketFee);
+
+			_ordersValue = _ordersValue.sub(order.makePrice);
+
+			order.status = OrderStatus.Settled;
+			ADAPT_TOKEN.setTokenMetadata(_tokenIds[index], now, order.makePrice);
+			ADAPT_TOKEN.transferFrom(address(this), msg.sender, _tokenIds[index]);
+
+			MARKET_FEES_MSIG.transfer(marketFee);
+			order.maker.transfer(makerDue);
+
+			emit LogOrderSettled(_tokenIds[index], order.makePrice, order.maker, msg.sender);
 		}
 
-		uint marketFee = msg.value.mul(MARKET_FEE_NUM).div(MARKET_FEE_DEN);
-		uint makerDue = msg.value.sub(marketFee);
-
-		order.status = OrderStatus.Settled;
-		ADAPT_TOKEN.setTokenMetadata(_tokenId, now, msg.value);
-		ADAPT_TOKEN.transferFrom(address(this), msg.sender, _tokenId);
-
-		MARKET_FEES_MSIG.transfer(marketFee);
-		order.maker.transfer(makerDue);
-
-		emit LogOrderSettled(_tokenId);
+		// the bundled value should match the price of all orders
+		require(_ordersValue == 0);
 	}
 }

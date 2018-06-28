@@ -211,7 +211,7 @@ contract('testing the functionality - ', function (rpc_accounts) {
 		const balanceMarketFees1 = await pGetBalance(ac.MARKET_FEES_MSIG);
 		const balanceAdaptAdmin1 = await pGetBalance(ac.ADAPT_ADMIN);
 
-		const { logs } = await market.takeOrder(
+		const { logs } = await market.takeOrders(
 			erc721Token.address,
 			[ tokens[1] ],
 			{ from: ac.BUYER1 , gas: 7000000, value: ether(1) }
@@ -245,10 +245,21 @@ contract('testing the functionality - ', function (rpc_accounts) {
 	});
 
 	it('should not be able to take order if price is lower than the asked price', async () => {
-		await market.takeOrder(
+		await market.takeOrders(
 			erc721Token.address,
 			[ tokens[2] ],
 			{ from: ac.ADAPT_ADMIN , gas: 7000000, value: ether(0.99) }
+		).should.be.rejectedWith(EVMRevert);
+
+		const tokenStatus = await market.getOrderStatus(erc721Token.address, tokens[2]);
+		assert.equal(tokenStatus, 1, 'The order should remain in \'Created\' state');
+	});
+
+	it('should not be able to take order if price is greater than the asked price', async () => {
+		await market.takeOrders(
+			erc721Token.address,
+			[ tokens[2] ],
+			{ from: ac.ADAPT_ADMIN , gas: 7000000, value: ether(1.1) }
 		).should.be.rejectedWith(EVMRevert);
 
 		const tokenStatus = await market.getOrderStatus(erc721Token.address, tokens[2]);
@@ -279,7 +290,7 @@ contract('testing the functionality - ', function (rpc_accounts) {
 	});
 
 	it('should not be able to make an order if the market was not apporved for the seller', async () => {
-		const { logs } = await market.takeOrder(
+		const { logs } = await market.takeOrders(
 			erc721Token.address,
 			[ tokens[3] ],
 			{ from: ac.BUYER1 , gas: 7000000, value: ether(1) }
@@ -341,7 +352,7 @@ contract('testing the functionality - ', function (rpc_accounts) {
 	it('should the market fee be calculated according to the new value', async () => {
 		const balanceMarketFees1 = await pGetBalance(ac.MARKET_FEES_MSIG);
 
-		const { logs } = await market.takeOrder(
+		const { logs } = await market.takeOrders(
 			erc721Token.address,
 			[ tokens[4] ],
 			{ from: ac.BUYER2 , gas: 7000000, value: ether(1) }
@@ -357,6 +368,54 @@ contract('testing the functionality - ', function (rpc_accounts) {
 		console.log('marketBalanceShouldBe', marketBalanceShouldBe.toString(10));
 
 		balanceMarketFees2.should.be.bignumber.equal(marketBalanceShouldBe);
+	});
+
+	it('should be able to take multiple orders', async () => {
+		const balanceMarketFees1 = await pGetBalance(ac.MARKET_FEES_MSIG);
+		const balanceAdaptAdmin1 = await pGetBalance(ac.ADAPT_ADMIN);
+
+		const { logs } = await market.takeOrders(
+			erc721Token.address,
+			[ tokens[5], tokens[6] ],
+			{ from: ac.BUYER2 , gas: 7000000, value: ether(2) }
+		).should.be.fulfilled;
+
+
+		const balanceMarketFees2 = await pGetBalance(ac.MARKET_FEES_MSIG);
+		const balanceAdaptAdmin2 = await pGetBalance(ac.ADAPT_ADMIN);
+
+		const marketFeesShouldBe = ether(2).mul(275).div(1000);
+		const marketBalanceShouldBe = balanceMarketFees1.add(marketFeesShouldBe);
+
+		const sellerFeesShouldBe = ether(2).sub(marketFeesShouldBe);
+		const sellerBalanceShouldBe = balanceAdaptAdmin1.add(sellerFeesShouldBe);
+
+		console.log('balanceMarketFees2', balanceMarketFees2.toString(10));
+		console.log('marketBalanceShouldBe', marketBalanceShouldBe.toString(10));
+
+		console.log('balanceAdaptAdmin2', balanceAdaptAdmin2.toString(10));
+		console.log('sellerBalanceShouldBe', sellerBalanceShouldBe.toString(10));
+
+		balanceMarketFees2.should.be.bignumber.equal(marketBalanceShouldBe);
+		balanceAdaptAdmin2.should.be.bignumber.equal(sellerBalanceShouldBe);
+	});
+
+	it('should not be able to take multiple orders if value is not enough', async () => {
+		const balanceMarketFees1 = await pGetBalance(ac.MARKET_FEES_MSIG);
+		const balanceAdaptAdmin1 = await pGetBalance(ac.ADAPT_ADMIN);
+
+		const { logs } = await market.takeOrders(
+			erc721Token.address,
+			[ tokens[7], tokens[8] ],
+			{ from: ac.BUYER2 , gas: 7000000, value: ether(1.99) }
+		).should.be.rejectedWith(EVMRevert);
+
+
+		const token7Status = await market.getOrderStatus(erc721Token.address, tokens[7]);
+		assert.equal(token7Status, 1, 'The order should remain in \'Created\' state');
+
+		const token8Status = await market.getOrderStatus(erc721Token.address, tokens[8]);
+		assert.equal(token8Status, 1, 'The order should remain in \'Created\' state');
 	});
 });
 

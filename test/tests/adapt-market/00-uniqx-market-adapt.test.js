@@ -63,7 +63,7 @@ contract('estimate gas - ', function (rpc_accounts) {
 			{ from: ac.ADAPT_ADMIN }
 		).should.be.fulfilled;
 
-		let rec = await market.make(
+		let rec = await market.makeOrders(
 			tokens,
 			prices,
 			reservations,

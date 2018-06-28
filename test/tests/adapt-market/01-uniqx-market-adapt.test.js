@@ -14,7 +14,10 @@ contract('Market - a simple walk-through the functionality', function (rpc_accou
 	let ac = accounts(rpc_accounts);
 	let adapt, market;
 
-	let token1, token2;
+	let tokesCount = 10;
+	let tokens = [];
+	let prices = [];
+	let reservations = [];
 
 	let pGetBalance = Bluebird.promisify(web3.eth.getBalance);
 	let pSendTransaction = Bluebird.promisify(web3.eth.sendTransaction);
@@ -45,7 +48,7 @@ contract('Market - a simple walk-through the functionality', function (rpc_accou
 			ac.ADAPT_ADMIN,
 			'0xabcd',
 			1,
-			2,
+			tokesCount,
 			{from: ac.ADAPT_ADMIN}
 		).should.be.fulfilled;
 
@@ -53,21 +56,24 @@ contract('Market - a simple walk-through the functionality', function (rpc_accou
 			ac.ADAPT_ADMIN,
 			'0xef01',
 			1,
-			2,
+			tokesCount,
 			{from: ac.ADAPT_ADMIN}
 		).should.be.fulfilled;
 
 		let balance = await adapt.balanceOf(ac.ADAPT_ADMIN);
 		console.log(ac.ADAPT_ADMIN, 'balance= ', balance.toString(10));
 
-		token1 = await adapt.tokenByIndex(0);
-		token2 = await adapt.tokenByIndex(2);
 
-		console.log('token1', token1.toString(16));
-		console.log('token2', token2.toString(16));
+		for (let i = 0; i < tokesCount; i++) {
+			tokens[i] = await adapt.tokenByIndex(i);
+			console.log('token: ', tokens[i].toString(10));
+			prices[i] = ether(1);
+			reservations[i] = 0x0;
+		}
 	});
 
 	it('should be able permission the market for all items in ADAPT', async () => {
+
 		await adapt.setApprovalForAll(
 			market.address,
 			true,
@@ -77,15 +83,14 @@ contract('Market - a simple walk-through the functionality', function (rpc_accou
 
 	it('should be able to create an order on the market', async () => {
 
-		const { logs } = await market.make(
-			[token1, token2],
-			[ether(1), ether(2)],
-			[0x0, 0x0],
-			{from: ac.ADAPT_ADMIN}
+		const { logs }  = await market.makeOrders(
+			tokens,
+			prices,
+			reservations,
+			{ from: ac.ADAPT_ADMIN , gas: 7000000 }
 		).should.be.fulfilled;
-		// console.log(JSON.stringify(rec.logs, null, 2));
 
-		let ownerToken1 = await adapt.ownerOf(token1);
+		let ownerToken1 = await adapt.ownerOf(tokens[0]);
 		assert.equal(ownerToken1, market.address, 'MARKET should tmp own the token');
 
 		await expectEvent.inLogs(logs, 'LogOrdersCreated');
@@ -96,14 +101,14 @@ contract('Market - a simple walk-through the functionality', function (rpc_accou
 		let balanceMarketFees1 = await pGetBalance(ac.MARKET_FEES_MSIG);
 		let balanceAdaptAdmin1 = await pGetBalance(ac.ADAPT_ADMIN);
 
-		const { logs } = await market.take(
-			token1,
+		const { logs } = await market.takeOrders(
+			[ tokens[0] ],
 			{from: ac.BUYER1, value: ether(1)}
 		).should.be.fulfilled;
 
 		await expectEvent.inLogs(logs, 'LogOrderSettled');
 
-		let ownerToken1 = await adapt.ownerOf(token1);
+		let ownerToken1 = await adapt.ownerOf(tokens[0]);
 		assert.equal(ownerToken1, ac.BUYER1, 'BUYER1 should now be the owner of token1');
 
 		let balanceMarketFees2 = await pGetBalance(ac.MARKET_FEES_MSIG);
@@ -125,35 +130,93 @@ contract('Market - a simple walk-through the functionality', function (rpc_accou
 		balanceAdaptAdmin2.should.be.bignumber.equal(sellerBalanceShouldBe);
 	});
 
-	it('should disallow to publish a token which was sold', async () => {
-		await adapt.setApprovalForAll(
-			market.address,
-			true,
-			{ from: ac.BUYER1 }
+	it('should be able to fulfill a valid take request with multiple tokens', async () => {
+
+		let balanceMarketFees1 = await pGetBalance(ac.MARKET_FEES_MSIG);
+		let balanceAdaptAdmin1 = await pGetBalance(ac.ADAPT_ADMIN);
+
+		const { logs } = await market.takeOrders(
+			[ tokens[1], tokens[2] ],
+			{ from: ac.BUYER1, value: ether(2) }
 		).should.be.fulfilled;
 
-		await market.make(
-			[ token1 ],
-			[ ether(1) ],
-			[0x0, 0x0],
+		await expectEvent.inLogs(logs, 'LogOrderSettled');
+
+		let ownerToken1 = await adapt.ownerOf(tokens[1]);
+		assert.equal(ownerToken1, ac.BUYER1, 'BUYER1 should now be the owner of token1');
+
+		let ownerToken2 = await adapt.ownerOf(tokens[2]);
+		assert.equal(ownerToken2, ac.BUYER1, 'BUYER1 should now be the owner of token2');
+
+		let balanceMarketFees2 = await pGetBalance(ac.MARKET_FEES_MSIG);
+		let balanceAdaptAdmin2 = await pGetBalance(ac.ADAPT_ADMIN);
+
+		let marketFeesShouldBe = ether(2).mul(4).div(100);
+		let marketBalanceShouldBe = balanceMarketFees1.add(marketFeesShouldBe);
+
+		let sellerFeesShouldBe = ether(2).sub(marketFeesShouldBe);
+		let sellerBalanceShouldBe = balanceAdaptAdmin1.add(sellerFeesShouldBe);
+
+		console.log('balanceMarketFees2', balanceMarketFees2.toString(10));
+		console.log('marketBalanceShouldBe', marketBalanceShouldBe.toString(10));
+
+		console.log('balanceAdaptAdmin2', balanceAdaptAdmin2.toString(10));
+		console.log('sellerBalanceShouldBe', sellerBalanceShouldBe.toString(10));
+
+		balanceMarketFees2.should.be.bignumber.equal(marketBalanceShouldBe);
+		balanceAdaptAdmin2.should.be.bignumber.equal(sellerBalanceShouldBe);
+	});
+
+	it('should not be able to take order if price is lower than the asked price', async () => {
+		await market.takeOrders(
+			[ tokens[3] ],
+			{ from: ac.BUYER1, value: ether(0.99) }
+		).should.be.rejectedWith(EVMRevert);
+
+		const tokenStatus = await market.getOrderStatus(tokens[3]);
+		assert.equal(tokenStatus, 1, 'The order should remain in \'Created\' state');
+	});
+
+	it('should not be able to take order if price is greater than the asked price', async () => {
+		await market.takeOrders(
+			[ tokens[3] ],
+			{ from: ac.BUYER1, value: ether(1.1) }
+		).should.be.rejectedWith(EVMRevert);
+
+		const tokenStatus = await market.getOrderStatus(tokens[3]);
+		assert.equal(tokenStatus, 1, 'The order should remain in \'Created\' state');
+	});
+
+	it('should disallow to publish a token which was sold', async () => {
+		await market.makeOrders(
+			[ tokens[0] ],
+			[ ether(1.5) ],
+			[ 0x0 ],
 			{from: ac.ADAPT_ADMIN}
 		).should.be.rejectedWith(EVMRevert);
 	});
 
 	it('should be able to cancel a published token from the market', async () => {
 
-		let ownerToken2 = await adapt.ownerOf(token2);
-		assert.equal(ownerToken2, market.address, 'MARKET should tmp own the token');
+		let ownerToken3 = await adapt.ownerOf(tokens[3]);
+		assert.equal(ownerToken3, market.address, 'MARKET should tmp own the token');
 
-		const { logs } = await market.cancel(
-			[token2],
+		const { logs } = await market.cancelOrders(
+			[ tokens[3] ],
 			{from: ac.ADAPT_ADMIN}
 		).should.be.fulfilled;
 
 		await expectEvent.inLogs(logs, 'LogOrdersCancelled');
 
-		ownerToken2 = await adapt.ownerOf(token2);
-		assert.equal(ownerToken2, ac.ADAPT_ADMIN, 'ADAPT_ADMIN should now own the item');
+		ownerToken3 = await adapt.ownerOf(tokens[3]);
+		assert.equal(ownerToken3, ac.ADAPT_ADMIN, 'ADAPT_ADMIN should now own the item');
+	});
+
+	it('should reject taking multiple orders if value is not enough', async () => {
+		const {logs} = await market.takeOrders(
+			[tokens[4], tokens[5]],
+			{from: ac.BUYER1, value: ether(1.99)}
+		).should.be.rejectedWith(EVMRevert);
 	});
 });
 

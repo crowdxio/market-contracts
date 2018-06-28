@@ -161,7 +161,7 @@ contract('estimate gas - ', function (rpc_accounts) {
 	});
 
 	it('should be able to take order', async () => {
-		const rec = await market.takeOrder(
+		const rec = await market.takeOrders(
 			erc721Token.address,
 			[ tokens[1] ],
 			{ from: ac.BUYER1 , gas: 7000000, value: ether(1) }
@@ -169,7 +169,7 @@ contract('estimate gas - ', function (rpc_accounts) {
 
 		await expectEvent.inLogs(rec.logs, 'LogOrderSettled');
 
-		console.log('takeOrder() - Gas Used = ' + rec.receipt.gasUsed);
+		console.log('takeOrders() - Gas Used = ' + rec.receipt.gasUsed);
 	});
 
 
