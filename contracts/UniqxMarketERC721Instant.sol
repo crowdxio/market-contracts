@@ -3,7 +3,7 @@ pragma solidity ^0.4.24;
 import "../zeppelin/contracts/ownership/NoOwner.sol";
 import "../zeppelin/contracts/lifecycle/Pausable.sol";
 import {SafeMath} from "../zeppelin/contracts/math/SafeMath.sol";
-import {ERC721Token} from '../zeppelin/contracts/token/ERC721/ERC721Token.sol';
+import {ERC721Token} from "../zeppelin/contracts/token/ERC721/ERC721Token.sol";
 
 contract UniqxMarketERC721Instant is NoOwner, Pausable {
 
@@ -14,6 +14,8 @@ contract UniqxMarketERC721Instant is NoOwner, Pausable {
 
 	uint public marketFeeNum = 1;
 	uint public marketFeeDen = 100;
+
+	bool public ordersAllowed = true;
 
 	enum OrderStatus {
 		Unknown,
@@ -58,13 +60,6 @@ contract UniqxMarketERC721Instant is NoOwner, Pausable {
 		address _taker
 	);
 
- 	bool public ordersAllowed = true;
-
-	modifier onlyAdmin() {
-		require(msg.sender == MARKET_ADMIN_MSIG);
-		_;
-	}
-
 	modifier whenOrdersNotAllowed() {
 		require(!ordersAllowed);
 		_;
@@ -75,16 +70,6 @@ contract UniqxMarketERC721Instant is NoOwner, Pausable {
 		_;
 	}
 
-	function allowOrders() onlyAdmin whenOrdersNotAllowed public {
-		ordersAllowed = true;
-		emit AllowOrders();
-	}
-
-	function disallowOrders() onlyAdmin whenOrdersAllowed public {
-		ordersAllowed = false;
-		emit DisallowOrders();
-	}
-
 	constructor(address _marketAdmin, address _marketFees) public {
 
 		MARKET_ADMIN_MSIG = _marketAdmin;
@@ -93,7 +78,17 @@ contract UniqxMarketERC721Instant is NoOwner, Pausable {
 		transferOwnership(_marketAdmin);
 	}
 
-	function registerContract(address _contract) public onlyAdmin {
+	function allowOrders() onlyOwner whenOrdersNotAllowed public {
+		ordersAllowed = true;
+		emit AllowOrders();
+	}
+
+	function disallowOrders() onlyOwner whenOrdersAllowed public {
+		ordersAllowed = false;
+		emit DisallowOrders();
+	}
+
+	function registerContract(address _contract) public onlyOwner {
 
 		require(!contracts[_contract].registered);
 
@@ -107,7 +102,7 @@ contract UniqxMarketERC721Instant is NoOwner, Pausable {
 		emit RegisterContract(_contract);
 	}
 
-	function unregisterContract(address _contract) public onlyAdmin {
+	function unregisterContract(address _contract) public onlyOwner {
 
 		require(contracts[_contract].registered);
 		delete contracts[_contract];
@@ -115,7 +110,8 @@ contract UniqxMarketERC721Instant is NoOwner, Pausable {
 		emit UnregisterContract(_contract);
 	}
 
-	function setPercentageFee(address _contract, uint _marketFeeNum, uint _marketFeeDen) public onlyAdmin {
+	function setPercentageFee(address _contract, uint _marketFeeNum, uint _marketFeeDen)
+	public onlyOwner {
 
 		marketFeeNum = _marketFeeNum;
 		marketFeeDen = _marketFeeDen;
@@ -123,7 +119,8 @@ contract UniqxMarketERC721Instant is NoOwner, Pausable {
 		emit SetPercentageFee(_contract, _marketFeeNum, _marketFeeDen);
 	}
 
-	function isSpenderApproved(address _contract, address _spender, uint256 _tokenId) internal view returns (bool) {
+	function isSpenderApproved(address _contract, address _spender, uint256 _tokenId)
+	internal view returns (bool) {
 
 		require(contracts[_contract].registered);
 		UniqxMarketContract storage marketContract = contracts[_contract];
@@ -161,7 +158,7 @@ contract UniqxMarketERC721Instant is NoOwner, Pausable {
 		_maker = order.maker;
 	}
 
-	function makeOrder(
+	function makeOrders(
 			address _contract,
 			uint [] _tokenIds,
 			uint [] _prices)
@@ -197,7 +194,8 @@ contract UniqxMarketERC721Instant is NoOwner, Pausable {
 		emit LogOrdersCreated(_contract, _tokenIds);
 	}
 
-	function cancelOrder(address _contract, uint [] _tokenIds) public whenNotPaused {
+	function cancelOrders(address _contract, uint [] _tokenIds)
+	public whenNotPaused {
 
 		require(contracts[_contract].registered);
 		UniqxMarketContract storage marketContract = contracts[_contract];
@@ -214,6 +212,7 @@ contract UniqxMarketERC721Instant is NoOwner, Pausable {
 			// token must still be in temporary custody of the market
 			require(marketContract.TOKEN.ownerOf(_tokenIds[index]) == address(this));
 
+			// TODO: transfer back to the original owner instead of the maker
 			marketContract.TOKEN.transferFrom(address(this), order.maker, _tokenIds[index]);
 
 			delete marketContract.orders[_tokenIds[index]];
@@ -222,7 +221,8 @@ contract UniqxMarketERC721Instant is NoOwner, Pausable {
 		emit LogOrdersCancelled(_contract, _tokenIds);
 	}
 
-	function changeOrder(address _contract, uint [] _tokenIds, uint [] _prices) public whenNotPaused {
+	function changeOrders(address _contract, uint [] _tokenIds, uint [] _prices)
+	public whenNotPaused {
 
 		require(_tokenIds.length == _prices.length);
 
@@ -243,15 +243,16 @@ contract UniqxMarketERC721Instant is NoOwner, Pausable {
 
 			order.makePrice = _prices[index];
 		}
-		
+
 		emit LogOrdersChanged(_contract, _tokenIds);
 	}
 
-	function takeOrder(address _contract, uint _tokenId) public payable whenNotPaused {
-		
+	function takeOrder(address _contract, uint _tokenId)
+	public payable whenNotPaused {
+
 		require(contracts[_contract].registered);
 		UniqxMarketContract storage marketContract = contracts[_contract];
-		
+
 		OrderInfo storage order = marketContract.orders[_tokenId];
 
 		// token must still be published on the market
@@ -269,7 +270,6 @@ contract UniqxMarketERC721Instant is NoOwner, Pausable {
 		order.maker.transfer(makerDue);
 
 		emit LogOrderSettled(_contract, _tokenId, order.makePrice, order.maker, msg.sender);
-
 		delete marketContract.orders[_tokenId];
 	}
 }

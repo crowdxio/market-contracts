@@ -144,7 +144,7 @@ contract('testing the functionality - ', function (rpc_accounts) {
 	});
 
 	it('should not able to make oreder when disallowed', async () => {
-		await market.makeOrder(
+		await market.makeOrders(
 			erc721Token.address,
 			tokens,
 			prices,
@@ -160,7 +160,7 @@ contract('testing the functionality - ', function (rpc_accounts) {
 	});
 
 	it('should be able to make multiple orders in one transaction', async () => {
-		const { logs } = await market.makeOrder(
+		const { logs } = await market.makeOrders(
 			erc721Token.address,
 			tokens,
 			prices,
@@ -180,7 +180,7 @@ contract('testing the functionality - ', function (rpc_accounts) {
 	});
 
 	it('should not be able to make an order twice', async () => {
-		const { logs } = await market.makeOrder(
+		const { logs } = await market.makeOrders(
 			erc721Token.address,
 			[ tokens[0] ],
 			[ ether(1.5) ],
@@ -192,7 +192,7 @@ contract('testing the functionality - ', function (rpc_accounts) {
 		const ownerToken1 = await erc721Token.ownerOf(tokens[0]);
 		assert.equal(ownerToken1, market.address, 'MARKET should tmp own the token');
 
-		const { logs } = await market.cancelOrder(
+		const { logs } = await market.cancelOrders(
 			erc721Token.address,
 			[ tokens[0] ],
 			{ from: ac.ADAPT_ADMIN , gas: 7000000 }
@@ -256,14 +256,14 @@ contract('testing the functionality - ', function (rpc_accounts) {
 	});
 
 	it('should be able to change an order', async () => {
-		await market.makeOrder(
+		await market.makeOrders(
 			erc721Token.address,
 			[ tokens[0] ],
 			[ ether(1) ],
 			{ from: ac.ADAPT_ADMIN , gas: 7000000 }
 		).should.be.fulfilled;
 
-		const { logs } = await market.changeOrder(
+		const { logs } = await market.changeOrders(
 			erc721Token.address,
 			[ tokens[0] ],
 			[ 2 ],
@@ -293,7 +293,7 @@ contract('testing the functionality - ', function (rpc_accounts) {
 		const ownerOfToken = await erc721Token.ownerOf(tokens[1]);
 		assert.equal(ownerOfToken, ac.BUYER1, 'BUYER1 should now be the owner of token');
 
-		await market.makeOrder(
+		await market.makeOrders(
 			erc721Token.address,
 			[ tokens[3] ],
 			[ ether(1.5) ],
@@ -309,7 +309,7 @@ contract('testing the functionality - ', function (rpc_accounts) {
 			{ from: ac.BUYER1 }
 		).should.be.fulfilled;
 
-		const { logs } = await market.makeOrder(
+		const { logs } = await market.makeOrders(
 			erc721Token.address,
 			[ tokens[3] ],
 			[ ether(1.5) ],

@@ -110,7 +110,7 @@ contract('estimate gas - ', function (rpc_accounts) {
 	});
 
 	it('should be able to make a single order', async () => {
-		const rec = await market.makeOrder(
+		const rec = await market.makeOrders(
 			erc721Token.address,
 			[ tokens[0] ],
 			[ 1 ],
@@ -122,11 +122,11 @@ contract('estimate gas - ', function (rpc_accounts) {
 
 		expectEvent.inLogs(rec.logs, 'LogOrdersCreated');
 
-		console.log('makeOrder() with 1 order - Gas Used = ' + rec.receipt.gasUsed);
+		console.log('makeOrders() with 1 order - Gas Used = ' + rec.receipt.gasUsed);
 	});
 
 	it('should be able to cancel order', async () => {
-		const rec = await market.cancelOrder(
+		const rec = await market.cancelOrders(
 			erc721Token.address,
 			[ tokens[0] ],
 			{ from: ac.ADAPT_ADMIN , gas: 7000000 }
@@ -139,11 +139,11 @@ contract('estimate gas - ', function (rpc_accounts) {
 		const event = rec.logs.find(e => e.event === 'LogOrdersCreated');
 		await expectEvent.inLogs(rec.logs, 'LogOrdersCancelled');
 
-		console.log('cancelOrder() - Gas Used = ' + rec.receipt.gasUsed);
+		console.log('cancelOrders() - Gas Used = ' + rec.receipt.gasUsed);
 	});
 
 	it('should be able to make multiple orders in one transaction', async () => {
-		const rec = await market.makeOrder(
+		const rec = await market.makeOrders(
 			erc721Token.address,
 			tokens,
 			prices,
@@ -157,7 +157,7 @@ contract('estimate gas - ', function (rpc_accounts) {
 			assert.equal(tokenStatus, 1);
 		}
 
-		console.log('makeOrder() with 10 orders - Gas Used = ' + rec.receipt.gasUsed);
+		console.log('makeOrders() with 10 orders - Gas Used = ' + rec.receipt.gasUsed);
 	});
 
 	it('should be able to take order', async () => {
@@ -174,7 +174,7 @@ contract('estimate gas - ', function (rpc_accounts) {
 
 
 	it('should be able to change an order', async () => {
-		const rec = await market.changeOrder(
+		const rec = await market.changeOrders(
 			erc721Token.address,
 			[ tokens[2] ],
 			[ 2 ],
@@ -188,7 +188,7 @@ contract('estimate gas - ', function (rpc_accounts) {
 		orderInfo[0].should.be.bignumber.equal(1); // 'Created' status
 		orderInfo[1].should.be.bignumber.equal(2);  // price
 
-		console.log('changeOrder() - Gas Used = ' + rec.receipt.gasUsed);
+		console.log('changeOrders() - Gas Used = ' + rec.receipt.gasUsed);
 	});
 
 	it('should be able to change the market fee', async () => {
