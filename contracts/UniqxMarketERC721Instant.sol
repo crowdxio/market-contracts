@@ -9,7 +9,6 @@ contract UniqxMarketERC721Instant is NoOwner, Pausable {
 
 	using SafeMath for uint;
 
-	address public MARKET_ADMIN_MSIG;
 	address public MARKET_FEES_MSIG;
 
 	uint public marketFeeNum = 1;
@@ -70,7 +69,6 @@ contract UniqxMarketERC721Instant is NoOwner, Pausable {
 
 	constructor(address _marketAdmin, address _marketFees) public {
 
-		MARKET_ADMIN_MSIG = _marketAdmin;
 		MARKET_FEES_MSIG = _marketFees;
 
 		transferOwnership(_marketAdmin);

@@ -10,7 +10,6 @@ contract UniqxMarketAdapt is NoOwner, Pausable {
 
 	using SafeMath for uint;
 
-	address public MARKET_ADMIN_MSIG;
 	address public MARKET_FEES_MSIG;
 	AdaptCollectibles public ADAPT_TOKEN;
 
@@ -49,7 +48,6 @@ contract UniqxMarketAdapt is NoOwner, Pausable {
 		address _adaptContract
 	) public {
 
-		MARKET_ADMIN_MSIG = _marketAdmin;
 		MARKET_FEES_MSIG = _marketFees;
 		ADAPT_TOKEN = AdaptCollectibles(_adaptContract);
 
