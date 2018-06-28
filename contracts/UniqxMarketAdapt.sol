@@ -2,11 +2,12 @@ pragma solidity ^0.4.24;
 
 import "../zeppelin/contracts/ownership/NoOwner.sol";
 import "../zeppelin/contracts/lifecycle/Pausable.sol";
+import "../zeppelin/contracts/ReentrancyGuard.sol";
 import {SafeMath} from "../zeppelin/contracts/math/SafeMath.sol";
 import "../zeppelin/contracts/token/ERC721/ERC721BasicToken.sol";
 import {AdaptCollectibles} from "../adapt/contracts/AdaptCollectibles.sol";
 
-contract UniqxMarketAdapt is NoOwner, Pausable {
+contract UniqxMarketAdapt is NoOwner, Pausable, ReentrancyGuard {
 
 	using SafeMath for uint;
 
@@ -98,7 +99,7 @@ contract UniqxMarketAdapt is NoOwner, Pausable {
 			uint [] _tokenIds,
 			uint [] _prices,
 			address[] _reservations)
-		public whenNotPaused {
+		public whenNotPaused nonReentrant {
 
 		require(_tokenIds.length == _prices.length);
 		require(_tokenIds.length == _reservations.length);
@@ -138,7 +139,7 @@ contract UniqxMarketAdapt is NoOwner, Pausable {
 		emit LogOrdersCreated(_tokenIds);
 	}
 
-	function cancel(uint [] _tokenIds) public whenNotPaused {
+	function cancel(uint [] _tokenIds) public whenNotPaused nonReentrant {
 
 		for(uint index=0; index<_tokenIds.length; index++) {
 			NftTokenOrder storage order = orders[_tokenIds[index]];
@@ -161,7 +162,7 @@ contract UniqxMarketAdapt is NoOwner, Pausable {
 	}
 
 	function take(uint _tokenId)
-		public payable whenNotPaused {
+		public payable whenNotPaused nonReentrant {
 
 		NftTokenOrder storage order = orders[_tokenId];
 

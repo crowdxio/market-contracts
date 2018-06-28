@@ -2,10 +2,11 @@ pragma solidity ^0.4.24;
 
 import "../zeppelin/contracts/ownership/NoOwner.sol";
 import "../zeppelin/contracts/lifecycle/Pausable.sol";
+import "../zeppelin/contracts/ReentrancyGuard.sol";
 import {SafeMath} from "../zeppelin/contracts/math/SafeMath.sol";
 import {ERC721Token} from "../zeppelin/contracts/token/ERC721/ERC721Token.sol";
 
-contract UniqxMarketERC721Instant is NoOwner, Pausable {
+contract UniqxMarketERC721Instant is NoOwner, Pausable, ReentrancyGuard {
 
 	using SafeMath for uint;
 
@@ -157,7 +158,7 @@ contract UniqxMarketERC721Instant is NoOwner, Pausable {
 			address _contract,
 			uint [] _tokenIds,
 			uint [] _prices)
-		public whenNotPaused whenOrdersAllowed {
+		public whenNotPaused whenOrdersAllowed nonReentrant {
 
 		require(_tokenIds.length == _prices.length);
 
@@ -191,7 +192,7 @@ contract UniqxMarketERC721Instant is NoOwner, Pausable {
 	}
 
 	function cancelOrders(address _contract, uint [] _tokenIds)
-	public whenNotPaused {
+	public whenNotPaused nonReentrant {
 
 		require(contracts[_contract].registered);
 		UniqxMarketContract storage marketContract = contracts[_contract];
@@ -219,7 +220,7 @@ contract UniqxMarketERC721Instant is NoOwner, Pausable {
 	}
 
 	function changeOrders(address _contract, uint [] _tokenIds, uint [] _prices)
-	public whenNotPaused {
+	public whenNotPaused nonReentrant {
 
 		require(_tokenIds.length == _prices.length);
 
@@ -246,7 +247,7 @@ contract UniqxMarketERC721Instant is NoOwner, Pausable {
 	}
 
 	function takeOrder(address _contract, uint _tokenId)
-	public payable whenNotPaused {
+	public payable whenNotPaused nonReentrant {
 
 		require(contracts[_contract].registered);
 		UniqxMarketContract storage marketContract = contracts[_contract];
