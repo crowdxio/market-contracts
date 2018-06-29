@@ -92,8 +92,8 @@ contract UniqxMarketERC721Instant is NoOwner, Pausable, ReentrancyGuard {
 
 	function allowContractOrders(address _contract) onlyOwner public {
 
-		require(contracts[_contract].registered);
 		UniqxMarketContract storage marketContract = contracts[_contract];
+		require(marketContract.registered);
 
 		require(!marketContract.ordersAllowed);
 
@@ -104,8 +104,8 @@ contract UniqxMarketERC721Instant is NoOwner, Pausable, ReentrancyGuard {
 
 	function disallowContractOrders(address _contract) onlyOwner public {
 
-		require(contracts[_contract].registered);
 		UniqxMarketContract storage marketContract = contracts[_contract];
+		require(marketContract.registered);
 
 		require(marketContract.ordersAllowed);
 
@@ -153,8 +153,9 @@ contract UniqxMarketERC721Instant is NoOwner, Pausable, ReentrancyGuard {
 	function getOrderStatus(address _contract, uint _tokenId) public view
 		returns (OrderStatus _status) {
 
-		require(contracts[_contract].registered);
 		UniqxMarketContract storage marketContract = contracts[_contract];
+
+		require(marketContract.registered);
 
 		return marketContract.orders[_tokenId].status;
 	}
@@ -167,8 +168,10 @@ contract UniqxMarketERC721Instant is NoOwner, Pausable, ReentrancyGuard {
 			address _maker
 		) {
 
-		require(contracts[_contract].registered);
-		OrderInfo storage order = contracts[_contract].orders[_tokenId];
+		UniqxMarketContract storage marketContract = contracts[_contract];
+		require(marketContract.registered);
+
+		OrderInfo storage order = marketContract.orders[_tokenId];
 
 		_status = order.status;
 		_makePrice = order.makePrice;
@@ -184,9 +187,9 @@ contract UniqxMarketERC721Instant is NoOwner, Pausable, ReentrancyGuard {
 
 		require(_tokenIds.length == _prices.length);
 
-		require(contracts[_contract].registered);
 		UniqxMarketContract storage marketContract = contracts[_contract];
 
+		require(marketContract.registered);
 		require(marketContract.ordersAllowed);
 
 		for(uint index=0; index<_tokenIds.length; index++) {
@@ -218,8 +221,8 @@ contract UniqxMarketERC721Instant is NoOwner, Pausable, ReentrancyGuard {
 	function cancelOrders(address _contract, uint [] _tokenIds)
 	public whenNotPaused nonReentrant {
 
-		require(contracts[_contract].registered);
 		UniqxMarketContract storage marketContract = contracts[_contract];
+		require(marketContract.registered);
 
 		for(uint index=0; index<_tokenIds.length; index++) {
 			OrderInfo storage order = marketContract.orders[_tokenIds[index]];
@@ -248,8 +251,8 @@ contract UniqxMarketERC721Instant is NoOwner, Pausable, ReentrancyGuard {
 
 		require(_tokenIds.length == _prices.length);
 
-		require(contracts[_contract].registered);
 		UniqxMarketContract storage marketContract = contracts[_contract];
+		require(marketContract.registered);
 
 		for(uint index=0; index<_tokenIds.length; index++) {
 			OrderInfo storage order = marketContract.orders[_tokenIds[index]];
@@ -273,8 +276,8 @@ contract UniqxMarketERC721Instant is NoOwner, Pausable, ReentrancyGuard {
 	function takeOrders(address _contract, uint [] _tokenIds)
 	public payable whenNotPaused nonReentrant {
 
-		require(contracts[_contract].registered);
 		UniqxMarketContract storage marketContract = contracts[_contract];
+		require(marketContract.registered);
 
 		uint _ordersValue = msg.value;
 		for(uint index=0; index<_tokenIds.length; index++) {
