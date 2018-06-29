@@ -72,52 +72,6 @@ contract('testing the functionality - ', function (rpc_accounts) {
 		).should.be.rejectedWith(EVMRevert);
 	});
 
-
-	it('should be able to unregister contract', async () => {
-		const token = await ERC721Token.new(
-			ac.ADAPT_OWNER,
-			ac.ADAPT_ADMIN,
-			{from: ac.OPERATOR, gas: 7000000}
-		).should.be.fulfilled;
-
-		await market.registerContract(
-			token.address,
-			{ from: ac.MARKET_ADMIN_MSIG , gas: 7000000 }
-		).should.be.fulfilled;
-
-		const { logs } = await market.unregisterContract(
-			token.address,
-			{ from: ac.MARKET_ADMIN_MSIG , gas: 7000000 }
-		).should.be.fulfilled;
-
-		await expectEvent.inLogs(logs, 'UnregisterContract');
-	});
-
-    it('should not allow other than admin to unregister a contract', async () => {
-        const token = await ERC721Token.new(
-            ac.ADAPT_OWNER,
-            ac.ADAPT_ADMIN,
-            { from: ac.OPERATOR, gas: 7000000 }
-        ).should.be.fulfilled;
-
-        await market.registerContract(
-            token.address,
-            { from: ac.MARKET_ADMIN_MSIG , gas: 7000000 }
-        ).should.be.fulfilled;
-
-	    await market.unregisterContract(
-		    token.address,
-		    { from: ac.ACCOUNT1 , gas: 7000000 }
-	    ).should.be.rejectedWith(EVMRevert);
-    });
-
-	it('should be able to disallow orders', async () => {
-		const { logs } = await market.disallowOrders({from: ac.MARKET_ADMIN_MSIG}
-		).should.be.fulfilled;
-
-		await expectEvent.inLogs(logs, 'DisallowOrders');
-	});
-
     it('should be able to mass mint new tokens', async function () {
 		await erc721Token.massMint(
 			ac.ADAPT_ADMIN,
@@ -141,22 +95,6 @@ contract('testing the functionality - ', function (rpc_accounts) {
 			true,
 			{ from: ac.ADAPT_ADMIN }
 		).should.be.fulfilled;
-	});
-
-	it('should not able to make oreder when disallowed', async () => {
-		await market.makeOrders(
-			erc721Token.address,
-			tokens,
-			prices,
-			{ from: ac.ADAPT_ADMIN, gas: 7000000 }
-		).should.be.rejectedWith(EVMRevert);
-	});
-
-	it('should be able to allow orders', async () => {
-		const { logs } = await market.allowOrders({ from: ac.MARKET_ADMIN_MSIG , gas: 7000000 }
-		).should.be.fulfilled;
-
-		await expectEvent.inLogs(logs, 'AllowOrders');
 	});
 
 	it('should be able to make multiple orders in one transaction', async () => {
@@ -205,6 +143,22 @@ contract('testing the functionality - ', function (rpc_accounts) {
 
 		const ownerToken2 = await erc721Token.ownerOf(tokens[0]);
 		assert.equal(ownerToken2, ac.ADAPT_ADMIN, 'ADAPT_ADMIN should now own the item');
+	});
+
+	it('should not allow other than the owner to cancel an order', async () => {
+		// a regular user should not be allowed
+		const { logs } = await market.cancelOrders(
+			erc721Token.address,
+			[ tokens[1] ],
+			{ from: ac.ACCOUNT1 , gas: 7000000 }
+		).should.be.rejectedWith(EVMRevert);
+
+		// the market owner should not be allowed
+		await market.cancelOrders(
+			erc721Token.address,
+			[ tokens[1] ],
+			{ from: ac.MARKET_ADMIN_MSIG , gas: 7000000 }
+		).should.be.rejectedWith(EVMRevert);
 	});
 
 	it('should be able to take order', async () => {

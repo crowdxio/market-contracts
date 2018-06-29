@@ -45,7 +45,7 @@ contract('estimate gas - ', function (rpc_accounts) {
 		console.log('registerContract() - Gas Used = ' + rec.receipt.gasUsed);
 	});
 
-	it('should be able to unregister a contract', async () => {
+	it('should be able to disable new orders on a contract', async () => {
 		const token = await ERC721Token.new(
 			ac.ADAPT_OWNER,
 			ac.ADAPT_ADMIN,
@@ -57,14 +57,14 @@ contract('estimate gas - ', function (rpc_accounts) {
 			{ from: ac.MARKET_ADMIN_MSIG , gas: 7000000 }
 		).should.be.fulfilled;
 
-		const rec = await market.unregisterContract(
+		const rec = await market.disallowContractOrders(
 			token.address,
 			{ from: ac.MARKET_ADMIN_MSIG , gas: 7000000 }
 		).should.be.fulfilled;
 
-		expectEvent.inLogs(rec.logs, 'UnregisterContract');
+		expectEvent.inLogs(rec.logs, 'DisallowContractOrders');
 
-		console.log('unregisterContract() - Gas Used = ' + rec.receipt.gasUsed);
+		console.log('disallowContractOrders() - Gas Used = ' + rec.receipt.gasUsed);
 	});
 
 	it('should be able to disallow orders', async () => {

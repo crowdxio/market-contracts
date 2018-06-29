@@ -31,6 +31,7 @@ contract UniqxMarketERC721Instant is NoOwner, Pausable, ReentrancyGuard {
 
 	struct UniqxMarketContract {
 		bool registered;
+		bool ordersAllowed;
 		mapping(uint => OrderInfo) orders;
 	}
 
@@ -39,8 +40,10 @@ contract UniqxMarketERC721Instant is NoOwner, Pausable, ReentrancyGuard {
 	event AllowOrders();
   	event DisallowOrders();
 
+	event AllowContractOrders(address _contract);
+	event DisallowContractOrders(address _contract);
+
 	event RegisterContract(address _contract);
-  	event UnregisterContract(address _contract);
 
 	event SetPercentageFee(
 		uint _marketFeeNum,
@@ -76,13 +79,39 @@ contract UniqxMarketERC721Instant is NoOwner, Pausable, ReentrancyGuard {
 	}
 
 	function allowOrders() onlyOwner whenOrdersNotAllowed public {
+
 		ordersAllowed = true;
 		emit AllowOrders();
 	}
 
 	function disallowOrders() onlyOwner whenOrdersAllowed public {
+
 		ordersAllowed = false;
 		emit DisallowOrders();
+	}
+
+	function allowContractOrders(address _contract) onlyOwner public {
+
+		require(contracts[_contract].registered);
+		UniqxMarketContract storage marketContract = contracts[_contract];
+
+		require(!marketContract.ordersAllowed);
+
+		marketContract.ordersAllowed = true;
+
+		emit AllowContractOrders(_contract);
+	}
+
+	function disallowContractOrders(address _contract) onlyOwner public {
+
+		require(contracts[_contract].registered);
+		UniqxMarketContract storage marketContract = contracts[_contract];
+
+		require(marketContract.ordersAllowed);
+
+		marketContract.ordersAllowed = false;
+
+		emit DisallowContractOrders(_contract);
 	}
 
 	function registerContract(address _contract) public onlyOwner {
@@ -90,20 +119,13 @@ contract UniqxMarketERC721Instant is NoOwner, Pausable, ReentrancyGuard {
 		require(!contracts[_contract].registered);
 
 		UniqxMarketContract memory newMarketContract = UniqxMarketContract({
-			registered: true
+			registered: true,
+			ordersAllowed: true
 		});
 
 		contracts[_contract] = newMarketContract;
 
 		emit RegisterContract(_contract);
-	}
-
-	function unregisterContract(address _contract) public onlyOwner {
-
-		require(contracts[_contract].registered);
-		delete contracts[_contract];
-
-		emit UnregisterContract(_contract);
 	}
 
 	function setPercentageFee(uint _marketFeeNum, uint _marketFeeDen)
@@ -164,6 +186,8 @@ contract UniqxMarketERC721Instant is NoOwner, Pausable, ReentrancyGuard {
 
 		require(contracts[_contract].registered);
 		UniqxMarketContract storage marketContract = contracts[_contract];
+
+		require(marketContract.ordersAllowed);
 
 		for(uint index=0; index<_tokenIds.length; index++) {
 			// token must not be published on the market
@@ -226,6 +250,8 @@ contract UniqxMarketERC721Instant is NoOwner, Pausable, ReentrancyGuard {
 
 		require(contracts[_contract].registered);
 		UniqxMarketContract storage marketContract = contracts[_contract];
+
+		require(marketContract.ordersAllowed);
 
 		for(uint index=0; index<_tokenIds.length; index++) {
 			OrderInfo storage order = marketContract.orders[_tokenIds[index]];
