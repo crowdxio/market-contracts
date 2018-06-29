@@ -43,6 +43,7 @@ contract UniqxMarketAdapt is NoOwner, Pausable, ReentrancyGuard {
 		uint settleTime;
 		OrderStatus status;
 		address maker;
+		address owner;
 	}
 
 	mapping(uint => NftTokenOrder) orders;
@@ -130,7 +131,8 @@ contract UniqxMarketAdapt is NoOwner, Pausable, ReentrancyGuard {
 					settlePrice: 0,
 					settleTime: 0,
 					status: OrderStatus.Created,
-					maker: msg.sender
+					maker: msg.sender,
+					owner: tokenOwner
 				});
 
 			if(_reservations[index] != address(0x0)) {
@@ -159,7 +161,9 @@ contract UniqxMarketAdapt is NoOwner, Pausable, ReentrancyGuard {
 			// token must still be in temporary custody of the market
 			require(ADAPT_TOKEN.ownerOf(_tokenIds[index]) == address(this));
 
-			ADAPT_TOKEN.transferFrom(address(this), order.maker, _tokenIds[index]);
+			// transfer back to the original
+			ADAPT_TOKEN.transferFrom(address(this), order.owner, _tokenIds[index]);
+
 			order.status = OrderStatus.Cancelled;
 		}
 

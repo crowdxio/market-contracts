@@ -371,6 +371,37 @@ contract('testing the functionality - ', function (rpc_accounts) {
 		const token8Status = await market.getOrderStatus(erc721Token.address, tokens[8]);
 		assert.equal(token8Status, 1, 'The order should remain in \'Created\' state');
 	});
+
+	it('should return the token to the original owner on cancel', async () => {
+
+		// approve ac.ACCOUNT3 to make transfers in the account of ac.BUYER1
+		await erc721Token.setApprovalForAll(
+			ac.ACCOUNT3,
+			true,
+			{ from: ac.BUYER1 }
+		).should.be.fulfilled;
+
+		await market.makeOrders(
+			erc721Token.address,
+			[ tokens[1] ],
+			[ ether(1) ],
+			{ from: ac.ACCOUNT3 , gas: 7000000 }
+		).should.be.fulfilled;
+
+		let ownerToken = await erc721Token.ownerOf(tokens[1]);
+		assert.equal(ownerToken, market.address, 'MARKET should tmp own the token');
+
+		const { logs } = await market.cancelOrders(
+			erc721Token.address,
+			[ tokens[1] ],
+			{ from: ac.ACCOUNT3 , gas: 7000000 }
+		).should.be.fulfilled;
+
+		await expectEvent.inLogs(logs, 'LogOrdersCancelled');
+
+		ownerToken = await erc721Token.ownerOf(tokens[1]);
+		assert.equal(ownerToken, ac.BUYER1, 'the original owenr(ac.BUYER1) should tmp own the token');
+	});
 });
 
 

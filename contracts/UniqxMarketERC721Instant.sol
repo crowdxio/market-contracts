@@ -27,6 +27,7 @@ contract UniqxMarketERC721Instant is NoOwner, Pausable, ReentrancyGuard {
 		uint makeTime;
 		OrderStatus status;
 		address maker;
+		address owner;
 	}
 
 	struct UniqxMarketContract {
@@ -209,7 +210,8 @@ contract UniqxMarketERC721Instant is NoOwner, Pausable, ReentrancyGuard {
 					makePrice: _prices[index],
 					makeTime: now,
 					status: OrderStatus.Created,
-					maker: msg.sender
+					maker: msg.sender,
+					owner: tokenOwner
 				});
 
 			marketContract.orders[_tokenIds[index]] = order;
@@ -237,8 +239,8 @@ contract UniqxMarketERC721Instant is NoOwner, Pausable, ReentrancyGuard {
 			ERC721Token token = ERC721Token(_contract);
 			require(token.ownerOf(_tokenIds[index]) == address(this));
 
-			// TODO: transfer back to the original owner instead of the maker
-			token.transferFrom(address(this), order.maker, _tokenIds[index]);
+			// transfer back to the original
+			token.transferFrom(address(this), order.owner, _tokenIds[index]);
 
 			delete marketContract.orders[_tokenIds[index]];
 		}
