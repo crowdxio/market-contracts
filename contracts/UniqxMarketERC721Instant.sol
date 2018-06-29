@@ -251,8 +251,6 @@ contract UniqxMarketERC721Instant is NoOwner, Pausable, ReentrancyGuard {
 		require(contracts[_contract].registered);
 		UniqxMarketContract storage marketContract = contracts[_contract];
 
-		require(marketContract.ordersAllowed);
-
 		for(uint index=0; index<_tokenIds.length; index++) {
 			OrderInfo storage order = marketContract.orders[_tokenIds[index]];
 
