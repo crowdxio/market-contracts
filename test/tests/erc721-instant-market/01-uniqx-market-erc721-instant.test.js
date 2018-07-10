@@ -174,7 +174,7 @@ contract('testing the functionality - ', function (rpc_accounts) {
 		const tokenStatus = await market.getOrderStatus(erc721Token.address, tokens[1]);
 		assert.equal(tokenStatus, 0);
 
-		await expectEvent.inLogs(logs, 'LogOrderSettled');
+		await expectEvent.inLogs(logs, 'LogOrderAcquired');
 
 		const ownerOfToken = await erc721Token.ownerOf(tokens[1]);
 		assert.equal(ownerOfToken, ac.BUYER1, 'BUYER1 should now be the owner of token');
@@ -253,7 +253,7 @@ contract('testing the functionality - ', function (rpc_accounts) {
 		const tokenStatus = await market.getOrderStatus(erc721Token.address, tokens[3]);
 		assert.equal(tokenStatus, 0);
 
-		await expectEvent.inLogs(logs, 'LogOrderSettled');
+		await expectEvent.inLogs(logs, 'LogOrderAcquired');
 
 		const ownerOfToken = await erc721Token.ownerOf(tokens[1]);
 		assert.equal(ownerOfToken, ac.BUYER1, 'BUYER1 should now be the owner of token');

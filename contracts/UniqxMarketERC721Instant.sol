@@ -54,7 +54,7 @@ contract UniqxMarketERC721Instant is NoOwner, Pausable, ReentrancyGuard {
 	event LogOrdersCreated(address _contract, uint[] _tokens);
 	event LogOrdersCancelled(address _contract, uint[] _tokens);
 	event LogOrdersChanged(address _contract, uint[] _tokens);
-	event LogOrderSettled(
+	event LogOrderAcquired(
 		address _contract,
 		uint _tokenId,
 		uint _price,
@@ -303,7 +303,7 @@ contract UniqxMarketERC721Instant is NoOwner, Pausable, ReentrancyGuard {
 			MARKET_FEES_MSIG.transfer(marketFee);
 			order.maker.transfer(makerDue);
 
-			emit LogOrderSettled(_contract, _tokenIds[index], order.makePrice, order.maker, msg.sender);
+			emit LogOrderAcquired(_contract, _tokenIds[index], order.makePrice, order.maker, msg.sender);
 
 			delete marketContract.orders[_tokenIds[index]];
 		}

@@ -167,7 +167,7 @@ contract('estimate gas - ', function (rpc_accounts) {
 			{ from: ac.BUYER1 , gas: 7000000, value: ether(1) }
 		).should.be.fulfilled;
 
-		await expectEvent.inLogs(rec.logs, 'LogOrderSettled');
+		await expectEvent.inLogs(rec.logs, 'LogOrderAcquired');
 
 		console.log('takeOrders() - Gas Used = ' + rec.receipt.gasUsed);
 	});
