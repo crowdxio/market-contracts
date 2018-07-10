@@ -1,5 +1,5 @@
 import {
-	accounts, assert, should, BigNumber, Bluebird
+	accounts, assert, should, BigNumber, Bluebird, OrderStatus
 } from '../../common/common';
 import ether from "../../helpers/ether";
 
@@ -72,10 +72,31 @@ contract('estimate gas - ', function (rpc_accounts) {
 
 		console.log('Publish complete - Gas Used = ' + rec.receipt.gasUsed);
 
-		let tokenStatus = await market.getOrderStatus(tokens[0]);
+		let orderStatus = await market.getOrderStatus(tokens[0]);
+		console.log('Order status: ', orderStatus);
 
-		console.log('token status ', JSON.stringify(tokenStatus));
-	})
+	});
+
+	it('BUYER1 should be able to donate more than is required and take the first token', async function () {
+
+		const tokenId = await adapt.tokenByIndex(0);
+
+		let result = await market.takeOrder(tokenId, { from: ac.BUYER1 , value: ether(1.1), gas: 7000000 }).should.be.fulfilled;
+
+		console.log('Take order completed! Gas used: ' + result.receipt.gasUsed);
+
+		// order status should be Acquired
+		const orderStatus = await market.getOrderStatus(tokenId);
+		console.log('Order status: ', JSON.stringify(orderStatus));
+		assert.equal(orderStatus, OrderStatus.Acquired, 'The order status should be \'Acquired\' now');
+
+		// BUYER1 should own the token now
+		const owner = await adapt.ownerOf(tokenId);
+		console.log('owner: ', owner);
+		console.log('BUYER1: ', ac.BUYER1);
+		assert.equal(owner, ac.BUYER1, 'BUYER1 should own the token now');
+
+	});
 });
 
 

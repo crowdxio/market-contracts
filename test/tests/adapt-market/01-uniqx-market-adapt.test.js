@@ -1,4 +1,3 @@
-
 import {
 	accounts, assert, should, BigNumber, Bluebird
 } from '../../common/common';
