@@ -105,7 +105,7 @@ contract('Market - a simple walk-through the functionality', function (rpc_accou
 			{ from: ac.BUYER1, value: prices[0] }
 		).should.be.fulfilled;
 
-		await expectEvent.inLogs(logs, 'LogOrderSettled');
+		await expectEvent.inLogs(logs, 'LogOrderAcquired');
 
 		let ownerToken1 = await adapt.ownerOf(tokens[0]);
 		assert.equal(ownerToken1, ac.BUYER1, 'BUYER1 should now be the owner of token1');
@@ -139,7 +139,7 @@ contract('Market - a simple walk-through the functionality', function (rpc_accou
 			{ from: ac.BUYER1, value: ether(2) }
 		).should.be.fulfilled;
 
-		await expectEvent.inLogs(logs, 'LogOrderSettled');
+		await expectEvent.inLogs(logs, 'LogOrderAcquired');
 
 		let ownerToken1 = await adapt.ownerOf(tokens[1]);
 		assert.equal(ownerToken1, ac.BUYER1, 'BUYER1 should now be the owner of token1');
