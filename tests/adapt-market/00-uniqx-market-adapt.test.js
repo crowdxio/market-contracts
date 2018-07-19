@@ -1,7 +1,7 @@
 import {
 	accounts, assert, should, BigNumber, Bluebird, OrderStatus
-} from '../../common/common';
-import ether from "../../helpers/ether";
+} from '../common/common';
+import ether from "../helpers/ether";
 
 const UniqxMarketAdapt = artifacts.require("../../../contracts/UniqxMarketAdapt.sol");
 const AdaptToken = artifacts.require("../../../adapt/contracts/AdaptCollectibles.sol");

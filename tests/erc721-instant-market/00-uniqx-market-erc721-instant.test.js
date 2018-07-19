@@ -1,8 +1,8 @@
 import {
-	accounts, assert, should, BigNumber, Bluebird
-} from '../../common/common';
-import ether from "../../helpers/ether";
-import expectEvent from "../../helpers/expectEvent";
+	accounts, assert, should, BigNumber, Bluebird, OrderStatus
+} from '../common/common';
+import ether from "../helpers/ether";
+import expectEvent from "../helpers/expectEvent";
 
 const UniqxMarketERC721Instant = artifacts.require("../../../contracts/UniqxMarketERC721Instant.sol");
 const ERC721Token = artifacts.require("../../../adapt/contracts/AdaptCollectibles.sol");
@@ -117,12 +117,12 @@ contract('estimate gas - ', function (rpc_accounts) {
 			{ from: ac.ADAPT_ADMIN , gas: 7000000 }
 		).should.be.fulfilled;
 
-		const tokenStatus = await market.getOrderStatus(erc721Token.address, tokens[0]);
-		assert.equal(tokenStatus, 1);
+		console.log('makeOrders() with 1 order - Gas Used = ' + rec.receipt.gasUsed);
 
 		expectEvent.inLogs(rec.logs, 'LogOrdersCreated');
 
-		console.log('makeOrders() with 1 order - Gas Used = ' + rec.receipt.gasUsed);
+		const orderStatus = await market.getOrderStatus(erc721Token.address, tokens[0]);
+		assert.equal(orderStatus, OrderStatus.Published);
 	});
 
 	it('should be able to cancel order', async () => {
@@ -132,9 +132,8 @@ contract('estimate gas - ', function (rpc_accounts) {
 			{ from: ac.ADAPT_ADMIN , gas: 7000000 }
 		).should.be.fulfilled;
 
-		const tokenStatus = await market.getOrderStatus(erc721Token.address, tokens[0]);
-		assert.equal(tokenStatus, 0);
-
+		const orderStatus = await market.getOrderStatus(erc721Token.address, tokens[0]);
+		assert.equal(orderStatus, OrderStatus.Cancelled);
 
 		const event = rec.logs.find(e => e.event === 'LogOrdersCreated');
 		await expectEvent.inLogs(rec.logs, 'LogOrdersCancelled');
@@ -153,8 +152,8 @@ contract('estimate gas - ', function (rpc_accounts) {
 		await expectEvent.inLogs(rec.logs, 'LogOrdersCreated');
 
 		for (let i = 0; i < tokens.length; i++) {
-			const tokenStatus = await market.getOrderStatus(erc721Token.address, tokens[i]);
-			assert.equal(tokenStatus, 1);
+			const orderStatus = await market.getOrderStatus(erc721Token.address, tokens[i]);
+			assert.equal(orderStatus, OrderStatus.Published);
 		}
 
 		console.log('makeOrders() with 10 orders - Gas Used = ' + rec.receipt.gasUsed);
@@ -167,9 +166,11 @@ contract('estimate gas - ', function (rpc_accounts) {
 			{ from: ac.BUYER1 , gas: 7000000, value: ether(1) }
 		).should.be.fulfilled;
 
-		await expectEvent.inLogs(rec.logs, 'LogOrderAcquired');
-
 		console.log('takeOrders() - Gas Used = ' + rec.receipt.gasUsed);
+
+		await expectEvent.inLogs(rec.logs, 'LogOrderAcquired');
+		const orderStatus = await market.getOrderStatus(erc721Token.address, tokens[1]);
+		assert.equal(orderStatus, OrderStatus.Acquired);
 	});
 
 
