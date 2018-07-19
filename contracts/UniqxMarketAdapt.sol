@@ -209,7 +209,9 @@ contract UniqxMarketAdapt is NoOwner, Pausable, ReentrancyGuard {
 		require(_amount >= order.makePrice);
 
 		// mark the order as acquired
-		order.status = OrderStatus.Acquired;
+		order.status 		= OrderStatus.Acquired;
+		order.acquirePrice 	= _amount;
+		order.acquireTime 	= now;
 
 		// update metadata before transfer
 		ADAPT_TOKEN.setTokenMetadata(_tokenId, now, order.makePrice);

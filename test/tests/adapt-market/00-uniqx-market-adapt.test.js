@@ -90,6 +90,11 @@ contract('estimate gas - ', function (rpc_accounts) {
 		console.log('Order status: ', JSON.stringify(orderStatus));
 		assert.equal(orderStatus, OrderStatus.Acquired, 'The order status should be \'Acquired\' now');
 
+		const orderInfo = await market.getOrderInfo(tokenId);
+		console.log('order info:', JSON.stringify(orderInfo));
+		orderInfo[3].should.be.bignumber.equal(ether(1.1));
+		orderInfo[4].should.be.bignumber.greaterThan(0);
+
 		// BUYER1 should own the token now
 		const owner = await adapt.ownerOf(tokenId);
 		console.log('owner: ', owner);
