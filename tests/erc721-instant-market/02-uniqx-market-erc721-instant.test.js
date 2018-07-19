@@ -1,9 +1,9 @@
 import {
-	accounts, assert, should, BigNumber, Bluebird
-} from '../../common/common';
-import ether from "../../helpers/ether";
-import expectEvent from "../../helpers/expectEvent";
-import EVMRevert from "../../../zeppelin/test/helpers/EVMRevert";
+	accounts, assert, should, BigNumber, Bluebird, OrderStatus
+} from '../common/common';
+import ether from "../helpers/ether";
+import expectEvent from "../helpers/expectEvent";
+import EVMRevert from "../../zeppelin/test/helpers/EVMRevert";
 
 
 const UniqxMarketERC721Instant = artifacts.require("../../contracts/UniqxMarketERC721Instant.sol");
@@ -141,8 +141,8 @@ contract('testing allow/disallow orders - ', function (rpc_accounts) {
 	});
 
 	it('should be able take/cancel orders for contract with orders disallowed', async () => {
-		let tokenStatus = await market.getOrderStatus(erc721Token1.address, tokens1[0]);
-		assert.equal(tokenStatus, 1, 'Order should be in \'Created\' State');
+		let orderStatus = await market.getOrderStatus(erc721Token1.address, tokens1[0]);
+		assert.equal(orderStatus, OrderStatus.Published, 'Order should be in \'Published\' State');
 
 		await market.takeOrders(
 			erc721Token1.address,
@@ -150,8 +150,8 @@ contract('testing allow/disallow orders - ', function (rpc_accounts) {
 			{ from: ac.BUYER2 , gas: 7000000, value: ether(1) }
 		).should.be.fulfilled;
 
-		tokenStatus = await market.getOrderStatus(erc721Token1.address, tokens1[0]);
-		assert.equal(tokenStatus, 0, 'Order should be in \'Unknown\' State');
+		orderStatus = await market.getOrderStatus(erc721Token1.address, tokens1[0]);
+		assert.equal(orderStatus, OrderStatus.Acquired, 'Order should be in `Acquired` state');
 
 		await market.cancelOrders(
 			erc721Token1.address,
@@ -159,8 +159,8 @@ contract('testing allow/disallow orders - ', function (rpc_accounts) {
 			{ from: ac.ADAPT_ADMIN , gas: 7000000 }
 		).should.be.fulfilled;
 
-		tokenStatus = await market.getOrderStatus(erc721Token1.address, tokens1[1]);
-		assert.equal(tokenStatus, 0, 'Order should be in \'Unknown\' State');
+		orderStatus = await market.getOrderStatus(erc721Token1.address, tokens1[1]);
+		assert.equal(orderStatus, OrderStatus.Cancelled, 'Order should be in `Cancelled` state');
 	});
 
 	it('should be able make orders for other contracts with orders allowed', async () => {

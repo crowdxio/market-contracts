@@ -33,8 +33,8 @@ contract UniqxMarketAdapt is NoOwner, Pausable, ReentrancyGuard {
 		Unknown,
 		Created,
 		Cancelled,
-		Reserved,
-		Acquired
+		Acquired,
+		Reserved
 	}
 
 	struct NftTokenOrder {

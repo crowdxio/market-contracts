@@ -1,9 +1,9 @@
 import {
-	accounts, assert, should, BigNumber, Bluebird
-} from '../../common/common';
-import ether from "../../helpers/ether";
-import expectEvent from "../../helpers/expectEvent";
-import EVMRevert from "../../../zeppelin/test/helpers/EVMRevert";
+	accounts, assert, should, BigNumber, Bluebird, OrderStatus
+} from '../common/common';
+import ether from "../helpers/ether";
+import expectEvent from "../helpers/expectEvent";
+import EVMRevert from "../../zeppelin/test/helpers/EVMRevert";
 
 
 const UniqxMarketERC721Instant = artifacts.require("../../contracts/UniqxMarketERC721Instant.sol");
@@ -108,9 +108,8 @@ contract('testing the functionality - ', function (rpc_accounts) {
 		await expectEvent.inLogs(logs, 'LogOrdersCreated');
 
 		for (let i = 0; i < tokens.length; i++) {
-			let tokenStatus = await market.getOrderStatus(erc721Token.address, tokens[i]);
-
-			assert.equal(tokenStatus, 1, 'Order should be in \'Created\' State');
+			const orderStatus = await market.getOrderStatus(erc721Token.address, tokens[i]);
+			assert.equal(orderStatus, OrderStatus.Published);
 
 			const ownerToken = await erc721Token.ownerOf(tokens[i]);
 			assert.equal(ownerToken, market.address, 'MARKET should tmp own the token');
@@ -138,8 +137,8 @@ contract('testing the functionality - ', function (rpc_accounts) {
 
 		await expectEvent.inLogs(logs, 'LogOrdersCancelled');
 
-		const tokenStatus = await market.getOrderStatus(erc721Token.address, tokens[0]);
-		assert.equal(tokenStatus, 0);
+		const orderStatus = await market.getOrderStatus(erc721Token.address, tokens[0]);
+		assert.equal(orderStatus, OrderStatus.Cancelled);
 
 		const ownerToken2 = await erc721Token.ownerOf(tokens[0]);
 		assert.equal(ownerToken2, ac.ADAPT_ADMIN, 'ADAPT_ADMIN should now own the item');
@@ -171,8 +170,8 @@ contract('testing the functionality - ', function (rpc_accounts) {
 			{ from: ac.BUYER1 , gas: 7000000, value: ether(1) }
 		).should.be.fulfilled;
 
-		const tokenStatus = await market.getOrderStatus(erc721Token.address, tokens[1]);
-		assert.equal(tokenStatus, 0);
+		const orderStatus = await market.getOrderStatus(erc721Token.address, tokens[1]);
+		assert.equal(orderStatus, OrderStatus.Acquired);
 
 		await expectEvent.inLogs(logs, 'LogOrderAcquired');
 
@@ -235,10 +234,9 @@ contract('testing the functionality - ', function (rpc_accounts) {
 			{ from: ac.ADAPT_ADMIN , gas: 7000000 }
 		).should.be.fulfilled;
 
-		const orderInfo = await market.getOrderInfo(erc721Token.address, tokens[0]);
-
 		await expectEvent.inLogs(logs, 'LogOrdersChanged');
 
+		const orderInfo = await market.getOrderInfo(erc721Token.address, tokens[0]);
 		orderInfo[0].should.be.bignumber.equal(1); // 'Created' status
 		orderInfo[1].should.be.bignumber.equal(2);  // price
 	});
@@ -250,10 +248,10 @@ contract('testing the functionality - ', function (rpc_accounts) {
 			{ from: ac.BUYER1 , gas: 7000000, value: ether(1) }
 		).should.be.fulfilled;
 
-		const tokenStatus = await market.getOrderStatus(erc721Token.address, tokens[3]);
-		assert.equal(tokenStatus, 0);
-
 		await expectEvent.inLogs(logs, 'LogOrderAcquired');
+
+		const orderStatus = await market.getOrderStatus(erc721Token.address, tokens[3]);
+		assert.equal(orderStatus, OrderStatus.Acquired);
 
 		const ownerOfToken = await erc721Token.ownerOf(tokens[1]);
 		assert.equal(ownerOfToken, ac.BUYER1, 'BUYER1 should now be the owner of token');
@@ -364,12 +362,11 @@ contract('testing the functionality - ', function (rpc_accounts) {
 			{ from: ac.BUYER2 , gas: 7000000, value: ether(1.99) }
 		).should.be.rejectedWith(EVMRevert);
 
+		const orderStatus7 = await market.getOrderStatus(erc721Token.address, tokens[7]);
+		assert.equal(orderStatus7, OrderStatus.Published);
 
-		const token7Status = await market.getOrderStatus(erc721Token.address, tokens[7]);
-		assert.equal(token7Status, 1, 'The order should remain in \'Created\' state');
-
-		const token8Status = await market.getOrderStatus(erc721Token.address, tokens[8]);
-		assert.equal(token8Status, 1, 'The order should remain in \'Created\' state');
+		const orderStatus8 = await market.getOrderStatus(erc721Token.address, tokens[8]);
+		assert.equal(orderStatus8, OrderStatus.Published);
 	});
 
 	it('should return the token to the original owner on cancel', async () => {

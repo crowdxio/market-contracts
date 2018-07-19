@@ -1,9 +1,9 @@
 import {
 	accounts, assert, should, BigNumber, Bluebird
-} from '../../common/common';
-import ether from "../../helpers/ether";
-import expectEvent from "../../helpers/expectEvent";
-import EVMRevert from "../../../zeppelin/test/helpers/EVMRevert";
+} from '../common/common';
+import ether from "../helpers/ether";
+import expectEvent from "../helpers/expectEvent";
+import EVMRevert from "../../zeppelin/test/helpers/EVMRevert";
 
 const UniqxMarketAdapt = artifacts.require("../../../contracts/UniqxMarketAdapt.sol");
 const AdaptToken = artifacts.require("../../../adapt/contracts/AdaptCollectibles.sol");

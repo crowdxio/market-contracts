@@ -34,9 +34,9 @@ const should = require('chai')
 const OrderStatus = {
 	Unknown: 0,
 	Published: 1,
-	Canceled: 2,
-	Reserved: 3,
-	Acquired: 4,
+	Cancelled: 2,
+	Acquired: 3,
+	Reserved: 4,
 };
 
 

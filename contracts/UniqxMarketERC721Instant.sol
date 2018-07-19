@@ -10,16 +10,11 @@ contract UniqxMarketERC721Instant is NoOwner, Pausable, ReentrancyGuard {
 
 	using SafeMath for uint;
 
-	address public MARKET_FEES_MSIG;
-
-	uint public marketFeeNum = 1;
-	uint public marketFeeDen = 100;
-
-	bool public ordersAllowed = true;
-
 	enum OrderStatus {
 		Unknown,
-		Created
+		Created,
+		Cancelled,
+		Acquired
 	}
 
 	struct OrderInfo {
@@ -36,21 +31,27 @@ contract UniqxMarketERC721Instant is NoOwner, Pausable, ReentrancyGuard {
 		mapping(uint => OrderInfo) orders;
 	}
 
+	address public MARKET_FEES_MSIG;
+	uint public marketFeeNum = 1;
+	uint public marketFeeDen = 100;
+	bool public ordersAllowed = true;
 	mapping(address => UniqxMarketContract) contracts;
+
+
+	constructor(
+		address _marketAdmin,
+		address _marketFees
+	) public {
+		MARKET_FEES_MSIG = _marketFees;
+		transferOwnership(_marketAdmin);
+	}
 
 	event AllowOrders();
   	event DisallowOrders();
-
 	event AllowContractOrders(address _contract);
 	event DisallowContractOrders(address _contract);
-
 	event RegisterContract(address _contract);
-
-	event SetPercentageFee(
-		uint _marketFeeNum,
-		uint _marketFeeDen
-	);
-
+	event SetPercentageFee(uint _marketFeeNum, uint _marketFeeDen);
 	event LogOrdersCreated(address _contract, uint[] _tokens);
 	event LogOrdersCancelled(address _contract, uint[] _tokens);
 	event LogOrdersChanged(address _contract, uint[] _tokens);
@@ -70,13 +71,6 @@ contract UniqxMarketERC721Instant is NoOwner, Pausable, ReentrancyGuard {
 	modifier whenOrdersAllowed() {
 		require(ordersAllowed);
 		_;
-	}
-
-	constructor(address _marketAdmin, address _marketFees) public {
-
-		MARKET_FEES_MSIG = _marketFees;
-
-		transferOwnership(_marketAdmin);
 	}
 
 	function allowOrders() onlyOwner whenOrdersNotAllowed public {
@@ -242,7 +236,8 @@ contract UniqxMarketERC721Instant is NoOwner, Pausable, ReentrancyGuard {
 			// transfer back to the original
 			token.transferFrom(address(this), order.owner, _tokenIds[index]);
 
-			delete marketContract.orders[_tokenIds[index]];
+			//delete marketContract.orders[_tokenIds[index]];
+			marketContract.orders[_tokenIds[index]].status = OrderStatus.Cancelled;
 		}
 
 		emit LogOrdersCancelled(_contract, _tokenIds);
@@ -305,7 +300,8 @@ contract UniqxMarketERC721Instant is NoOwner, Pausable, ReentrancyGuard {
 
 			emit LogOrderAcquired(_contract, _tokenIds[index], order.makePrice, order.maker, msg.sender);
 
-			delete marketContract.orders[_tokenIds[index]];
+			// delete marketContract.orders[_tokenIds[index]];
+			marketContract.orders[_tokenIds[index]].status = OrderStatus.Acquired;
 		}
 
 		// the bundled value should match the price of all orders
