@@ -97,6 +97,15 @@ contract('testing the functionality - ', function (rpc_accounts) {
 		).should.be.fulfilled;
 	});
 
+	it('should not be able to make order with value less than minimum', async () => {
+		await market.makeOrders(
+			erc721Token.address,
+			[tokens[0]],
+			[ether(0.000001)],
+			{ from: ac.ADAPT_ADMIN , gas: 7000000 }
+		).should.be.rejectedWith(EVMRevert);
+	});
+
 	it('should be able to make multiple orders in one transaction', async () => {
 		const { logs } = await market.makeOrders(
 			erc721Token.address,

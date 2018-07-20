@@ -31,6 +31,7 @@ contract UniqxMarketERC721Instant is NoOwner, Pausable, ReentrancyGuard {
 		mapping(uint => OrderInfo) orders;
 	}
 
+	uint public MIN_SELL_VALUE = 10000000000000 wei;
 	address public MARKET_FEES_MSIG;
 	uint public marketFeeNum = 1;
 	uint public marketFeeDen = 100;
@@ -188,6 +189,9 @@ contract UniqxMarketERC721Instant is NoOwner, Pausable, ReentrancyGuard {
 		require(marketContract.ordersAllowed);
 
 		for(uint index=0; index<_tokenIds.length; index++) {
+
+			require(_prices[index] >= MIN_SELL_VALUE);
+
 			// token must not be published on the market
 			OrderInfo storage existingOrder = marketContract.orders[_tokenIds[index]];
 			require(existingOrder.status != OrderStatus.Created);

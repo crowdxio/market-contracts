@@ -113,7 +113,7 @@ contract('estimate gas - ', function (rpc_accounts) {
 		const rec = await market.makeOrders(
 			erc721Token.address,
 			[ tokens[0] ],
-			[ 1 ],
+			[ ether(1) ],
 			{ from: ac.ADAPT_ADMIN , gas: 7000000 }
 		).should.be.fulfilled;
 
