@@ -11,6 +11,7 @@ contract UniqxMarketERC721Auction is NoOwner, Pausable, ReentrancyGuard {
 	using SafeMath for uint;
 
 	address public MARKET_FEES_MSIG;
+
 	bool public AUCTIONS_ALLOWED = true;
 
 	uint public marketFeeNum = 1;
@@ -68,6 +69,7 @@ contract UniqxMarketERC721Auction is NoOwner, Pausable, ReentrancyGuard {
 	event LogAuctionsCreated(address _contract, uint[] _tokens);
 	event LogAuctionsCancelled(address _contract, uint[] _tokens);
 	event LogAuctionsChanged(address _contract, uint[] _tokens);
+	event LogAuctionBidPlaced(address _contract, uint _token, uint bid, address bidder);
 	event LogAuctionSettled(
 		address _contract,
 		uint _tokenId,
@@ -297,6 +299,7 @@ contract UniqxMarketERC721Auction is NoOwner, Pausable, ReentrancyGuard {
 	}
 
 
+	// TODO: avoid duplicate ids in array to prevent users outbids themselves
 	function bidAuctions(
 		address _contract,
 		uint [] _tokenIds,
@@ -305,41 +308,44 @@ contract UniqxMarketERC721Auction is NoOwner, Pausable, ReentrancyGuard {
 		whenNotPaused
 		nonReentrant
 		public
-		payable
+		returns(uint)
 	{
 		UniqxMarketContract storage marketContract = contracts[_contract];
-		require(marketContract.registered);
 
-		uint _bidsValue = msg.value;
+		// make sure the token contract is registered
+		require(marketContract.registered);
+		uint bidsPlaced = 0;
+
 		for(uint index=0; index<_tokenIds.length; index++) {
 
 			AuctionInfo storage auction = marketContract.auctions[_tokenIds[index]];
 
-			// token must still be published on the market
+			// make sure the token exists and the auction is either created or bidden.
 			require(auction.status != AuctionStatus.Unknown);
 
-			// the bid must be bigger than the make price
+			// fault tolerantly: skip bidding the expired auctions
+			if (auction.expiryTime > now) {
+				continue;
+			}
 
-			// should still have enough ETH to pay this bid
-			require(_bidsValue >= _bids[index]);
+			// fault tolerantly: skip bidding the auctions whose highest bid value is bigger than the current bid
+			if (auction.highestBidValue > _bids[index]) {
+				continue;
+			}
 
-			uint marketFee = auction.highestBidValue.mul(marketFeeNum).div(marketFeeDen);
-			uint makerDue = auction.highestBidValue.sub(marketFee);
+			auction.highestBidValue = _bids[index];
+			auction.bidder = msg.sender;
 
-			_bidsValue = _bidsValue.sub(auction.highestBidValue);
+			emit LogAuctionBidPlaced(_contract, _tokenIds[index], _bids[index], msg.sender);
 
-			ERC721Token token = ERC721Token(_contract);
-			token.transferFrom(address(this), msg.sender, _tokenIds[index]);
-
-			MARKET_FEES_MSIG.transfer(marketFee);
-			auction.maker.transfer(makerDue);
-
-			emit LogAuctionSettled(_contract, _tokenIds[index], auction.highestBidValue, auction.maker, msg.sender);
-
-			delete marketContract.auctions[_tokenIds[index]];
+			bidsPlaced++;
 		}
 
-		// the bundled value should match the price of all auctions
-		require(_bidsValue == 0);
+		return bidsPlaced;
+	}
+
+
+	function poke() public {
+
 	}
 }
