@@ -28,7 +28,7 @@ contract UniqxMarketERC721Auction is NoOwner, Pausable, ReentrancyGuard {
 		uint makeMaxPrice;
 
 		uint makeTime;
-		uint expiryTime;
+		uint endTime;
 
 		AuctionStatus status;
 
@@ -184,7 +184,7 @@ contract UniqxMarketERC721Auction is NoOwner, Pausable, ReentrancyGuard {
 			uint _makeMinPrice,
 			uint _makeMaxPrice,
 			uint _makeTime,
-			uint _expiryTime,
+			uint _endTime,
 
 			uint _bid,
 			address _bidder
@@ -201,7 +201,7 @@ contract UniqxMarketERC721Auction is NoOwner, Pausable, ReentrancyGuard {
 		_makeMinPrice = auction.makeMinPrice;
 		_makeMaxPrice = auction.makeMaxPrice;
 		_makeTime = auction.makeTime;
-		_expiryTime = auction.expiryTime;
+		_endTime = auction.endTime;
 
 		_bid = auction.highestBidValue;
 		_bidder = auction.bidder;
@@ -212,7 +212,7 @@ contract UniqxMarketERC721Auction is NoOwner, Pausable, ReentrancyGuard {
 		uint [] _tokenIds,
 		uint [] _minPrices,
 		uint [] _maxPrices,
-		uint [] _expiryTimes
+		uint [] _endTimes
 	)
 		whenNotPaused
 		whenAuctionsAllowed
@@ -221,7 +221,7 @@ contract UniqxMarketERC721Auction is NoOwner, Pausable, ReentrancyGuard {
 	{
 		require(_tokenIds.length == _minPrices.length);
 		require(_tokenIds.length == _maxPrices.length);
-		require(_tokenIds.length == _expiryTimes.length);
+		require(_tokenIds.length == _endTimes.length);
 		UniqxMarketContract storage marketContract = contracts[_contract];
 
 		require(marketContract.registered);
@@ -244,7 +244,7 @@ contract UniqxMarketERC721Auction is NoOwner, Pausable, ReentrancyGuard {
 					makeMinPrice: _minPrices[index],
 					makeMaxPrice: _maxPrices[index],
 					makeTime: now,
-					expiryTime: _expiryTimes[index],
+					endTime: _endTimes[index],
 					status: AuctionStatus.Created,
 					maker: msg.sender,
 					owner: tokenOwner,
@@ -300,6 +300,7 @@ contract UniqxMarketERC721Auction is NoOwner, Pausable, ReentrancyGuard {
 
 
 	// TODO: avoid duplicate ids in array to prevent users outbids themselves
+	// TODO; handle max
 	function bidAuctions(
 		address _contract,
 		uint [] _tokenIds,
@@ -310,12 +311,12 @@ contract UniqxMarketERC721Auction is NoOwner, Pausable, ReentrancyGuard {
 		public
 		returns(uint)
 	{
-		UniqxMarketContract storage marketContract = contracts[_contract];
 
 		// make sure the token contract is registered
+		UniqxMarketContract storage marketContract = contracts[_contract];
 		require(marketContract.registered);
-		uint bidsPlaced = 0;
 
+		uint bidsPlaced = 0;
 		for(uint index=0; index<_tokenIds.length; index++) {
 
 			AuctionInfo storage auction = marketContract.auctions[_tokenIds[index]];
@@ -323,8 +324,8 @@ contract UniqxMarketERC721Auction is NoOwner, Pausable, ReentrancyGuard {
 			// make sure the token exists and the auction is either created or bidden.
 			require(auction.status != AuctionStatus.Unknown);
 
-			// fault tolerantly: skip bidding the expired auctions
-			if (auction.expiryTime > now) {
+			// fault tolerantly: skip bidding the ended auctions
+			if (auction.endTime > now) {
 				continue;
 			}
 
@@ -345,7 +346,54 @@ contract UniqxMarketERC721Auction is NoOwner, Pausable, ReentrancyGuard {
 	}
 
 
-	function poke() public {
+	function takeAuctions(
+		address _contract,
+		uint[] _tokenIds
+	)
+		whenNotPaused
+		nonReentrant
+		public
+		payable
+	{
+		// make sure the token contract is registered
+		UniqxMarketContract storage marketContract = contracts[_contract];
+		require(marketContract.registered);
 
+		uint auctionsValue = 0;
+
+		for(uint index = 0; index < _tokenIds.length; index++) {
+
+			AuctionInfo storage auction = marketContract.auctions[_tokenIds[index]];
+
+			if (auction.status != AuctionStatus.Bidden) {
+				continue;
+			}
+
+			// interested in bidden ended auctions only won by the sender
+			if (auction.endTime > now || auction.bidder != msg.sender) {
+				continue;
+			}
+
+			auctionsValue += auction.highestBidValue;
+
+			uint marketFee = auction.highestBidValue.mul(marketFeeNum).div(marketFeeDen);
+			uint makerDue = auction.highestBidValue.sub(marketFee);
+
+			// transfer token to sender
+			ERC721Token token = ERC721Token(_contract);
+			token.transferFrom(address(this), msg.sender, _tokenIds[index]);
+
+			// transfer fee to market
+			MARKET_FEES_MSIG.transfer(marketFee);
+
+			// TODO: maybe transfer directly to the owner?
+			// transfer the rest to the maker
+			auction.maker.transfer(makerDue);
+
+			emit LogAuctionSettled(_contract, _tokenIds[index], auction.highestBidValue, auction.maker, msg.sender);
+		}
+
+		// make sure the sender passed the exact amount and no wei went to the contract
+		require(auctionsValue == msg.value);
 	}
 }
