@@ -230,11 +230,12 @@ contract UniqxMarketERC721Auction is NoOwner, Pausable, ReentrancyGuard {
 					makeMaxPrice: _maxPrices[index],
 					makeTime: now,
 					expiryTime: _expiryTimes[index],
-					bid: 0,
-					bidder: address(0),
 					status: AuctionStatus.Created,
 					maker: msg.sender,
-					owner: tokenOwner
+					owner: tokenOwner,
+					bid: 0,
+					bidTime: 0,
+					bidder: address(0)
 				});
 
 			marketContract.auctions[_tokenIds[index]] = auction;
@@ -300,10 +301,10 @@ contract UniqxMarketERC721Auction is NoOwner, Pausable, ReentrancyGuard {
 			// should still have enough ETH to pay this bid
 			require(_bidsValue >= _bids[index]);
 
-			uint marketFee = auction.makePrice.mul(marketFeeNum).div(marketFeeDen);
-			uint makerDue = auction.makePrice.sub(marketFee);
+			uint marketFee = auction.bid.mul(marketFeeNum).div(marketFeeDen);
+			uint makerDue = auction.bid.sub(marketFee);
 
-			_bidsValue = _bidsValue.sub(auction.makePrice);
+			_bidsValue = _bidsValue.sub(auction.bid);
 
 			ERC721Token token = ERC721Token(_contract);
 			token.transferFrom(address(this), msg.sender, _tokenIds[index]);
@@ -311,7 +312,7 @@ contract UniqxMarketERC721Auction is NoOwner, Pausable, ReentrancyGuard {
 			MARKET_FEES_MSIG.transfer(marketFee);
 			auction.maker.transfer(makerDue);
 
-			emit LogAuctionSettled(_contract, _tokenIds[index], auction.makePrice, auction.maker, msg.sender);
+			emit LogAuctionSettled(_contract, _tokenIds[index], auction.bid, auction.maker, msg.sender);
 
 			delete marketContract.auctions[_tokenIds[index]];
 		}
