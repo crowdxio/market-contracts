@@ -3,12 +3,12 @@ import {
 } from '../common/common';
 import ether from "../helpers/ether";
 import expectEvent from "../helpers/expectEvent";
-//import * as moment from 'moment';
 const moment = require('moment');
+import { increaseTimeTo } from "../../zeppelin/test/helpers/increaseTime";
+
 
 const ERC721Token = artifacts.require("../../../adapt/contracts/AdaptCollectibles.sol");
 const UniqxMarketERC721Auction = artifacts.require('../../contracts/UniqxMarketERC721Auction.sol');
-
 
 contract('Testing UniqxMarketERC721Instant', async function (rpc_accounts) {
 
@@ -90,20 +90,73 @@ contract('Testing UniqxMarketERC721Instant', async function (rpc_accounts) {
 		const orderStatus = await auctionMarket.getOrderStatus(erc721Token.address, tokens[0]);
 		assert.equal(orderStatus, OrderStatus.Published);
 
-		console.log('makeOrders() with 1 order - Gas Used = ' + rec.receipt.gasUsed);
+		console.log('makeAuctions() with 3 auctions - Gas Used = ' + rec.receipt.gasUsed);
 	});
 
-	it('should allow buyer1 to place a bid for token0', async function () {
+	it('should allow buyer1 to place a bid for token0 and token1', async function () {
 		const rec = await auctionMarket.bidAuctions(
 			erc721Token.address,
-			[ tokens[0] ],
-			[ ether(1.1) ],
-			{ from: ac.BUYER1 , gas: 7000000, value: ether(1.1) }
+			[ tokens[0], tokens[1]],
+			[ ether(1.1), ether(1.1)],
+			{ from: ac.BUYER1 , gas: 7000000, value: ether(2.2) }
 		).should.be.fulfilled;
 
 		expectEvent.inLogs(rec.logs, 'LogAuctionBidPlaced');
-		console.log('makeOrders() with 1 order - Gas Used = ' + rec.receipt.gasUsed);
 	});
+
+	it('should allow buyer2 to outbid buyer1 and take the token0', async function () {
+		const rec = await auctionMarket.bidAuctions(
+			erc721Token.address,
+			[ tokens[0] ],
+			[ ether(3) ],
+			{ from: ac.BUYER2 , gas: 7000000, value: ether(3) }
+		).should.be.fulfilled;
+
+		expectEvent.inLogs(rec.logs, 'LogAuctionAcquired');
+	});
+
+	it('should allow buyer3 to outbid buyer1 on token1', async function () {
+
+		const rec = await auctionMarket.bidAuctions(
+			erc721Token.address,
+			[ tokens[1] ],
+			[ ether(1.2) ],
+			{ from: ac.BUYER3 , gas: 7000000, value: ether(1.2) }
+		).should.be.fulfilled;
+
+		expectEvent.inLogs(rec.logs, 'LogAuctionBidPlaced');
+	});
+
+	it('should not allow buyer3 to take the token1 yet, auction is still open', async function () {
+		const rec = await auctionMarket.takeAuctions(
+			erc721Token.address,
+			[tokens[1]],
+			{ from: ac.BUYER3 , gas: 7000000}
+		).should.be.fulfilled;
+
+		const owner = await erc721Token.ownerOf(tokens[1]);
+		assert.notEqual(owner, ac.BUYER3);
+		assert.equal(owner, auctionMarket.address); // market still owns the token
+	});
+
+
+	it('seek 1 week, should allow buyer3 to take token1', async function () {
+		increaseTimeTo(moment().add(7, 'days').unix());
+
+		const rec = await auctionMarket.takeAuctions(
+			erc721Token.address,
+			[tokens[1]],
+			{ from: ac.BUYER3 , gas: 7000000}
+		).should.be.fulfilled;
+
+		expectEvent.inLogs(rec.logs, 'LogAuctionAcquired');
+
+		const owner = await erc721Token.ownerOf(tokens[1]);
+
+		assert.equal(owner, ac.BUYER3);
+		assert.notEqual(owner, auctionMarket.address); // market still owns the token
+	});
+
 });
 
 
