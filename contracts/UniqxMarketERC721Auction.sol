@@ -17,11 +17,11 @@ contract UniqxMarketERC721Auction is NoOwner, Pausable, ReentrancyGuard {
 	uint public marketFeeNum = 1;
 	uint public marketFeeDen = 100;
 
-	enum AuctionStatus {
+	enum OrderStatus {
 		Unknown,
 		Created,
-		Settled,
-		Cancelled
+		Cancelled,
+		Acquired
 	}
 
 	struct AuctionInfo {
@@ -31,7 +31,7 @@ contract UniqxMarketERC721Auction is NoOwner, Pausable, ReentrancyGuard {
 		uint makeTime;
 		uint endTime;
 
-		AuctionStatus status;
+		OrderStatus status;
 
 		address maker;
 		address owner;
@@ -71,7 +71,7 @@ contract UniqxMarketERC721Auction is NoOwner, Pausable, ReentrancyGuard {
 	event LogAuctionsCancelled(address _contract, uint[] _tokens);
 	event LogAuctionsChanged(address _contract, uint[] _tokens);
 	event LogAuctionBidPlaced(address _contract, uint _token, uint bid, address bidder);
-	event LogAuctionSettled(
+	event LogAuctionAcquired(
 		address _contract,
 		uint _tokenId,
 		uint _price,
@@ -89,8 +89,10 @@ contract UniqxMarketERC721Auction is NoOwner, Pausable, ReentrancyGuard {
 		_;
 	}
 
-	constructor(address _marketAdmin, address _marketFeesMsig) public {
-
+	constructor(
+		address _marketAdmin,
+		address _marketFeesMsig
+	) public {
 		MARKET_FEES_MSIG = _marketFeesMsig;
 		transferOwnership(_marketAdmin);
 	}
@@ -166,8 +168,8 @@ contract UniqxMarketERC721Auction is NoOwner, Pausable, ReentrancyGuard {
 				token.isApprovedForAll(tokenOwner, _spender));
 	}
 
-	function getAuctionStatus(address _contract, uint _tokenId)
-		public view returns (AuctionStatus _status)
+	function getOrderStatus(address _contract, uint _tokenId)
+		public view returns (OrderStatus _status)
 	{
 
 		UniqxMarketContract storage marketContract = contracts[_contract];
@@ -176,11 +178,11 @@ contract UniqxMarketERC721Auction is NoOwner, Pausable, ReentrancyGuard {
 		return marketContract.auctions[_tokenId].status;
 	}
 
-	function getAuctionInfo(address _contract, uint _tokenId)
+	function getOrderInfo(address _contract, uint _tokenId)
 		public
 		view
 		returns (
-			AuctionStatus _status,
+			OrderStatus _status,
 			address _maker,
 			uint _makeMinPrice,
 			uint _makeMaxPrice,
@@ -236,7 +238,7 @@ contract UniqxMarketERC721Auction is NoOwner, Pausable, ReentrancyGuard {
 
 			// make sure the auction is not created already
 			AuctionInfo storage existingAuction = marketContract.auctions[_tokenIds[index]];
-			require(auction.status != AuctionStatus.Created);
+			require(auction.status != OrderStatus.Created);
 
 			// make sure the maker is approved to sell this item
 			require(isSpenderApproved(_contract, msg.sender, _tokenIds[index]));
@@ -251,7 +253,7 @@ contract UniqxMarketERC721Auction is NoOwner, Pausable, ReentrancyGuard {
 				makeMaxPrice: _maxPrices[index],
 				makeTime: now,
 				endTime: _endTimes[index],
-				status: AuctionStatus.Created,
+				status: OrderStatus.Created,
 				maker: msg.sender,
 				owner: tokenOwner,
 				highestBidValue: 0,
@@ -278,7 +280,7 @@ contract UniqxMarketERC721Auction is NoOwner, Pausable, ReentrancyGuard {
 
 			// make sure the auction is created
 			AuctionInfo storage auction = marketContract.auctions[_tokenIds[index]];
-			require(auction.status == AuctionStatus.Created);
+			require(auction.status == OrderStatus.Created);
 
 			// auction must have zero bids
 			require(auction.highestBidValue == 0);
@@ -297,7 +299,7 @@ contract UniqxMarketERC721Auction is NoOwner, Pausable, ReentrancyGuard {
 			token.transferFrom(address(this), auction.owner, _tokenIds[index]);
 
 			// mark the auction as cancelled
-			auction.status = AuctionStatus.Cancelled;
+			auction.status = OrderStatus.Cancelled;
 		}
 
 		emit LogAuctionsCancelled(_contract, _tokenIds);
@@ -319,12 +321,15 @@ contract UniqxMarketERC721Auction is NoOwner, Pausable, ReentrancyGuard {
 		UniqxMarketContract storage marketContract = contracts[_contract];
 		require(marketContract.registered);
 
+		// validate parameters
+		require(_tokenIds.length == _bids.length);
+
 		uint bidAmount = 0;
 		for(uint index = 0; index < _tokenIds.length; index++) {
 
 			// make sure the auction is created
 			AuctionInfo storage auction = marketContract.auctions[_tokenIds[index]];
-			require(auction.status == AuctionStatus.Created);
+			require(auction.status == OrderStatus.Created);
 
 			require(auction.endTime <= now);
 			require(_bids[index] > auction.makeMinPrice);
@@ -357,8 +362,8 @@ contract UniqxMarketERC721Auction is NoOwner, Pausable, ReentrancyGuard {
 				ERC721Token token = ERC721Token(_contract);
 				token.transferFrom(address(this), msg.sender, _tokenIds[index]);
 
-				auction.status = AuctionStatus.Settled;
-				emit LogAuctionSettled(_contract, _tokenIds[index], auction.highestBidValue, auction.maker, msg.sender);
+				auction.status = OrderStatus.Acquired;
+				emit LogAuctionAcquired(_contract, _tokenIds[index], auction.highestBidValue, auction.maker, msg.sender);
 
 			} else {
 				emit LogAuctionBidPlaced(_contract, _tokenIds[index], _bids[index], msg.sender);
@@ -384,12 +389,12 @@ contract UniqxMarketERC721Auction is NoOwner, Pausable, ReentrancyGuard {
 
 			AuctionInfo storage auction = marketContract.auctions[_tokenIds[index]];
 
-			if (auction.status != AuctionStatus.Created) {
+			if (auction.status != OrderStatus.Created) {
 				continue;
 			}
 
-			// looking for ended auctions only won by the sender
-			if (!(now > auction.endTime && auction.bidder == msg.sender)) {
+			// skip on going auctions
+			if (now <= auction.endTime) {
 				continue;
 			}
 
@@ -397,16 +402,16 @@ contract UniqxMarketERC721Auction is NoOwner, Pausable, ReentrancyGuard {
 			uint marketFee = auction.highestBidValue.mul(marketFeeNum).div(marketFeeDen);
 			MARKET_FEES_MSIG.transfer(marketFee);
 
-			// transfer the amount due to the maker
+			// transfer the amount due to the owner
 			uint ownerDue = auction.highestBidValue.sub(marketFee);
 			auction.owner.transfer(ownerDue);
 
 			// transfer token to sender
 			ERC721Token token = ERC721Token(_contract);
-			token.transferFrom(address(this), msg.sender, _tokenIds[index]);
+			token.transferFrom(address(this), auction.bidder, _tokenIds[index]);
 
-			auction.status = AuctionStatus.Settled;
-			emit LogAuctionSettled(_contract, _tokenIds[index], auction.highestBidValue, auction.maker, msg.sender);
+			auction.status = OrderStatus.Acquired;
+			emit LogAuctionAcquired(_contract, _tokenIds[index], auction.highestBidValue, auction.maker, auction.bidder);
 		}
 	}
 }
