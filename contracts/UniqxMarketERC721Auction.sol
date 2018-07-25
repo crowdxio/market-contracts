@@ -309,7 +309,7 @@ contract UniqxMarketERC721Auction is NoOwner, Pausable, ReentrancyGuard {
 			bidAmount += _bids[index];
 
 			// buy it now?
-			if (_bids[index] > auction.makeMaxPrice) {
+			if (_bids[index] >= auction.makeMaxPrice) {
 
 				// transfer fee to market
 				uint marketFee = auction.highestBidValue.mul(marketFeeNum).div(marketFeeDen);
