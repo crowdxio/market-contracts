@@ -234,11 +234,11 @@ contract UniqxMarketERC721Auction is NoOwner, Pausable, ReentrancyGuard {
 		require(_tokenIds.length == _maxPrices.length);
 		require(_tokenIds.length == _endTimes.length);
 
-		for(uint index=0; index<_tokenIds.length; index++) {
+		for(uint index = 0; index < _tokenIds.length; index++) {
 
 			// make sure the auction is not created already
 			AuctionInfo storage existingAuction = marketContract.auctions[_tokenIds[index]];
-			require(auction.status != OrderStatus.Created);
+			require(existingAuction.status != OrderStatus.Created);
 
 			// make sure the maker is approved to sell this item
 			require(isSpenderApproved(_contract, msg.sender, _tokenIds[index]));
@@ -267,50 +267,11 @@ contract UniqxMarketERC721Auction is NoOwner, Pausable, ReentrancyGuard {
 		emit LogAuctionsCreated(_contract, _tokenIds);
 	}
 
-	function cancelAuctions(address _contract, uint [] _tokenIds)
-		whenNotPaused
-		nonReentrant
-		public
-	{
-		// make sure the token contract is registered
-		UniqxMarketContract storage marketContract = contracts[_contract];
-		require(marketContract.registered);
-
-		for(uint index=0; index<_tokenIds.length; index++) {
-
-			// make sure the auction is created
-			AuctionInfo storage auction = marketContract.auctions[_tokenIds[index]];
-			require(auction.status == OrderStatus.Created);
-
-			// auction must have zero bids
-			require(auction.highestBidValue == 0);
-
-			// only the owner or the maker can cancel the auction
-			require(
-				msg.sender == auction.maker ||
-				msg.sender == auction.owner
-			);
-
-			// token must still be in escrow in this market contract
-			ERC721Token token = ERC721Token(_contract);
-			require(token.ownerOf(_tokenIds[index]) == address(this));
-
-			// transfer back to the original owner of the token
-			token.transferFrom(address(this), auction.owner, _tokenIds[index]);
-
-			// mark the auction as cancelled
-			auction.status = OrderStatus.Cancelled;
-		}
-
-		emit LogAuctionsCancelled(_contract, _tokenIds);
-	}
-
-
 	// TODO: avoid duplicate ids in array to prevent users outbids themselves
 	function bidAuctions(
 		address _contract,
 		uint [] _tokenIds,
-		uint[] _bids
+		uint [] _bids
 	)
 		whenNotPaused
 		nonReentrant
@@ -331,7 +292,7 @@ contract UniqxMarketERC721Auction is NoOwner, Pausable, ReentrancyGuard {
 			AuctionInfo storage auction = marketContract.auctions[_tokenIds[index]];
 			require(auction.status == OrderStatus.Created);
 
-			require(auction.endTime <= now);
+			require( now <= auction.endTime);
 			require(_bids[index] > auction.makeMinPrice);
 			require(_bids[index] > auction.highestBidValue);
 
@@ -414,4 +375,43 @@ contract UniqxMarketERC721Auction is NoOwner, Pausable, ReentrancyGuard {
 			emit LogAuctionAcquired(_contract, _tokenIds[index], auction.highestBidValue, auction.maker, auction.bidder);
 		}
 	}
+
+	function cancelAuctions(address _contract, uint [] _tokenIds)
+		whenNotPaused
+		nonReentrant
+		public
+	{
+		// make sure the token contract is registered
+		UniqxMarketContract storage marketContract = contracts[_contract];
+		require(marketContract.registered);
+
+		for(uint index=0; index<_tokenIds.length; index++) {
+
+			// make sure the auction is created
+			AuctionInfo storage auction = marketContract.auctions[_tokenIds[index]];
+			require(auction.status == OrderStatus.Created);
+
+			// auction must have zero bids
+			require(auction.highestBidValue == 0);
+
+			// only the owner or the maker can cancel the auction
+			require(
+				msg.sender == auction.maker ||
+				msg.sender == auction.owner
+			);
+
+			// token must still be in escrow in this market contract
+			ERC721Token token = ERC721Token(_contract);
+			require(token.ownerOf(_tokenIds[index]) == address(this));
+
+			// transfer back to the original owner of the token
+			token.transferFrom(address(this), auction.owner, _tokenIds[index]);
+
+			// mark the auction as cancelled
+			auction.status = OrderStatus.Cancelled;
+		}
+
+		emit LogAuctionsCancelled(_contract, _tokenIds);
+	}
+
 }
