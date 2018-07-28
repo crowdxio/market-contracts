@@ -240,6 +240,9 @@ contract UniqxMarketERC721Auction is NoOwner, Pausable, ReentrancyGuard {
 			AuctionInfo storage existingAuction = marketContract.auctions[_tokenIds[index]];
 			require(existingAuction.status != OrderStatus.Created);
 
+			// make sure the expiry time is at least one hour in the future
+			require(_endTimes[index] > now + 1 hours);
+
 			// make sure the maker is approved to sell this item
 			require(isSpenderApproved(_contract, msg.sender, _tokenIds[index]));
 
@@ -392,7 +395,7 @@ contract UniqxMarketERC721Auction is NoOwner, Pausable, ReentrancyGuard {
 			require(auction.status == OrderStatus.Created);
 
 			// auction must have zero bids
-			require(auction.highestBidValue == 0);
+			require(now > auction.endTime || auction.highestBidValue == 0);
 
 			// only the owner or the maker can cancel the auction
 			require(
