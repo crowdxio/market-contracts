@@ -290,6 +290,71 @@ contract('Testing UniqxMarketERC721Instant', async function (rpc_accounts) {
 			{ from: ac.ADAPT_ADMIN , gas: 7000000 }
 		).should.be.rejectedWith(EVMRevert);
 	});
+
+	it('should anyone be able to settle if auction has ended', async function () {
+		const oneDayLater = latestTime() + duration.days(1);
+
+		let rec = await auctionMarket.makeAuctions(
+			erc721Token.address,
+			[ tokens[3] ],
+			[ ether(1) ],
+			[ ether(2) ],
+			[ oneDayLater ],
+			{ from: ac.ADAPT_ADMIN , gas: 7000000 }
+		).should.be.fulfilled;
+
+		expectEvent.inLogs(rec.logs, 'LogAuctionsCreated');
+		let orderStatus = await auctionMarket.getOrderStatus(erc721Token.address, tokens[3]);
+		assert.equal(orderStatus, OrderStatus.Published);
+
+		rec = await auctionMarket.bidAuctions(
+			erc721Token.address,
+			[ tokens[3] ],
+			[ ether(1.1) ],
+			{ from: ac.BUYER1 , gas: 7000000, value: ether(1.1) }
+		).should.be.fulfilled;
+
+		expectEvent.inLogs(rec.logs, 'LogAuctionBidPlaced');
+
+		increaseTimeTo(oneDayLater + duration.minutes(1));
+
+		rec = await auctionMarket.takeAuctions( // anyone can settle
+			erc721Token.address,
+			[tokens[3]],
+			{ from: ac.BUYER3 , gas: 7000000}
+		).should.be.fulfilled;
+
+		const owner = await erc721Token.ownerOf(tokens[3]);
+		assert.equal(owner, ac.BUYER1);
+	});
+
+	it('should transfer token back to the owner if auction has ended and it was not bidden', async function () {
+		const oneDayLater = latestTime() + duration.days(1);
+
+		let rec = await auctionMarket.makeAuctions(
+			erc721Token.address,
+			[ tokens[4] ],
+			[ ether(1) ],
+			[ ether(2) ],
+			[ oneDayLater ],
+			{ from: ac.ADAPT_ADMIN , gas: 7000000 }
+		).should.be.fulfilled;
+
+		expectEvent.inLogs(rec.logs, 'LogAuctionsCreated');
+		let orderStatus = await auctionMarket.getOrderStatus(erc721Token.address, tokens[4]);
+		assert.equal(orderStatus, OrderStatus.Published);
+
+		increaseTimeTo(oneDayLater + duration.minutes(1));
+
+		rec = await auctionMarket.takeAuctions(
+			erc721Token.address,
+			[tokens[4]],
+			{ from: ac.BUYER3 , gas: 7000000}
+		).should.be.fulfilled;
+
+		const owner = await erc721Token.ownerOf(tokens[4]);
+		assert.equal(owner, ac.ADAPT_ADMIN);
+	});
 });
 
 

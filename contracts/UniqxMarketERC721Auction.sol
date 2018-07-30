@@ -362,6 +362,13 @@ contract UniqxMarketERC721Auction is NoOwner, Pausable, ReentrancyGuard {
 				continue;
 			}
 
+			// if not bidden and auction has ended, transfer the token back to the owner
+			if (auction.highestBidValue == 0) {
+				ERC721Token _token = ERC721Token(_contract);
+				_token.transferFrom(address(this), auction.owner, _tokenIds[index]);
+				continue;
+			}
+
 			// transfer fee to market
 			uint marketFee = auction.highestBidValue.mul(marketFeeNum).div(marketFeeDen);
 			MARKET_FEES_MSIG.transfer(marketFee);
