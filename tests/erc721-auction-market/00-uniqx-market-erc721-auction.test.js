@@ -328,7 +328,7 @@ contract('Testing UniqxMarketERC721Instant', async function (rpc_accounts) {
 		assert.equal(owner, ac.BUYER1);
 	});
 
-	it('should transfer token back to the owner if auction has ended and it was not bidden', async function () {
+	it('should not take ended auction that was not bidden', async function () {
 		const oneDayLater = latestTime() + duration.days(1);
 
 		let rec = await auctionMarket.makeAuctions(
@@ -352,7 +352,16 @@ contract('Testing UniqxMarketERC721Instant', async function (rpc_accounts) {
 			{ from: ac.BUYER3 , gas: 7000000}
 		).should.be.fulfilled;
 
-		const owner = await erc721Token.ownerOf(tokens[4]);
+		let owner = await erc721Token.ownerOf(tokens[4]);
+		assert.equal(owner, auctionMarket.address);
+
+		await auctionMarket.cancelAuctions(
+			erc721Token.address,
+			[tokens[4]],
+			{ from: ac.ADAPT_ADMIN , gas: 7000000}
+		).should.be.fulfilled;
+
+		owner = await erc721Token.ownerOf(tokens[4]);
 		assert.equal(owner, ac.ADAPT_ADMIN);
 	});
 });

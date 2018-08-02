@@ -362,10 +362,8 @@ contract UniqxMarketERC721Auction is NoOwner, Pausable, ReentrancyGuard {
 				continue;
 			}
 
-			// if not bidden and auction has ended, transfer the token back to the owner
+			// skip zero bid ended auctions
 			if (auction.highestBidValue == 0) {
-				ERC721Token _token = ERC721Token(_contract);
-				_token.transferFrom(address(this), auction.owner, _tokenIds[index]);
 				continue;
 			}
 
@@ -401,7 +399,7 @@ contract UniqxMarketERC721Auction is NoOwner, Pausable, ReentrancyGuard {
 			AuctionInfo storage auction = marketContract.auctions[_tokenIds[index]];
 			require(auction.status == OrderStatus.Created);
 
-			// auction must have zero bids
+			// auction must be ended or have zero bids
 			require(now > auction.endTime || auction.highestBidValue == 0);
 
 			// only the owner or the maker can cancel the auction
@@ -423,5 +421,4 @@ contract UniqxMarketERC721Auction is NoOwner, Pausable, ReentrancyGuard {
 
 		emit LogAuctionsCancelled(_contract, _tokenIds);
 	}
-
 }
