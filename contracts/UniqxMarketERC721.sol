@@ -34,8 +34,6 @@ contract UniqxMarketERC721 is NoOwner, Pausable, ReentrancyGuard {
 		// COMMON
 		OrderFormat format;
 		OrderStatus status;
-		uint listedAt;
-		uint updatedAt;
 		address owner; 				// the user who owns the token sold via this order
 		address seller; 			// the seller (must be approved by the owner before listing)
 		uint buyPrice;				// holds the 'buy it now' price
@@ -214,16 +212,12 @@ contract UniqxMarketERC721 is NoOwner, Pausable, ReentrancyGuard {
 		return tokenContract.orders[tokenId].status;
 	}
 
-	// TODO: stack too deep - figure out something else, like split this get in half... jeez...
-/*
 	function getOrderInfo(address token, uint tokenId)
 		public
 		view
 		returns (
 			OrderFormat format,
 			OrderStatus status,
-			uint listedAt,
-			uint updatedAt,
 			address owner,
 			address seller,
 			uint buyPrice,
@@ -242,8 +236,6 @@ contract UniqxMarketERC721 is NoOwner, Pausable, ReentrancyGuard {
 
 		format 		= order.format;
 		status 		= order.status;
-		listedAt 	= order.listedAt;
-		updatedAt 	= order.updatedAt;
 		owner 		= order.owner;
 		seller 		= order.seller;
 		buyPrice 	= order.buyPrice;
@@ -252,7 +244,6 @@ contract UniqxMarketERC721 is NoOwner, Pausable, ReentrancyGuard {
 		endTime 	= order.endTime;
 		highestBid 	= order.highestBid;
 	}
-*/
 
 	function sellTokens(
 		address token,
@@ -292,10 +283,8 @@ contract UniqxMarketERC721 is NoOwner, Pausable, ReentrancyGuard {
 
 			OrderInfo memory newOrder = OrderInfo(
 				{
-					format: OrderFormat.Auction,
+					format: OrderFormat.FixedPrice,
 					status: OrderStatus.Listed,
-					listedAt: now,
-					updatedAt: now,
 					owner: owner,
 					seller: msg.sender,
 					buyPrice: buyPrices[i],
@@ -367,13 +356,11 @@ contract UniqxMarketERC721 is NoOwner, Pausable, ReentrancyGuard {
 
 			// mark the order as sold
 			order.status = OrderStatus.Sold;
-			order.updatedAt = now;
 			order.buyer = msg.sender;
 
-			emit LogTokenSold(token, tokenIds[i], order.buyer, order.buyPrice, order.updatedAt);
+			emit LogTokenSold(token, tokenIds[i], order.buyer, order.buyPrice, now);
 
-			// TODO: delete order from map to save space on storage
-			// delete tokenContract.orders[tokenIds[i]];
+			delete tokenContract.orders[tokenIds[i]];
 		}
 
 		// the bundled value should match the price of all orders
@@ -430,8 +417,6 @@ contract UniqxMarketERC721 is NoOwner, Pausable, ReentrancyGuard {
 				{
 					format: OrderFormat.Auction,
 					status: OrderStatus.Listed,
-					listedAt: now,
-					updatedAt: now,
 					owner: owner,
 					seller: msg.sender,
 					buyPrice: buyPrices[i],
@@ -476,7 +461,7 @@ contract UniqxMarketERC721 is NoOwner, Pausable, ReentrancyGuard {
 		// validate parameters
 		require(tokenIds.length == bids.length);
 
-		uint bidAmount = 0;
+		uint bidRunningSum = 0;
 		for(uint i = 0; i < tokenIds.length; i++) {
 
 			OrderInfo storage order = tokenContract.orders[tokenIds[i]];
@@ -503,10 +488,8 @@ contract UniqxMarketERC721 is NoOwner, Pausable, ReentrancyGuard {
 			order.highestBid = bids[i];
 			// update highest bidder
 			order.buyer = msg.sender;
-			// set the updated time
-			order.updatedAt = now;
 
-			bidAmount += bids[i];
+			bidRunningSum += bids[i];
 
 			// buy it now?
 			if (bids[i] >= order.buyPrice) {
@@ -525,16 +508,15 @@ contract UniqxMarketERC721 is NoOwner, Pausable, ReentrancyGuard {
 
 				// mark the order as sold
 				order.status = OrderStatus.Sold;
-				emit LogTokenSold(token, tokenIds[i], order.buyer, order.highestBid, order.updatedAt);
+				emit LogTokenSold(token, tokenIds[i], order.buyer, order.highestBid, now);
 			} else {
-				emit LogBidPlaced(token, tokenIds[i], order.buyer, order.highestBid, order.updatedAt);
+				emit LogBidPlaced(token, tokenIds[i], order.buyer, order.highestBid, now);
 			}
 
-			// TODO: delete order from map to save space on storage
-			// delete tokenContract.orders[tokenIds[i]];
+			delete tokenContract.orders[tokenIds[i]];
 		}
 
-		require(bidAmount == msg.value);
+		require(bidRunningSum == msg.value);
 	}
 
 
@@ -552,11 +534,11 @@ contract UniqxMarketERC721 is NoOwner, Pausable, ReentrancyGuard {
 		// token contract must be registered
 		require(tokenContract.registered);
 
-		for(uint i=0; i< tokenIds.length; i++) {
+		for(uint i = 0; i < tokenIds.length; i++) {
 
 			OrderInfo storage order = tokenContract.orders[tokenIds[i]];
 
-			// make sure token is listed
+			// order must be listed
 			require(order.status == OrderStatus.Listed);
 
 			// only the owner or the seller can cancel an order
@@ -580,12 +562,10 @@ contract UniqxMarketERC721 is NoOwner, Pausable, ReentrancyGuard {
 
 			// mark the order as cancelled
 			order.status = OrderStatus.Cancelled;
-			order.updatedAt = now;
 
-			emit LogTokenCanceled(token, tokenIds[i], order.updatedAt);
+			emit LogTokenCanceled(token, tokenIds[i], now);
 
-			// TODO: delete order from map to save space on storage
-			// delete tokenContract.orders[tokenIds[i]];
+			delete tokenContract.orders[tokenIds[i]];
 		}
 	}
 
@@ -610,27 +590,15 @@ contract UniqxMarketERC721 is NoOwner, Pausable, ReentrancyGuard {
 
 			OrderInfo storage order = tokenContract.orders[tokenIds[i]];
 
-			if (order.status != OrderStatus.Listed) {
-				continue;
-			}
+			// order must be listed
+			require(order.status == OrderStatus.Listed);
 
-			// stick to auctions
-			if (order.format != OrderFormat.Auction){
-				continue;
-			}
-
-			// skip the auctions which in progress
-			if (now < order.endTime) {
-				continue;
-			}
-
-			// okay we got to an ended auction
+			// order must be ended auction
+			require(order.format == OrderFormat.Auction && now >= order.endTime);
 
 			ERC721Token tokenInstance = ERC721Token(token);
 
 			if (order.highestBid > 0) {
-
-				// we have a winner
 
 				// transfer fee to market
 				uint marketFee = order.highestBid.mul(marketFeeNum).div(marketFeeDen);
@@ -645,9 +613,8 @@ contract UniqxMarketERC721 is NoOwner, Pausable, ReentrancyGuard {
 
 				// mark the order as sold
 				order.status = OrderStatus.Sold;
-				order.updatedAt = now;
 
-				emit LogTokenSold(token, tokenIds[i], order.buyer, order.highestBid, order.updatedAt);
+				emit LogTokenSold(token, tokenIds[i], order.buyer, order.highestBid, now);
 
 			} else {
 
@@ -658,13 +625,11 @@ contract UniqxMarketERC721 is NoOwner, Pausable, ReentrancyGuard {
 
 				// mark the order as unsold
 				order.status = OrderStatus.Unsold;
-				order.updatedAt = now;
 
-				emit LogTokenUnsold(token, tokenIds[i], order.updatedAt);
+				emit LogTokenUnsold(token, tokenIds[i], now);
 			}
 
-			// TODO: delete order from map to save space on storage
-			// delete tokenContract.orders[tokenIds[i]];
+			delete tokenContract.orders[tokenIds[i]];
 		}
 	}
 }
