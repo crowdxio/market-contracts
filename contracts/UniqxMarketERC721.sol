@@ -267,7 +267,7 @@ contract UniqxMarketERC721 is NoOwner, Pausable, ReentrancyGuard {
 		highestBid 	= order.highestBid;
 	}
 
-	function sellTokens(
+	function listTokensFixedPrice(
 		address token,
 		uint[] tokenIds,
 		uint[] buyPrices
@@ -387,7 +387,7 @@ contract UniqxMarketERC721 is NoOwner, Pausable, ReentrancyGuard {
 		require(ordersAmount == msg.value);
 	}
 
-	function auctionTokens(
+	function listTokensAuction(
 		address token,
 		uint[] tokenIds,
 		uint[] buyPrices,
