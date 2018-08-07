@@ -93,7 +93,7 @@ contract('estimate gas - ', async function (rpc_accounts) {
 
 
 	it('should be able to list 10 adapt tokens for sale - fixed price', async () => {
-		const rec = await unixMarket.sellTokens(
+		const rec = await unixMarket.listTokensFixedPrice(
 			adaptToken.address,
 			tokens,
 			prices,
@@ -103,7 +103,7 @@ contract('estimate gas - ', async function (rpc_accounts) {
 			}
 		).should.be.fulfilled;
 
-		console.log(`GAS - Sell ${tokensCount} adapt tokens: ${rec.receipt.gasUsed}`);
+		console.log(`GAS - List ${tokensCount} adapt tokens fixed price: ${rec.receipt.gasUsed}`);
 
 		//expectEvent.inLogs(rec.logs, 'LogOrdersCreated');
 	});
