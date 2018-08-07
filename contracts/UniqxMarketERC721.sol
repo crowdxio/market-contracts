@@ -97,7 +97,7 @@ contract UniqxMarketERC721 is NoOwner, Pausable, ReentrancyGuard {
 
 	event LogTokenSold(address token, uint tokenId, address buyer, uint price, uint soldAt);
 
-	event LogTokenCanceled(address token, uint tokenId, uint cancelledAt);
+	event LogTokensCanceled(address token, uint[] tokenIds, uint cancelledAt);
 
 	event LogTokenUnsold(address token, uint tokenId, uint unsoldAt);
 
@@ -529,11 +529,10 @@ contract UniqxMarketERC721 is NoOwner, Pausable, ReentrancyGuard {
 				// mark the order as sold
 				order.status = OrderStatus.Sold;
 				emit LogTokenSold(token, tokenIds[i], order.buyer, order.highestBid, now);
+				delete tokenContract.orders[tokenIds[i]];
 			} else {
 				emit LogBidPlaced(token, tokenIds[i], order.buyer, order.highestBid, now);
 			}
-
-			delete tokenContract.orders[tokenIds[i]];
 		}
 
 		require(bidRunningSum == msg.value);
@@ -583,10 +582,10 @@ contract UniqxMarketERC721 is NoOwner, Pausable, ReentrancyGuard {
 			// mark the order as cancelled
 			order.status = OrderStatus.Cancelled;
 
-			emit LogTokenCanceled(token, tokenIds[i], now);
-
 			delete tokenContract.orders[tokenIds[i]];
 		}
+
+		emit LogTokensCanceled(token, tokenIds, now);
 	}
 
 	// this will move the auctions into final states (Sold/Unsold)
