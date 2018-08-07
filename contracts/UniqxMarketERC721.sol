@@ -54,29 +54,51 @@ contract UniqxMarketERC721 is NoOwner, Pausable, ReentrancyGuard {
 	mapping(address => TokenContract) tokenContracts;
 
 	event LogOrdersEnabled();
-  	event LogOrdersDisabled();
+
+	event LogOrdersDisabled();
+
 	event LogTokenRegistered(address token);
+
 	event LogTokenOrdersEnabled(address token);
+
 	event LogTokenOrdersDisabled(address token);
-	event LogTokenListed(
+
+	event LogTokensListedFixedPrice(
 		// lookup
 		address token,
-		uint tokenId,
+		uint[] tokenIds,
 
 		// common
 		OrderFormat format,
 		uint listedAt,
 		address owner,
 		address seller,
-		uint buyPrice,
+		uint[] buyPrices
+	);
+
+	event LogTokensListedAuction(
+		// lookup
+		address token,
+		uint[] tokenIds,
+
+		// common
+		OrderFormat format,
+		uint listedAt,
+		address owner,
+		address seller,
+		uint[] buyPrices,
 
 		// auction
-		uint startPrice,
-		uint endTime
+		uint[] startPrices,
+		uint[] endTime
 	);
+
 	event LogBidPlaced(address token, uint tokenId, address bidder, uint bid, uint placedAt);
+
 	event LogTokenSold(address token, uint tokenId, address buyer, uint price, uint soldAt);
+
 	event LogTokenCanceled(address token, uint tokenId, uint cancelledAt);
+
 	event LogTokenUnsold(address token, uint tokenId, uint unsoldAt);
 
 	modifier whenOrdersEnabled() {
@@ -296,19 +318,17 @@ contract UniqxMarketERC721 is NoOwner, Pausable, ReentrancyGuard {
 			);
 
 			tokenContracts[token].orders[tokenIds[i]] = newOrder;
-
-			emit LogTokenListed(
-				token,
-				tokenIds[i],
-				OrderFormat.Auction,
-				now,
-				owner,
-				msg.sender,
-				buyPrices[i],
-				0,
-				0
-			);
 		}
+
+		emit LogTokensListedFixedPrice(
+			token,
+			tokenIds,
+			OrderFormat.FixedPrice,
+			now,
+			owner,
+			msg.sender,
+			buyPrices
+		);
 	}
 
 	function buyTokens(
@@ -428,19 +448,19 @@ contract UniqxMarketERC721 is NoOwner, Pausable, ReentrancyGuard {
 			);
 
 			tokenContracts[token].orders[tokenIds[i]] = newOrder;
-
-			emit LogTokenListed(
-				token,
-				tokenIds[i],
-				OrderFormat.Auction,
-				now,
-				owner,
-				msg.sender,
-				buyPrices[i],
-				startPrices[i],
-				endTimes[i]
-			);
 		}
+
+		emit LogTokensListedAuction(
+			token,
+			tokenIds,
+			OrderFormat.Auction,
+			now,
+			owner,
+			msg.sender,
+			buyPrices,
+			startPrices,
+			endTimes
+		);
 	}
 
 	function bidTokens(
