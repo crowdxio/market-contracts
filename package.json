@@ -18,6 +18,7 @@
 	"license": "GPL v3",
 	"dependencies": {
 		"@types/node": "^9.6.5",
+		"abi-decoder": "^1.1.0",
 		"bignumber.js": "git+https://github.com/frozeman/bignumber.js-nolookahead.git",
 		"bip39": "^2.5.0",
 		"bluebird": "^3.5.1",

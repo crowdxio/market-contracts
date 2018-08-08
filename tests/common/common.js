@@ -1,4 +1,3 @@
-
 const moment = require('moment');
 
 export function accounts(rpc_accounts) {
@@ -31,6 +30,11 @@ const should = require('chai')
 	.use(require('chai-bignumber')(BigNumber))
 	.should();
 
+const getBalanceAsync = Bluebird.promisify(web3.eth.getBalance);
+
+export async function getBalanceAsyncStr(address, base = 10) {
+	return (await getBalanceAsync(address)).toString(base);
+}
 
 const OrderStatus = {
 	Unknown: 0,
@@ -40,7 +44,6 @@ const OrderStatus = {
 	Reserved: 4,
 };
 
-
 module.exports = {
 	accounts: accounts,
 	BigNumber: BigNumber,
@@ -48,4 +51,6 @@ module.exports = {
 	assert: assert,
 	should: should,
 	OrderStatus: OrderStatus,
+	getBalanceAsync: getBalanceAsync,
+	getBalanceAsyncStr: getBalanceAsyncStr
 };

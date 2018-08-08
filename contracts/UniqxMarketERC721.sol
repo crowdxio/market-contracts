@@ -69,7 +69,6 @@ contract UniqxMarketERC721 is NoOwner, Pausable, ReentrancyGuard {
 		uint[] tokenIds,
 
 		// common
-		OrderFormat format,
 		uint listedAt,
 		address owner,
 		address seller,
@@ -82,7 +81,6 @@ contract UniqxMarketERC721 is NoOwner, Pausable, ReentrancyGuard {
 		uint[] tokenIds,
 
 		// common
-		OrderFormat format,
 		uint listedAt,
 		address owner,
 		address seller,
@@ -323,7 +321,6 @@ contract UniqxMarketERC721 is NoOwner, Pausable, ReentrancyGuard {
 		emit LogTokensListedFixedPrice(
 			token,
 			tokenIds,
-			OrderFormat.FixedPrice,
 			now,
 			owner,
 			msg.sender,
@@ -453,7 +450,6 @@ contract UniqxMarketERC721 is NoOwner, Pausable, ReentrancyGuard {
 		emit LogTokensListedAuction(
 			token,
 			tokenIds,
-			OrderFormat.Auction,
 			now,
 			owner,
 			msg.sender,
