@@ -1,20 +1,22 @@
 import {
-	accounts, assert, BigNumber, getBalanceAsync, getBalanceAsyncStr, parseUnixMarketEvent
+	accounts, assert, BigNumber, getBalanceAsync, getBalanceAsyncStr, parseAdaptTokenEvent, parseUnixMarketEvent
 } from '../common/common';
 import ether from "../helpers/ether";
 import expectEvent from "../helpers/expectEvent";
 const moment = require('moment');
 import * as abiDecoder from 'abi-decoder';
 
-const AdaptToken = artifacts.require("../../../adapt/contracts/AdaptCollectibles.sol");
+const AdaptCollectibles = artifacts.require("../../../adapt/contracts/AdaptCollectibles.sol");
 const UniqxMarketERC721 = artifacts.require('../../contracts/UniqxMarketERC721.sol');
+
+const AdaptCollectiblesJson = require("../../build/contracts/AdaptCollectibles.json");
 const UniqxMarketERC721Json = require('../../build/contracts/UniqxMarketERC721.json');
 
 contract('Testing FixedPrice listing - main flow', async function (rpc_accounts) {
 
 	const ac = accounts(rpc_accounts);
 	let unixMarket;
-	let adaptToken;
+	let adaptCollectibles;
 
 	const tokensCount = 10;
 	let tokens = [];
@@ -35,17 +37,17 @@ contract('Testing FixedPrice listing - main flow', async function (rpc_accounts)
 
 		console.log(`The market contract has been successfully deployed at ${unixMarket.address}`);
 
-		adaptToken = await AdaptToken.new(
+		adaptCollectibles = await AdaptCollectibles.new(
 			ac.ADAPT_OWNER,
 			ac.ADAPT_ADMIN,
 			{ from: ac.OPERATOR, gas: 7000000 }
 		).should.be.fulfilled;
 
-		console.log(`The adapt token has been successfully deployed at ${adaptToken.address}`);
+		console.log(`The adapt token has been successfully deployed at ${adaptCollectibles.address}`);
 	});
 
 	it('should mint some test tokens', async function () {
-		const ret = await adaptToken.massMint(
+		const ret = await adaptCollectibles.massMint(
 			ac.ADAPT_ADMIN,
 			'json hash',			// json hash
 			1,				        // start
@@ -59,7 +61,7 @@ contract('Testing FixedPrice listing - main flow', async function (rpc_accounts)
 	it('should register the adapt token', async function () {
 
 		const ret = await unixMarket.registerToken(
-			adaptToken.address,
+			adaptCollectibles.address,
 			{
 				from: ac.MARKET_ADMIN_MSIG,
 				gas: 7000000
@@ -74,7 +76,7 @@ contract('Testing FixedPrice listing - main flow', async function (rpc_accounts)
 
 	it('should allwo the market to escrow the adapt tokens', async function () {
 		// approve market to transfer all erc721 tokens hold by admin
-		await adaptToken.setApprovalForAll(
+		await adaptCollectibles.setApprovalForAll(
 			unixMarket.address,
 			true,
 			{
@@ -88,12 +90,12 @@ contract('Testing FixedPrice listing - main flow', async function (rpc_accounts)
 	it('should be able to list 10 adapt tokens for sale - fixed price', async () => {
 
 		for (let i = 0; i < tokensCount; i++) {
-			tokens[i] = await adaptToken.tokenByIndex(i);
+			tokens[i] = await adaptCollectibles.tokenByIndex(i);
 			prices[i] = ether(1);
 		}
 
 		const rec = await unixMarket.listTokensFixedPrice(
-			adaptToken.address,
+			adaptCollectibles.address,
 			tokens,
 			prices,
 			{
@@ -109,7 +111,7 @@ contract('Testing FixedPrice listing - main flow', async function (rpc_accounts)
 
 	it('should be able to cancel 2 tokens', async () => {
 		const rec = await unixMarket.cancelTokens(
-			adaptToken.address,
+			adaptCollectibles.address,
 			[tokens[0], tokens[1]],
 			{
 				from: ac.ADAPT_ADMIN ,
@@ -142,7 +144,7 @@ contract('Testing FixedPrice listing - main flow', async function (rpc_accounts)
 		console.log(`marketBalanceBefore: ${marketBalanceBefore.toString(10)}`);
 
 		const ret = await unixMarket.buyTokens(
-			adaptToken.address,
+			adaptCollectibles.address,
 			tokensToBuy,
 			{
 				from: ac.BUYER1,
@@ -154,7 +156,7 @@ contract('Testing FixedPrice listing - main flow', async function (rpc_accounts)
 		expectEvent.inLogs(ret.logs, 'LogTokenSold');
 
 		for (let token of tokensToBuy) {
-			const owner = await adaptToken.ownerOf(token);
+			const owner = await adaptCollectibles.ownerOf(token);
 			assert.equal(owner, ac.BUYER1, 'owner should be buyer1');
 		}
 
@@ -169,10 +171,13 @@ contract('Testing FixedPrice listing - main flow', async function (rpc_accounts)
 		console.log(`GAS - Buy 8 adapt tokens: ${ret.receipt.gasUsed}`);
 	});
 
-	it('watch the market logs', async function () {
+	it('should watch and parse the the logs', async function () {
+
+		// market
+
 		abiDecoder.addABI(UniqxMarketERC721Json['abi']);
 
-		const filter = web3.eth.filter(
+		const marketFilter = web3.eth.filter(
 			{
 				fromBlock: 1,
 				toBlock: 'latest',
@@ -180,7 +185,7 @@ contract('Testing FixedPrice listing - main flow', async function (rpc_accounts)
 			}
 		);
 
-		filter.watch(async (error, result ) => {
+		marketFilter.watch(async (error, result ) => {
 			if (error) {
 				console.log(error);
 				return;
@@ -188,6 +193,29 @@ contract('Testing FixedPrice listing - main flow', async function (rpc_accounts)
 
 			const events = abiDecoder.decodeLogs([result]);
 			await parseUnixMarketEvent(events[0]);
-		})
+		});
+
+
+		// adapt
+
+		abiDecoder.addABI(AdaptCollectiblesJson['abi']);
+
+		const adaptCollectiblesFilter = web3.eth.filter(
+			{
+				fromBlock: 1,
+				toBlock: 'latest',
+				address: adaptCollectibles.address,
+			}
+		);
+
+		adaptCollectiblesFilter.watch(async (error, result ) => {
+			if (error) {
+				console.log(error);
+				return;
+			}
+
+			const events = abiDecoder.decodeLogs([result]);
+			await parseAdaptTokenEvent(events[0]);
+		});
 	});
 });

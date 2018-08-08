@@ -45,6 +45,31 @@ const OrderStatus = {
 };
 
 
+async function parseAdaptTokenEvent(event) {
+
+	//console.log(JSON.stringify(event, null, '\t'));
+
+	const name = event['name'];
+
+	// we are only interested in transfer events
+	if (name !== 'Transfer') {
+		console.log(`Skipping event ${name}...`);
+		return;
+	}
+
+	const parameters = event['events']; // it's called events for some reason...
+	const from       = parameters[0].value;
+	const to         = parameters[1].value;
+	const tokenId    = new BigNumber(parameters[2].value);
+
+	if (from === '0x0000000000000000000000000000000000000000') {
+		// this is the initial transfer, right after mint
+		console.log(`Token 0x${tokenId.toString(16)} minted! Owner is: ${to}`);
+	} else {
+		console.log(`Token 0x${tokenId.toString(16)} transferred from: ${from} to: ${to}`);
+	}
+}
+
 async function parseUnixMarketEvent(event) {
 
 	//console.log(JSON.stringify(event, null, '\t'));
@@ -122,9 +147,9 @@ async function parseUnixMarketEvent(event) {
 		case 'LogBidPlaced': {
 			const token         = parameters[0].value;
 			const tokenId       = new BigNumber(parameters[1].value);
-			const bidder         = parameters[2].value;
-			const bid         = parameters[3].value;
-			const bidTime      = parameters[4].value;
+			const bidder        = parameters[2].value;
+			const bid           = parameters[3].value;
+			const bidTime       = parameters[4].value;
 			console.log(`Bid Placed : token=${token}, tokenId=0x${tokenId.toString(16)}, bidder=${bidder}, bid=${bid}, bidPlacedAt=${moment.unix(bidTime).utc().format()}`);
 			break;
 		}
@@ -142,5 +167,6 @@ module.exports = {
 	OrderStatus: OrderStatus,
 	getBalanceAsync: getBalanceAsync,
 	getBalanceAsyncStr: getBalanceAsyncStr,
+	parseAdaptTokenEvent: parseAdaptTokenEvent,
 	parseUnixMarketEvent: parseUnixMarketEvent
 };
