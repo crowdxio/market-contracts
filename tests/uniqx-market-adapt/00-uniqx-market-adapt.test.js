@@ -85,10 +85,10 @@ contract('estimate gas - ', function (rpc_accounts) {
 
 		console.log('Take order completed! Gas used: ' + result.receipt.gasUsed);
 
-		// order status should be Acquired
+		// order status should be Sold
 		const orderStatus = await market.getOrderStatus(tokenId);
 		console.log('Order status: ', JSON.stringify(orderStatus));
-		assert.equal(orderStatus, OrderStatus.Acquired, 'The order status should be \'Acquired\' now');
+		assert.equal(orderStatus, OrderStatus.Sold, 'The order status should be \'Sold\' now');
 
 		const orderInfo = await market.getOrderInfo(tokenId);
 		console.log('order info:', JSON.stringify(orderInfo));

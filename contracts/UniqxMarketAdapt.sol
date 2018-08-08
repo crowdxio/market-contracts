@@ -31,10 +31,10 @@ contract UniqxMarketAdapt is NoOwner, Pausable, ReentrancyGuard {
 
 	enum OrderStatus {
 		Unknown,
-		Created,
+		Listed,
+		Reserved,
 		Cancelled,
-		Acquired,
-		Reserved
+		Sold
 	}
 
 	struct NftTokenOrder {
@@ -134,7 +134,7 @@ contract UniqxMarketAdapt is NoOwner, Pausable, ReentrancyGuard {
 					makeTime: now,
 					acquirePrice: 0,
 					acquireTime: 0,
-					status: OrderStatus.Created,
+					status: OrderStatus.Listed,
 					maker: msg.sender,
 					owner: tokenOwner
 				});
@@ -160,7 +160,7 @@ contract UniqxMarketAdapt is NoOwner, Pausable, ReentrancyGuard {
 
 			// token must still be published on the market
 			require(
-				order.status == OrderStatus.Created ||
+				order.status == OrderStatus.Listed ||
 				order.status == OrderStatus.Reserved
 			);
 			// token must still be in temporary custody of the market
@@ -201,7 +201,7 @@ contract UniqxMarketAdapt is NoOwner, Pausable, ReentrancyGuard {
 		NftTokenOrder storage order = orders[_tokenId];
 
 		require(
-			order.status == OrderStatus.Created ||
+			order.status == OrderStatus.Listed ||
 			order.status == OrderStatus.Reserved
 		);
 
@@ -209,7 +209,7 @@ contract UniqxMarketAdapt is NoOwner, Pausable, ReentrancyGuard {
 		require(_amount >= order.makePrice);
 
 		// mark the order as acquired
-		order.status 		= OrderStatus.Acquired;
+		order.status 		= OrderStatus.Sold;
 		order.acquirePrice 	= _amount;
 		order.acquireTime 	= now;
 

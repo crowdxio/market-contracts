@@ -118,7 +118,7 @@ contract('testing the functionality - ', function (rpc_accounts) {
 
 		for (let i = 0; i < tokens.length; i++) {
 			const orderStatus = await market.getOrderStatus(erc721Token.address, tokens[i]);
-			assert.equal(orderStatus, OrderStatus.Published);
+			assert.equal(orderStatus, OrderStatus.Listed);
 
 			const ownerToken = await erc721Token.ownerOf(tokens[i]);
 			assert.equal(ownerToken, market.address, 'MARKET should tmp own the token');
@@ -180,7 +180,7 @@ contract('testing the functionality - ', function (rpc_accounts) {
 		).should.be.fulfilled;
 
 		const orderStatus = await market.getOrderStatus(erc721Token.address, tokens[1]);
-		assert.equal(orderStatus, OrderStatus.Acquired);
+		assert.equal(orderStatus, OrderStatus.Sold);
 
 		await expectEvent.inLogs(logs, 'LogOrderAcquired');
 
@@ -260,7 +260,7 @@ contract('testing the functionality - ', function (rpc_accounts) {
 		await expectEvent.inLogs(logs, 'LogOrderAcquired');
 
 		const orderStatus = await market.getOrderStatus(erc721Token.address, tokens[3]);
-		assert.equal(orderStatus, OrderStatus.Acquired);
+		assert.equal(orderStatus, OrderStatus.Sold);
 
 		const ownerOfToken = await erc721Token.ownerOf(tokens[1]);
 		assert.equal(ownerOfToken, ac.BUYER1, 'BUYER1 should now be the owner of token');
@@ -372,10 +372,10 @@ contract('testing the functionality - ', function (rpc_accounts) {
 		).should.be.rejectedWith(EVMRevert);
 
 		const orderStatus7 = await market.getOrderStatus(erc721Token.address, tokens[7]);
-		assert.equal(orderStatus7, OrderStatus.Published);
+		assert.equal(orderStatus7, OrderStatus.Listed);
 
 		const orderStatus8 = await market.getOrderStatus(erc721Token.address, tokens[8]);
-		assert.equal(orderStatus8, OrderStatus.Published);
+		assert.equal(orderStatus8, OrderStatus.Listed);
 	});
 
 	it('should return the token to the original owner on cancel', async () => {

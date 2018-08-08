@@ -142,7 +142,7 @@ contract('testing allow/disallow orders - ', function (rpc_accounts) {
 
 	it('should be able take/cancel orders for contract with orders disallowed', async () => {
 		let orderStatus = await market.getOrderStatus(erc721Token1.address, tokens1[0]);
-		assert.equal(orderStatus, OrderStatus.Published, 'Order should be in \'Published\' State');
+		assert.equal(orderStatus, OrderStatus.Listed, 'Order should be in \'Listed\' State');
 
 		await market.takeOrders(
 			erc721Token1.address,
@@ -151,7 +151,7 @@ contract('testing allow/disallow orders - ', function (rpc_accounts) {
 		).should.be.fulfilled;
 
 		orderStatus = await market.getOrderStatus(erc721Token1.address, tokens1[0]);
-		assert.equal(orderStatus, OrderStatus.Acquired, 'Order should be in `Acquired` state');
+		assert.equal(orderStatus, OrderStatus.Sold, 'Order should be in `Sold` state');
 
 		await market.cancelOrders(
 			erc721Token1.address,

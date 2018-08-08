@@ -122,7 +122,7 @@ contract('estimate gas - ', function (rpc_accounts) {
 		expectEvent.inLogs(rec.logs, 'LogOrdersCreated');
 
 		const orderStatus = await market.getOrderStatus(erc721Token.address, tokens[0]);
-		assert.equal(orderStatus, OrderStatus.Published);
+		assert.equal(orderStatus, OrderStatus.Listed);
 	});
 
 	it('should be able to cancel order', async () => {
@@ -153,7 +153,7 @@ contract('estimate gas - ', function (rpc_accounts) {
 
 		for (let i = 0; i < tokens.length; i++) {
 			const orderStatus = await market.getOrderStatus(erc721Token.address, tokens[i]);
-			assert.equal(orderStatus, OrderStatus.Published);
+			assert.equal(orderStatus, OrderStatus.Listed);
 		}
 
 		console.log('makeOrders() with 10 orders - Gas Used = ' + rec.receipt.gasUsed);
@@ -170,7 +170,7 @@ contract('estimate gas - ', function (rpc_accounts) {
 
 		await expectEvent.inLogs(rec.logs, 'LogOrderAcquired');
 		const orderStatus = await market.getOrderStatus(erc721Token.address, tokens[1]);
-		assert.equal(orderStatus, OrderStatus.Acquired);
+		assert.equal(orderStatus, OrderStatus.Sold);
 	});
 
 

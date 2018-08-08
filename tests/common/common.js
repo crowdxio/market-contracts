@@ -37,13 +37,13 @@ export async function getBalanceAsyncStr(address, base = 10) {
 }
 
 const OrderStatus = {
-	Unknown: 0,
-	Published: 1,
-	Cancelled: 2,
-	Acquired: 3,
-	Reserved: 4,
+	Unknown:    0,
+	Listed:     1,
+	Reserved:   2,
+	Cancelled:  3,
+	Sold:       4,
+	Unsold:     5,
 };
-
 
 async function parseAdaptTokenEvent(event) {
 

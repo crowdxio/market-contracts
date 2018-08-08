@@ -24,6 +24,7 @@ contract UniqxMarketERC721 is NoOwner, Pausable, ReentrancyGuard {
 	enum OrderStatus {
 		Unknown,
 		Listed,			// token listed by owner or seller
+		Reserved,		// not used in this contract
 		Cancelled,		// order canceled by owner or seller (some restrictions are applied on auction orders)
 		Sold,			// token sold, the item goes to the buyer or to the highest bidder on auction orders
 		Unsold			// auction ended with zero bids, token goes back to owner

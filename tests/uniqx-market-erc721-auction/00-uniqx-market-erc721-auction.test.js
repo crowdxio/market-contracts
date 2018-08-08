@@ -90,7 +90,7 @@ contract('Testing UniqxMarketERC721Instant', async function (rpc_accounts) {
 
 		expectEvent.inLogs(rec.logs, 'LogAuctionsCreated');
 		const orderStatus = await auctionMarket.getOrderStatus(erc721Token.address, tokens[0]);
-		assert.equal(orderStatus, OrderStatus.Published);
+		assert.equal(orderStatus, OrderStatus.Listed);
 
 		console.log('makeAuctions() with 3 auctions - Gas Used = ' + rec.receipt.gasUsed);
 	});
@@ -181,7 +181,7 @@ contract('Testing UniqxMarketERC721Instant', async function (rpc_accounts) {
 
 		expectEvent.inLogs(rec.logs, 'LogAuctionsCreated');
 		let orderStatus = await auctionMarket.getOrderStatus(erc721Token.address, tokens[3]);
-		assert.equal(orderStatus, OrderStatus.Published);
+		assert.equal(orderStatus, OrderStatus.Listed);
 
 		rec = await auctionMarket.cancelAuctions(
 			erc721Token.address,
@@ -209,7 +209,7 @@ contract('Testing UniqxMarketERC721Instant', async function (rpc_accounts) {
 
 		expectEvent.inLogs(rec.logs, 'LogAuctionsCreated');
 		let orderStatus = await auctionMarket.getOrderStatus(erc721Token.address, tokens[3]);
-		assert.equal(orderStatus, OrderStatus.Published);
+		assert.equal(orderStatus, OrderStatus.Listed);
 
 		increaseTimeTo(oneDayLater + duration.minutes(1));
 
@@ -239,7 +239,7 @@ contract('Testing UniqxMarketERC721Instant', async function (rpc_accounts) {
 
 		expectEvent.inLogs(rec.logs, 'LogAuctionsCreated');
 		let orderStatus = await auctionMarket.getOrderStatus(erc721Token.address, tokens[3]);
-		assert.equal(orderStatus, OrderStatus.Published);
+		assert.equal(orderStatus, OrderStatus.Listed);
 
 		rec = await auctionMarket.bidAuctions(
 			erc721Token.address,
@@ -305,7 +305,7 @@ contract('Testing UniqxMarketERC721Instant', async function (rpc_accounts) {
 
 		expectEvent.inLogs(rec.logs, 'LogAuctionsCreated');
 		let orderStatus = await auctionMarket.getOrderStatus(erc721Token.address, tokens[3]);
-		assert.equal(orderStatus, OrderStatus.Published);
+		assert.equal(orderStatus, OrderStatus.Listed);
 
 		rec = await auctionMarket.bidAuctions(
 			erc721Token.address,
@@ -342,7 +342,7 @@ contract('Testing UniqxMarketERC721Instant', async function (rpc_accounts) {
 
 		expectEvent.inLogs(rec.logs, 'LogAuctionsCreated');
 		let orderStatus = await auctionMarket.getOrderStatus(erc721Token.address, tokens[4]);
-		assert.equal(orderStatus, OrderStatus.Published);
+		assert.equal(orderStatus, OrderStatus.Listed);
 
 		increaseTimeTo(oneDayLater + duration.minutes(1));
 
