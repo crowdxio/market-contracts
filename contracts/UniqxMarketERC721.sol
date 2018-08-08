@@ -88,7 +88,7 @@ contract UniqxMarketERC721 is NoOwner, Pausable, ReentrancyGuard {
 
 		// auction
 		uint[] startPrices,
-		uint[] endTime
+		uint[] endTimes
 	);
 
 	event LogBidPlaced(address token, uint tokenId, address bidder, uint bid, uint placedAt);
@@ -459,7 +459,7 @@ contract UniqxMarketERC721 is NoOwner, Pausable, ReentrancyGuard {
 		);
 	}
 
-	function bidTokens(
+	function placeBids(
 		address token,
 		uint [] tokenIds,
 		uint [] bids
@@ -507,6 +507,8 @@ contract UniqxMarketERC721 is NoOwner, Pausable, ReentrancyGuard {
 
 			bidRunningSum += bids[i];
 
+			emit LogBidPlaced(token, tokenIds[i], order.buyer, order.highestBid, now);
+
 			// buy it now?
 			if (bids[i] >= order.buyPrice) {
 
@@ -526,8 +528,6 @@ contract UniqxMarketERC721 is NoOwner, Pausable, ReentrancyGuard {
 				order.status = OrderStatus.Sold;
 				emit LogTokenSold(token, tokenIds[i], order.buyer, order.highestBid, now);
 				delete tokenContract.orders[tokenIds[i]];
-			} else {
-				emit LogBidPlaced(token, tokenIds[i], order.buyer, order.highestBid, now);
 			}
 		}
 

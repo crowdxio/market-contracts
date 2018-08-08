@@ -3,6 +3,8 @@ import {
 } from '../common/common';
 import ether from "../helpers/ether";
 import expectEvent from "../helpers/expectEvent";
+import { duration, increaseTimeTo } from "../../zeppelin/test/helpers/increaseTime";
+import latestTime from '../../zeppelin/test/helpers/latestTime';
 const moment = require('moment');
 import * as abiDecoder from 'abi-decoder';
 
@@ -10,7 +12,7 @@ const AdaptToken = artifacts.require("../../../adapt/contracts/AdaptCollectibles
 const UniqxMarketERC721 = artifacts.require('../../contracts/UniqxMarketERC721.sol');
 const UniqxMarketERC721Json = require('../../build/contracts/UniqxMarketERC721.json');
 
-contract('Testing FixedPrice listing - main flow', async function (rpc_accounts) {
+contract('Testing Auction listing - main flow', async function (rpc_accounts) {
 
 	const ac = accounts(rpc_accounts);
 	let unixMarket;
@@ -18,7 +20,9 @@ contract('Testing FixedPrice listing - main flow', async function (rpc_accounts)
 
 	const tokensCount = 10;
 	let tokens = [];
-	let prices = [];
+	let buyPrices = [];
+	let startPrices = [];
+	let endTimes = [];
 
 	it('should successfully deploy the market contract and the adapt token', async function () {
 
@@ -38,19 +42,20 @@ contract('Testing FixedPrice listing - main flow', async function (rpc_accounts)
 		adaptToken = await AdaptToken.new(
 			ac.ADAPT_OWNER,
 			ac.ADAPT_ADMIN,
-			{ from: ac.OPERATOR, gas: 7000000 }
+			{from: ac.OPERATOR, gas: 7000000}
 		).should.be.fulfilled;
 
 		console.log(`The adapt token has been successfully deployed at ${adaptToken.address}`);
 	});
 
 	it('should mint some test tokens', async function () {
+
 		const ret = await adaptToken.massMint(
 			ac.ADAPT_ADMIN,
 			'json hash',			// json hash
 			1,				        // start
 			tokensCount,		    // count
-			{ from: ac.ADAPT_ADMIN }
+			{from: ac.ADAPT_ADMIN}
 		).should.be.fulfilled;
 
 		console.log(`GAS - Mass mint ${tokensCount} adapt tokens: ${ret.receipt.gasUsed}`);
@@ -71,8 +76,7 @@ contract('Testing FixedPrice listing - main flow', async function (rpc_accounts)
 		console.log(`GAS - Register Token: ${ret.receipt.gasUsed}`);
 	});
 
-
-	it('should allwo the market to escrow the adapt tokens', async function () {
+	it('should allow the market to escrow the adapt tokens', async function () {
 		// approve market to transfer all erc721 tokens hold by admin
 		await adaptToken.setApprovalForAll(
 			unixMarket.address,
@@ -84,27 +88,31 @@ contract('Testing FixedPrice listing - main flow', async function (rpc_accounts)
 		).should.be.fulfilled;
 	});
 
+	it('should be able to list 10 adapt tokens for sale - auction format', async () => {
 
-	it('should be able to list 10 adapt tokens for sale - fixed price', async () => {
-
+		const threeDaysLater = moment().add(3, 'days').unix();
 		for (let i = 0; i < tokensCount; i++) {
 			tokens[i] = await adaptToken.tokenByIndex(i);
-			prices[i] = ether(1);
+			buyPrices[i] = ether(9);
+			startPrices[i] = ether(1);
+			endTimes[i] = threeDaysLater;
 		}
 
-		const rec = await unixMarket.listTokensFixedPrice(
+		const rec = await unixMarket.listTokensAuction(
 			adaptToken.address,
 			tokens,
-			prices,
+			buyPrices,
+			startPrices,
+			endTimes,
 			{
-				from: ac.ADAPT_ADMIN ,
+				from: ac.ADAPT_ADMIN,
 				gas: 7000000
 			}
 		).should.be.fulfilled;
 
 		console.log(`GAS - List ${tokensCount} adapt tokens fixed price: ${rec.receipt.gasUsed}`);
 
-		expectEvent.inLogs(rec.logs, 'LogTokensListedFixedPrice');
+		expectEvent.inLogs(rec.logs, 'LogTokensListedAuction');
 	});
 
 	it('should be able to cancel 2 tokens', async () => {
@@ -112,7 +120,7 @@ contract('Testing FixedPrice listing - main flow', async function (rpc_accounts)
 			adaptToken.address,
 			[tokens[0], tokens[1]],
 			{
-				from: ac.ADAPT_ADMIN ,
+				from: ac.ADAPT_ADMIN,
 				gas: 7000000
 			}
 		).should.be.fulfilled;
@@ -124,49 +132,73 @@ contract('Testing FixedPrice listing - main flow', async function (rpc_accounts)
 		console.log(`Market balance: ${await getBalanceAsyncStr(ac.MARKET_FEES_MSIG)}`);
 	});
 
-	it('should be able to buy 8 tokens', async () => {
 
-		const tokensToBuy = tokens.slice(2);
-		//console.log(`Tokens to buy: ${JSON.stringify(tokensToBuy)}`);
-		const priceToPay = new BigNumber(ether(8));
-		const marketFee = priceToPay.dividedToIntegerBy(100);
-		const ownerDue = priceToPay - marketFee;
-
-		const ownerBalanceBefore = await getBalanceAsync(ac.ADAPT_ADMIN);
-		const marketBalanceBefore = await getBalanceAsync(ac.MARKET_FEES_MSIG);
-
-		console.log(`priceToPay: ${priceToPay.toString(10)}`);
-		console.log(`marketFee: ${marketFee.toString(10)}`);
-		console.log(`ownerDue: ${ownerDue.toString(10)}`);
-		console.log(`ownerBalanceBefore: ${ownerBalanceBefore.toString(10)}`);
-		console.log(`marketBalanceBefore: ${marketBalanceBefore.toString(10)}`);
-
-		const ret = await unixMarket.buyTokens(
+	it('should be able to place bids on 2 tokens', async function () {
+		const ret = await unixMarket.placeBids(
 			adaptToken.address,
-			tokensToBuy,
+			[tokens[2], tokens[3]],
+			[ether(2), ether(2)],
 			{
 				from: ac.BUYER1,
-				value: priceToPay,
+				value: ether(4),
+				gas: 7000000
+			}
+		).should.be.fulfilled;
+
+		expectEvent.inLogs(ret.logs, 'LogBidPlaced');
+
+		console.log(`GAS - Bid 2 adapt tokens: ${ret.receipt.gasUsed}`);
+	});
+
+	it('should be able to place a bid big enough to buy the token', async function () {
+		const ret = await unixMarket.placeBids(
+			adaptToken.address,
+			[tokens[4]],
+			[ether(9)],
+			{
+				from: ac.BUYER2,
+				value: ether(9),
+				gas: 7000000
+			}
+		).should.be.fulfilled;
+
+		expectEvent.inLogs(ret.logs, 'LogBidPlaced');
+		expectEvent.inLogs(ret.logs, 'LogTokenSold');
+
+		console.log(`GAS - Bid 2 adapt tokens: ${ret.receipt.gasUsed}`);
+	});
+
+
+	it('should allow the winner to finalize the auctions', async function () {
+		const threeDaysLater = latestTime() + duration.days(3);
+		increaseTimeTo(threeDaysLater + duration.minutes(1));
+
+		const ret = await unixMarket.finalizeAuctions(
+			adaptToken.address,
+			[tokens[2], tokens[3]],
+			{
+				from: ac.BUYER1,
 				gas: 7000000
 			}
 		).should.be.fulfilled;
 
 		expectEvent.inLogs(ret.logs, 'LogTokenSold');
+	});
 
-		for (let token of tokensToBuy) {
-			const owner = await adaptToken.ownerOf(token);
-			assert.equal(owner, ac.BUYER1, 'owner should be buyer1');
-		}
+	it('should allow the owner to take the unsold tokens back', async function () {
+		const threeDaysLater = latestTime() + duration.days(3);
+		increaseTimeTo(threeDaysLater + duration.minutes(1));
 
-		const marketBalanceAfter = await getBalanceAsync(ac.MARKET_FEES_MSIG);
-		marketBalanceAfter.should.be.bignumber.equal(marketBalanceBefore.plus(marketFee));
+		const ret = await unixMarket.finalizeAuctions(
+			adaptToken.address,
+			[tokens[5], tokens[6]],
+			{
+				from: ac.ADAPT_ADMIN,
+				gas: 7000000
+			}
+		).should.be.fulfilled;
 
-		const ownerBalanceAfter = await getBalanceAsync(ac.ADAPT_ADMIN);
-		ownerBalanceAfter.should.be.bignumber.equal(ownerBalanceBefore.plus(ownerDue));
-
-		console.log(`Market balance: ${await getBalanceAsyncStr(ac.MARKET_FEES_MSIG)}`);
-
-		console.log(`GAS - Buy 8 adapt tokens: ${ret.receipt.gasUsed}`);
+		expectEvent.inLogs(ret.logs, 'LogTokenUnsold');
 	});
 
 	it('watch the market logs', async function () {
@@ -190,4 +222,5 @@ contract('Testing FixedPrice listing - main flow', async function (rpc_accounts)
 			await parseUnixMarketEvent(events[0]);
 		})
 	});
+
 });
