@@ -82,7 +82,7 @@ contract('Market - a simple walk-through the functionality', function (rpc_accou
 
 	it('should be able to create an order on the market', async () => {
 
-		const { logs }  = await market.makeOrders(
+		const { logs }  = await market.listTokens(
 			[ tokens[0], tokens[1], tokens[2] ],
 			[ prices[0], prices[1], prices[2] ],
 			[ reservations[0], reservations[1], reservations[2] ],
@@ -92,7 +92,7 @@ contract('Market - a simple walk-through the functionality', function (rpc_accou
 		let ownerToken1 = await adapt.ownerOf(tokens[0]);
 		assert.equal(ownerToken1, market.address, 'MARKET should tmp own the token');
 
-		await expectEvent.inLogs(logs, 'LogOrdersCreated');
+		await expectEvent.inLogs(logs, 'LogTokensListed');
 	});
 
 	it('should be able to fulfill a valid take request', async () => {
@@ -100,12 +100,12 @@ contract('Market - a simple walk-through the functionality', function (rpc_accou
 		let balanceMarketFees1 = await pGetBalance(ac.MARKET_FEES_MSIG);
 		let balanceAdaptAdmin1 = await pGetBalance(ac.ADAPT_ADMIN);
 
-		const { logs } = await market.takeOrders(
+		const { logs } = await market.buyTokens(
 			[ tokens[0] ],
 			{ from: ac.BUYER1, value: prices[0] }
 		).should.be.fulfilled;
 
-		await expectEvent.inLogs(logs, 'LogOrderAcquired');
+		await expectEvent.inLogs(logs, 'LogTokenSold');
 
 		let ownerToken1 = await adapt.ownerOf(tokens[0]);
 		assert.equal(ownerToken1, ac.BUYER1, 'BUYER1 should now be the owner of token1');
@@ -134,12 +134,12 @@ contract('Market - a simple walk-through the functionality', function (rpc_accou
 		let balanceMarketFees1 = await pGetBalance(ac.MARKET_FEES_MSIG);
 		let balanceAdaptAdmin1 = await pGetBalance(ac.ADAPT_ADMIN);
 
-		const { logs } = await market.takeOrders(
+		const { logs } = await market.buyTokens(
 			[ tokens[1], tokens[2] ],
 			{ from: ac.BUYER1, value: ether(2) }
 		).should.be.fulfilled;
 
-		await expectEvent.inLogs(logs, 'LogOrderAcquired');
+		await expectEvent.inLogs(logs, 'LogTokenSold');
 
 		let ownerToken1 = await adapt.ownerOf(tokens[1]);
 		assert.equal(ownerToken1, ac.BUYER1, 'BUYER1 should now be the owner of token1');
@@ -167,34 +167,34 @@ contract('Market - a simple walk-through the functionality', function (rpc_accou
 	});
 
 	it('should not be able to take order if price is lower than the asked price', async () => {
-		const { logs }  = await market.makeOrders(
+		const { logs }  = await market.listTokens(
 			[ tokens[3] ],
 			[ prices[3] ],
 			[ reservations[3] ],
 			{ from: ac.ADAPT_ADMIN, gas: 7000000 }
 		).should.be.fulfilled;
 
-		await market.takeOrders(
+		await market.buyTokens(
 			[ tokens[3] ],
 			{ from: ac.BUYER1, value: ether(0.99) }
 		).should.be.rejectedWith(EVMRevert);
 
 		const tokenStatus = await market.getOrderStatus(tokens[3]);
-		assert.equal(tokenStatus, 1, 'The order should remain in \'Created\' state');
+		assert.equal(tokenStatus, 1, 'The order should remain in \'Listed\' state');
 	});
 
 	it('should not be able to take order if price is greater than the asked price', async () => {
-		await market.takeOrders(
+		await market.buyTokens(
 			[ tokens[3] ],
 			{ from: ac.BUYER1, value: ether(1.1) }
 		).should.be.rejectedWith(EVMRevert);
 
 		const tokenStatus = await market.getOrderStatus(tokens[3]);
-		assert.equal(tokenStatus, 1, 'The order should remain in \'Created\' state');
+		assert.equal(tokenStatus, 1, 'The order should remain in \'Listed\' state');
 	});
 
 	it('should disallow to publish a token which was sold', async () => {
-		await market.makeOrders(
+		await market.listTokens(
 			[ tokens[0] ],
 			[ ether(1.5) ],
 			[ 0x0 ],
@@ -207,12 +207,12 @@ contract('Market - a simple walk-through the functionality', function (rpc_accou
 		let ownerToken3 = await adapt.ownerOf(tokens[3]);
 		assert.equal(ownerToken3, market.address, 'MARKET should tmp own the token');
 
-		const { logs } = await market.cancelOrders(
+		const { logs } = await market.cancelTokens(
 			[ tokens[3] ],
 			{ from: ac.ADAPT_ADMIN }
 		).should.be.fulfilled;
 
-		await expectEvent.inLogs(logs, 'LogOrdersCancelled');
+		await expectEvent.inLogs(logs, 'LogTokensCancelled');
 
 		ownerToken3 = await adapt.ownerOf(tokens[3]);
 		assert.equal(ownerToken3, ac.ADAPT_ADMIN, 'ADAPT_ADMIN should now own the item');
@@ -220,20 +220,20 @@ contract('Market - a simple walk-through the functionality', function (rpc_accou
 
 	it('should reject taking multiple orders if value is not enough', async () => {
 
-		await market.makeOrders(
+		await market.listTokens(
 			[ tokens[4], tokens[5] ],
 			[ prices[4], prices[5] ],
 			[ reservations[4], reservations[5] ],
 			{ from: ac.ADAPT_ADMIN, gas: 7000000 }
 		).should.be.fulfilled;
 
-		const {logs} = await market.takeOrders(
+		const {logs} = await market.buyTokens(
 			[ tokens[4], tokens[5] ],
 			{ from: ac.BUYER1, value: ether(1.99) }
 		).should.be.rejectedWith(EVMRevert);
 	});
 
-	it('should return the token to the original owner(not the maker) on cancel', async () => {
+	it('should return the token to the original owner(not the seller) on cancel', async () => {
 
 		// approve ac.ACCOUNT3 to make transfers in the account of ac.ADAPT_ADMIN
 		await adapt.setApprovalForAll(
@@ -242,7 +242,7 @@ contract('Market - a simple walk-through the functionality', function (rpc_accou
 			{ from: ac.ADAPT_ADMIN }
 		).should.be.fulfilled;
 
-		await market.makeOrders(
+		await market.listTokens(
 			[ tokens[6] ],
 			[ prices[6] ],
 			[ reservations[6] ],
@@ -252,12 +252,12 @@ contract('Market - a simple walk-through the functionality', function (rpc_accou
 		let ownerToken = await adapt.ownerOf(tokens[6]);
 		assert.equal(ownerToken, market.address, 'MARKET should tmp own the token');
 
-		const { logs } = await market.cancelOrders(
+		const { logs } = await market.cancelTokens(
 			[ tokens[6] ],
 			{ from: ac.ACCOUNT3 , gas: 7000000 }
 		).should.be.fulfilled;
 
-		await expectEvent.inLogs(logs, 'LogOrdersCancelled');
+		await expectEvent.inLogs(logs, 'LogTokensCancelled');
 
 		ownerToken = await adapt.ownerOf(tokens[6]);
 		assert.equal(ownerToken, ac.ADAPT_ADMIN, 'the original owner(ac.ADAPT_ADMIN) own the token');
