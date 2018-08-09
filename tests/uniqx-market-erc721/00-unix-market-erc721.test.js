@@ -74,7 +74,7 @@ contract('Testing FixedPrice listing - main flow', async function (rpc_accounts)
 	});
 
 
-	it('should allwo the market to escrow the adapt tokens', async function () {
+	it('should allow the market to escrow the adapt tokens', async function () {
 		// approve market to transfer all erc721 tokens hold by admin
 		await adaptCollectibles.setApprovalForAll(
 			unixMarket.address,

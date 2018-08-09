@@ -27,11 +27,10 @@ contract UniqxMarketAdapt is NoOwner, Pausable, ReentrancyGuard {
 	}
 
 	struct OrderInfo {
-		uint makePrice;
-		uint makeTime;
-		uint acquirePrice;
 		OrderStatus status;
-		address maker;
+		uint buyPrice;
+		uint listedAt;
+		address seller;
 		address owner;
 	}
 
@@ -75,18 +74,16 @@ contract UniqxMarketAdapt is NoOwner, Pausable, ReentrancyGuard {
 	function getOrderInfo(uint _tokenId) public view
 		returns (
 			OrderStatus _status,
-			uint _makePrice,
-			uint _makeTime,
-			uint _acquirePrice,
-			address _maker
+			uint _buyPrice,
+			uint _listedAt,
+			address _seller
 		)
 	{
 		OrderInfo storage order = orders[_tokenId];
 		_status = order.status;
-		_makePrice = order.makePrice;
-		_makeTime = order.makeTime;
-		_acquirePrice = order.acquirePrice;
-		_maker = order.maker;
+		_buyPrice = order.buyPrice;
+		_listedAt = order.listedAt;
+		_seller = order.seller;
 	}
 
 	function getReservation(uint _tokenId) public view
@@ -137,7 +134,7 @@ contract UniqxMarketAdapt is NoOwner, Pausable, ReentrancyGuard {
 				existingOrder.status == OrderStatus.Cancelled
 			);
 
-			// make sure the maker is approved to sell this item
+			// make sure the seller is approved to sell this item
 			require(isSpenderApproved(msg.sender, tokenIds[i]));
 
 			// market will now escrow the token (owner or seller must approve unix market before listing)
@@ -147,11 +144,10 @@ contract UniqxMarketAdapt is NoOwner, Pausable, ReentrancyGuard {
 
 			OrderInfo memory order = OrderInfo(
 				{
-					makePrice: buyPrices[i],
-					makeTime: now,
-					acquirePrice: 0,
+					buyPrice: buyPrices[i],
+					listedAt: now,
 					status: OrderStatus.Listed,
-					maker: msg.sender,
+					seller: msg.sender,
 					owner: tokenOwner
 				}
 			);
@@ -174,18 +170,23 @@ contract UniqxMarketAdapt is NoOwner, Pausable, ReentrancyGuard {
 	{
 		for(uint i=0; i < tokenIds.length; i++) {
 			OrderInfo storage order = orders[tokenIds[i]];
-			// only the original maker can cancel
-			require(msg.sender == order.maker);
 
-			// token must still be published on the market
+			// token must be listed or reserved
 			require(
 				order.status == OrderStatus.Listed ||
 				order.status == OrderStatus.Reserved
 			);
+
+			// only the owner or the seller can cancel a token
+			require(
+				msg.sender == order.seller ||
+				msg.sender == order.owner
+			);
+
 			// token must still be in temporary custody of the market
 			require(ADAPT_TOKEN.ownerOf(tokenIds[i]) == address(this));
 
-			// transfer back to the original
+			// transfer the token back to the owner
 			ADAPT_TOKEN.transferFrom(address(this), order.owner, tokenIds[i]);
 
 			order.status = OrderStatus.Cancelled;
@@ -203,7 +204,7 @@ contract UniqxMarketAdapt is NoOwner, Pausable, ReentrancyGuard {
 		uint amountLeft = msg.value;
 
 		for(uint i = 0; i < tokenIds.length; i++) {
-			uint amount = orders[tokenIds[i]].makePrice;
+			uint amount = orders[tokenIds[i]].buyPrice;
 			buyTokenInternal(tokenIds[i], amount);
 			amountLeft = amountLeft.sub(amount);
 		}
@@ -225,20 +226,24 @@ contract UniqxMarketAdapt is NoOwner, Pausable, ReentrancyGuard {
 
 		OrderInfo storage order = orders[tokenId];
 
+		// token must be listed or reserved
 		require(
 			order.status == OrderStatus.Listed ||
 			order.status == OrderStatus.Reserved
 		);
 
+		if (order.status == OrderStatus.Reserved && msg.sender != reservations[tokenId]) {
+			require(now > order.listedAt + RESERVATION_TIME);
+		}
+
 		// the amount of ETH forwarded is higher than the make price
-		require(_amount >= order.makePrice);
+		require(_amount >= order.buyPrice);
 
 		// mark the order as acquired
-		order.status 		= OrderStatus.Sold;
-		order.acquirePrice 	= _amount;
+		order.status = OrderStatus.Sold;
 
 		// update metadata before transfer
-		ADAPT_TOKEN.setTokenMetadata(tokenId, now, order.makePrice);
+		ADAPT_TOKEN.setTokenMetadata(tokenId, now, order.buyPrice);
 
 		// really transfer the token to the buyer
 		ADAPT_TOKEN.transferFrom(address(this), msg.sender, tokenId);
@@ -247,9 +252,9 @@ contract UniqxMarketAdapt is NoOwner, Pausable, ReentrancyGuard {
 		uint marketFee = _amount.mul(MARKET_FEE_NUM).div(MARKET_FEE_DEN);
 		MARKET_FEES_MSIG.transfer(marketFee);
 
-		// transfer the amount due to the maker
-		uint makerDue = order.makePrice.sub(marketFee);
-		order.maker.transfer(makerDue);
+		// transfer the amount due to the owner
+		uint ownerDue = order.buyPrice.sub(marketFee);
+		order.owner.transfer(ownerDue);
 
 		emit LogTokenSold(tokenId, msg.sender, _amount, now);
 	}
