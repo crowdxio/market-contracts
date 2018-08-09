@@ -81,19 +81,19 @@ contract('estimate gas - ', function (rpc_accounts) {
 
 		const tokenId = await adapt.tokenByIndex(0);
 
-		let result = await market.takeOrder(tokenId, { from: ac.BUYER1 , value: ether(1.1), gas: 7000000 }).should.be.fulfilled;
+		let result = await market.buyToken(tokenId, { from: ac.BUYER1 , value: ether(1.1), gas: 7000000 }).should.be.fulfilled;
 
 		console.log('Take order completed! Gas used: ' + result.receipt.gasUsed);
 
 		// order status should be Sold
-		const orderStatus = await market.getOrderStatus(tokenId);
-		console.log('Order status: ', JSON.stringify(orderStatus));
-		assert.equal(orderStatus, OrderStatus.Sold, 'The order status should be \'Sold\' now');
+		//const orderStatus = await market.getOrderStatus(tokenId);
+		//console.log('Order status: ', JSON.stringify(orderStatus));
+		//assert.equal(orderStatus, OrderStatus.Sold, 'The order status should be \'Sold\' now');
 
-		const orderInfo = await market.getOrderInfo(tokenId);
-		console.log('order info:', JSON.stringify(orderInfo));
-		orderInfo[3].should.be.bignumber.equal(ether(1.1));
-		orderInfo[4].should.be.bignumber.greaterThan(0);
+		//const orderInfo = await market.getOrderInfo(tokenId);
+		//console.log('order info:', JSON.stringify(orderInfo));
+		//orderInfo[3].should.be.bignumber.equal(ether(1.1));
+		//orderInfo[4].should.be.bignumber.greaterThan(0);
 
 		// BUYER1 should own the token now
 		const owner = await adapt.ownerOf(tokenId);

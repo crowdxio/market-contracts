@@ -127,11 +127,11 @@ contract UniqxMarketAdapt is NoOwner, Pausable, ReentrancyGuard {
 
 			require(buyPrices[i] >= MIN_DONATION);
 
-			// token must not be listed on the market
+			// make sure the token is not listed already
 			OrderInfo storage existingOrder = orders[tokenIds[i]];
 			require(
-				existingOrder.status == OrderStatus.Unknown ||
-				existingOrder.status == OrderStatus.Cancelled
+				existingOrder.status != OrderStatus.Listed &&
+				existingOrder.status != OrderStatus.Reserved
 			);
 
 			// make sure the seller is approved to sell this item
@@ -189,7 +189,7 @@ contract UniqxMarketAdapt is NoOwner, Pausable, ReentrancyGuard {
 			// transfer the token back to the owner
 			ADAPT_TOKEN.transferFrom(address(this), order.owner, tokenIds[i]);
 
-			order.status = OrderStatus.Cancelled;
+			delete orders[tokenIds[i]];
 		}
 
 		emit LogTokensCancelled(tokenIds, now);
@@ -239,9 +239,6 @@ contract UniqxMarketAdapt is NoOwner, Pausable, ReentrancyGuard {
 		// the amount of ETH forwarded is higher than the make price
 		require(_amount >= order.buyPrice);
 
-		// mark the order as acquired
-		order.status = OrderStatus.Sold;
-
 		// update metadata before transfer
 		ADAPT_TOKEN.setTokenMetadata(tokenId, now, order.buyPrice);
 
@@ -255,6 +252,8 @@ contract UniqxMarketAdapt is NoOwner, Pausable, ReentrancyGuard {
 		// transfer the amount due to the owner
 		uint ownerDue = order.buyPrice.sub(marketFee);
 		order.owner.transfer(ownerDue);
+
+		delete orders[tokenId];
 
 		emit LogTokenSold(tokenId, msg.sender, _amount, now);
 	}
