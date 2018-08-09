@@ -83,14 +83,14 @@ async function parseUnixMarketEvent(event) {
 			const token         = parameters[0].value;
 			const tokenIds      = parameters[1].value;
 			const listTime      = parameters[2].value;
-			const owner         = parameters[3].value;
+			const owners        = parameters[3].value;
 			const seller        = parameters[4].value;
 			const buyPrices     = parameters[5].value;
 
 			const tokensCount = tokenIds.length;
 			for(let i = 0; i < tokensCount; i++) {
 				const tokenId = new BigNumber(tokenIds[i]);
-				console.log(`Token Listed FixedPrice: token=${token}, tokenId=0x${tokenId.toString(16)}, listedAt=${moment.unix(listTime).utc().format()}, owner=${owner}, seller=${seller}, buyPrices=${buyPrices[i]}`);
+				console.log(`Token Listed FixedPrice: token=${token}, tokenId=0x${tokenId.toString(16)}, listedAt=${moment.unix(listTime).utc().format()}, owner=${owners[i]}, seller=${seller}, buyPrices=${buyPrices[i]}`);
 			}
 			break;
 		}
@@ -99,7 +99,7 @@ async function parseUnixMarketEvent(event) {
 			const token         = parameters[0].value;
 			const tokenIds      = parameters[1].value;
 			const listTime      = parameters[2].value;
-			const owner         = parameters[3].value;
+			const owners        = parameters[3].value;
 			const seller        = parameters[4].value;
 			const buyPrices     = parameters[5].value;
 			const endPrices     = parameters[6].value;
@@ -108,7 +108,7 @@ async function parseUnixMarketEvent(event) {
 			const tokensCount = tokenIds.length;
 			for(let i = 0; i < tokensCount; i++) {
 				const tokenId = new BigNumber(tokenIds[i]);
-				console.log(`Token Listed Auction: token=${token}, tokenId=0x${tokenId.toString(16)}, listedAt=${moment.unix(listTime).utc().format()}, owner=${owner}, seller=${seller}, buyPrices=${buyPrices[i]}, endPrice=${endPrices[i]}, endTime=${moment.unix(endTimes[i]).utc().format()}`);
+				console.log(`Token Listed Auction: token=${token}, tokenId=0x${tokenId.toString(16)}, listedAt=${moment.unix(listTime).utc().format()}, owner=${owners[i]}, seller=${seller}, buyPrices=${buyPrices[i]}, endPrice=${endPrices[i]}, endTime=${moment.unix(endTimes[i]).utc().format()}`);
 			}
 			break;
 
