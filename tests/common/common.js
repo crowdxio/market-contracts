@@ -70,6 +70,58 @@ async function parseAdaptTokenEvent(event) {
 	}
 }
 
+async function parseAdaptMarketEvent(event) {
+
+	// console.log(JSON.stringify(event, null, '\t'));
+
+	const name = event['name'];
+	const parameters = event['events']; // it's called events for some reason...
+
+	switch (name) {
+		case 'LogTokensListed': {
+
+			const tokenIds      = parameters[0].value;
+			const buyPrices     = parameters[1].value;
+			const reservations  = parameters[2].value;
+			const owners        = parameters[3].value;
+			const seller        = parameters[4].value;
+			const listTime      = parameters[5].value;
+
+			const tokensCount = tokenIds.length;
+			for(let i = 0; i < tokensCount; i++) {
+				const tokenId = new BigNumber(tokenIds[i]);
+				console.log(`Token Listed: tokenId=${tokenId.toString(10)}, buyPrices=${buyPrices[i]}, reservation=${reservations[i]}, owner=${owners[i]}, seller=${seller}, listedAt=${moment.unix(listTime).utc().format()}`);
+			}
+			break;
+		}
+
+		case 'LogTokensCancelled': {
+			const tokenIds      = parameters[0].value;
+			const cancelTime    = parameters[1].value;
+
+			const tokensCount = tokenIds.length;
+			for(let i = 0; i < tokensCount; i++) {
+				const tokenId = new BigNumber(tokenIds[i]);
+				console.log(`Token Canceled: tokenId=${tokenId.toString(10)}, cancelledAt=${moment.unix(cancelTime).utc().format()}`);
+			}
+			break;
+		}
+
+		case 'LogTokenSold': {
+			const tokenId       = new BigNumber(parameters[0].value);
+			const buyer         = parameters[1].value;
+			const price         = parameters[2].value;
+			const soldTime      = parameters[3].value;
+			console.log(`Token Sold: tokenId=${tokenId.toString(10)}, buyer=${buyer}, price=${price}, soldAt=${moment.unix(soldTime).utc().format()}`);
+			break;
+		}
+
+		default:
+			console.log(`Skipping event ${name}...`);
+	}
+}
+
+
 async function parseUnixMarketEvent(event) {
 
 	//console.log(JSON.stringify(event, null, '\t'));
@@ -114,7 +166,7 @@ async function parseUnixMarketEvent(event) {
 
 		}
 
-		case 'LogTokensCanceled': {
+		case 'LogTokensCancelled': {
 			const token         = parameters[0].value;
 			const tokenIds      = parameters[1].value;
 			const cancelTime    = parameters[2].value;
@@ -168,5 +220,6 @@ module.exports = {
 	getBalanceAsync: getBalanceAsync,
 	getBalanceAsyncStr: getBalanceAsyncStr,
 	parseAdaptTokenEvent: parseAdaptTokenEvent,
-	parseUnixMarketEvent: parseUnixMarketEvent
+	parseUnixMarketEvent: parseUnixMarketEvent,
+	parseAdaptMarketEvent: parseAdaptMarketEvent
 };

@@ -1,11 +1,12 @@
 import {
-	accounts, assert, should, BigNumber, Bluebird
+	accounts, assert, should, BigNumber, Bluebird, parseAdaptTokenEvent, parseUnixMarketEvent, parseAdaptMarketEvent
 } from '../common/common';
 import ether from "../helpers/ether";
 import expectEvent from "../helpers/expectEvent";
 import EVMRevert from "../../zeppelin/test/helpers/EVMRevert";
 import latestTime from '../../zeppelin/test/helpers/latestTime';
 import { duration, increaseTimeTo } from '../../zeppelin/test/helpers/increaseTime';
+import * as abiDecoder from 'abi-decoder';
 
 const UniqxMarketAdapt = artifacts.require("../../../contracts/UniqxMarketAdapt.sol");
 const AdaptToken = artifacts.require("../../../adapt/contracts/AdaptCollectibles.sol");
@@ -43,6 +44,29 @@ contract('Adapt Market - test logging', function (rpc_accounts) {
 		console.log("UNIQX successfully deployed at address " + market.address);
 	});
 
+	it('should watch and parse the the logs', async function () {
+
+		const MarketAdaptJson = require('../../build/contracts/UniqxMarketAdapt.json');
+		abiDecoder.addABI(MarketAdaptJson['abi']);
+
+		const marketFilter = web3.eth.filter(
+			{
+				fromBlock: 1,
+				toBlock: 'latest',
+				address: market.address,
+			}
+		);
+
+		marketFilter.watch(async (error, result ) => {
+			if (error) {
+				console.log(error);
+				return;
+			}
+
+			const events = abiDecoder.decodeLogs([result]);
+			await parseAdaptMarketEvent(events[0]);
+		});
+	});
 
 	it('should be able to mint some tokens in ADAPT', async () => {
 
@@ -101,7 +125,6 @@ contract('Adapt Market - test logging', function (rpc_accounts) {
 			{ from: ac.ADAPT_ADMIN, gas: 7000000 }
 		).should.be.fulfilled;
 	});
-
 
 	it('BUYER1 should be able to donate for a token', async () => {
 		await market.buyToken(

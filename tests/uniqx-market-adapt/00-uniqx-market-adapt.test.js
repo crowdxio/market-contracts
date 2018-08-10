@@ -100,7 +100,6 @@ contract('estimate gas - ', function (rpc_accounts) {
 		console.log('owner: ', owner);
 		console.log('BUYER1: ', ac.BUYER1);
 		assert.equal(owner, ac.BUYER1, 'BUYER1 should own the token now');
-
 	});
 });
 
