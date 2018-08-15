@@ -11,6 +11,7 @@ const UniqxMarketERC721 = artifacts.require('../../contracts/UniqxMarketERC721.s
 
 const AdaptCollectiblesJson = require("../../build/contracts/AdaptCollectibles.json");
 const UniqxMarketERC721Json = require('../../build/contracts/UniqxMarketERC721.json');
+// MC: you don't need to import the JSON's explicitly, you can get them as AdaptCollectibles.abi
 
 contract('Testing FixedPrice listing - main flow', async function (rpc_accounts) {
 
@@ -37,6 +38,8 @@ contract('Testing FixedPrice listing - main flow', async function (rpc_accounts)
 
 		console.log(`The market contract has been successfully deployed at ${unixMarket.address}`);
 
+		// MC: we should change this to the generic ERC721 contract instead of ADAPT
+		// MC: this needs to work with any contract and this is the cleanest way to enforce
 		adaptCollectibles = await AdaptCollectibles.new(
 			ac.ADAPT_OWNER,
 			ac.ADAPT_ADMIN,
@@ -69,6 +72,9 @@ contract('Testing FixedPrice listing - main flow', async function (rpc_accounts)
 		).should.be.fulfilled;
 
 		expectEvent.inLogs(ret.logs, 'LogTokenRegistered');
+
+		// MC: we should also have a check if the token is actually stored as registered
+		// MC: the presence of the event does not guarantee registration
 
 		console.log(`GAS - Register Token: ${ret.receipt.gasUsed}`);
 	});
@@ -106,6 +112,7 @@ contract('Testing FixedPrice listing - main flow', async function (rpc_accounts)
 
 		console.log(`GAS - List ${tokensCount} adapt tokens fixed price: ${rec.receipt.gasUsed}`);
 
+		// MC: we should check here for each and every order the exact details by reading data back
 		expectEvent.inLogs(rec.logs, 'LogTokensListedFixedPrice');
 	});
 
@@ -124,6 +131,7 @@ contract('Testing FixedPrice listing - main flow', async function (rpc_accounts)
 		expectEvent.inLogs(rec.logs, 'LogTokensCanceled');
 
 		console.log(`Market balance: ${await getBalanceAsyncStr(ac.MARKET_FEES_MSIG)}`);
+		// MC: if you want to check that a balance has chanced, do so by comparison not printing only
 	});
 
 	it('should be able to buy 8 tokens', async () => {
@@ -167,15 +175,14 @@ contract('Testing FixedPrice listing - main flow', async function (rpc_accounts)
 		ownerBalanceAfter.should.be.bignumber.equal(ownerBalanceBefore.plus(ownerDue));
 
 		console.log(`Market balance: ${await getBalanceAsyncStr(ac.MARKET_FEES_MSIG)}`);
-
 		console.log(`GAS - Buy 8 adapt tokens: ${ret.receipt.gasUsed}`);
 	});
 
-	it('should watch and parse the the logs', async function () {
+	it('should watch and parse the logs', async function () {
 
 		// market
-
 		abiDecoder.addABI(UniqxMarketERC721Json['abi']);
+		// MC: is it worth having the same instance of the abiDecoder according to the problems we discovered on it ?
 
 		const marketFilter = web3.eth.filter(
 			{
@@ -192,12 +199,14 @@ contract('Testing FixedPrice listing - main flow', async function (rpc_accounts)
 			}
 
 			const events = abiDecoder.decodeLogs([result]);
+
+			// MC: this parsing is very nice, but we need to enforce exact values
+			// MC: it is not enough to visually recognise that they are printed
+			// MC: I suppose we'll do this for each action and parse its events independently
 			await parseUnixMarketEvent(events[0]);
 		});
 
-
 		// adapt
-
 		abiDecoder.addABI(AdaptCollectiblesJson['abi']);
 
 		const adaptCollectiblesFilter = web3.eth.filter(

@@ -41,6 +41,7 @@ contract('Testing Auction listing - main flow', async function (rpc_accounts) {
 
 		console.log(`The market contract has been successfully deployed at ${unixMarket.address}`);
 
+		// MC: let's change to the generic ERC21 token instead of ADAPT
 		adaptCollectibles = await AdaptCollectibles.new(
 			ac.ADAPT_OWNER,
 			ac.ADAPT_ADMIN,
@@ -114,6 +115,7 @@ contract('Testing Auction listing - main flow', async function (rpc_accounts) {
 
 		console.log(`GAS - List ${tokensCount} adapt tokens fixed price: ${rec.receipt.gasUsed}`);
 
+		// MC: should check the details of the orders here; both content of logs and content of data
 		expectEvent.inLogs(rec.logs, 'LogTokensListedAuction');
 	});
 
@@ -129,8 +131,9 @@ contract('Testing Auction listing - main flow', async function (rpc_accounts) {
 
 		console.log(`GAS - Cancel 2 adapt tokens: ${rec.receipt.gasUsed}`);
 
+		// MC: should check insistence of orders and content of logs
 		expectEvent.inLogs(rec.logs, 'LogTokensCanceled');
-
+		// MC: should enforce the change in balance with an assert
 		console.log(`Market balance: ${await getBalanceAsyncStr(ac.MARKET_FEES_MSIG)}`);
 	});
 
@@ -148,7 +151,7 @@ contract('Testing Auction listing - main flow', async function (rpc_accounts) {
 		).should.be.fulfilled;
 
 		expectEvent.inLogs(ret.logs, 'LogBidPlaced');
-
+		// MC: should check content of orders and content of logs
 		console.log(`GAS - Bid 2 adapt tokens: ${ret.receipt.gasUsed}`);
 	});
 
@@ -165,7 +168,7 @@ contract('Testing Auction listing - main flow', async function (rpc_accounts) {
 		).should.be.fulfilled;
 
 		expectEvent.inLogs(ret.logs, 'LogBidPlaced');
-
+		// MC: should check content of orders and content of logs
 		console.log(`GAS - Bid 2 adapt tokens: ${ret.receipt.gasUsed}`);
 	});
 
@@ -184,7 +187,7 @@ contract('Testing Auction listing - main flow', async function (rpc_accounts) {
 
 		expectEvent.inLogs(ret.logs, 'LogBidPlaced');
 		expectEvent.inLogs(ret.logs, 'LogTokenSold');
-
+		// MC: should check content of orders and content of logs
 		console.log(`GAS - Bid 2 adapt tokens: ${ret.receipt.gasUsed}`);
 	});
 
@@ -202,6 +205,7 @@ contract('Testing Auction listing - main flow', async function (rpc_accounts) {
 			}
 		).should.be.fulfilled;
 
+		// MC: should check content of orders and content of logs
 		expectEvent.inLogs(ret.logs, 'LogTokenSold');
 	});
 
@@ -217,6 +221,7 @@ contract('Testing Auction listing - main flow', async function (rpc_accounts) {
 			}
 		).should.be.fulfilled;
 
+		// MC: should check content of orders and content of logs
 		expectEvent.inLogs(ret.logs, 'LogTokenSold');
 	});
 
@@ -233,6 +238,7 @@ contract('Testing Auction listing - main flow', async function (rpc_accounts) {
 			}
 		).should.be.fulfilled;
 
+		// MC: should check content of orders and content of logs
 		expectEvent.inLogs(ret.logs, 'LogTokenUnsold');
 	});
 
