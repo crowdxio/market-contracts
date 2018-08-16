@@ -274,6 +274,7 @@ contract UniqxMarketERC721 is NoOwner, Pausable, ReentrancyGuard {
 
 		require(tokenContract.registered, "Token must be registered");
 		require(tokenContract.ordersEnabled, "Orders must be enabled for this token");
+		require(tokenIds.length > 0, "Array must have at least one entry");
 		require(tokenIds.length == buyPrices.length, "Array lengths must match");
 
 		for(uint i = 0; i < tokenIds.length; i++) {
@@ -332,6 +333,7 @@ contract UniqxMarketERC721 is NoOwner, Pausable, ReentrancyGuard {
 
 		require(tokenContract.registered, "Token must be registered");
 		require(tokenContract.ordersEnabled, "Orders must be enabled for this token");
+		require(tokenIds.length > 0, "Array must have at least one entry");
 		require(tokenIds.length == buyPrices.length, "Array lengths must match");
 		require(tokenIds.length == startPrices.length, "Array lengths must match");
 		require(tokenIds.length == endTimes.length, "Array lengths must match");
@@ -391,6 +393,7 @@ contract UniqxMarketERC721 is NoOwner, Pausable, ReentrancyGuard {
 		ERC721Token tokenInstance = ERC721Token(token);
 
 		require(tokenContract.registered, "Token must be registered");
+		require(tokenIds.length > 0, "Array must have at least one entry");
 
 		uint ordersAmount = 0;
 		for(uint i = 0; i < tokenIds.length; i++) {
@@ -438,6 +441,7 @@ contract UniqxMarketERC721 is NoOwner, Pausable, ReentrancyGuard {
 		ERC721Token tokenInstance = ERC721Token(token);
 
 		require(tokenContract.registered, "Token must be registered");
+		require(tokenIds.length > 0, "Array must have at least one entry");
 		require(tokenIds.length == bids.length, "Array lengths must match");
 
 		uint bidRunningSum = 0;
@@ -503,6 +507,7 @@ contract UniqxMarketERC721 is NoOwner, Pausable, ReentrancyGuard {
 		ERC721Token tokenInstance = ERC721Token(token);
 
 		require(tokenContract.registered, "Token must be registered");
+		require(tokenIds.length > 0, "Array must have at least one entry");
 
 		for(uint i = 0; i < tokenIds.length; i++) {
 
@@ -547,6 +552,7 @@ contract UniqxMarketERC721 is NoOwner, Pausable, ReentrancyGuard {
 		ERC721Token tokenInstance = ERC721Token(token);
 
 		require(tokenContract.registered, "Token must be registered");
+		require(tokenIds.length > 0, "Array must have at least one entry");
 
 		for(uint i = 0; i < tokenIds.length; i++) {
 
