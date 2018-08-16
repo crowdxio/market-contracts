@@ -70,7 +70,7 @@ async function parseAdaptTokenEvent(event) {
 	}
 }
 
-async function parseAdaptMarketEvent(event) {
+async function parseAdaptMarketEvent(event, timestamp) {
 
 	// console.log(JSON.stringify(event, null, '\t'));
 
@@ -85,24 +85,22 @@ async function parseAdaptMarketEvent(event) {
 			const reservations  = parameters[2].value;
 			const owners        = parameters[3].value;
 			const seller        = parameters[4].value;
-			const listTime      = parameters[5].value;
 
 			const tokensCount = tokenIds.length;
 			for(let i = 0; i < tokensCount; i++) {
 				const tokenId = new BigNumber(tokenIds[i], 10).toString(16);
-				console.log(`Token Listed: tokenId=0x${tokenId}, buyPrices=${buyPrices[i]}, reservation=${reservations[i]}, owner=${owners[i]}, seller=${seller}, listedAt=${moment.unix(listTime).utc().format()}`);
+				console.log(`Token Listed: tokenId=0x${tokenId}, buyPrices=${buyPrices[i]}, reservation=${reservations[i]}, owner=${owners[i]}, seller=${seller}, listedAt=${moment.unix(timestamp).utc().format()}`);
 			}
 			break;
 		}
 
 		case 'LogTokensCancelled': {
 			const tokenIds      = parameters[0].value;
-			const cancelTime    = parameters[1].value;
 
 			const tokensCount = tokenIds.length;
 			for(let i = 0; i < tokensCount; i++) {
 				const tokenId = new BigNumber(tokenIds[i], 10).toString(16);
-				console.log(`Token Canceled: tokenId=0x${tokenId}, cancelledAt=${moment.unix(cancelTime).utc().format()}`);
+				console.log(`Token Canceled: tokenId=0x${tokenId}, cancelledAt=${moment.unix(timestamp).utc().format()}`);
 			}
 			break;
 		}
@@ -111,8 +109,7 @@ async function parseAdaptMarketEvent(event) {
 			const tokenId       = new BigNumber(parameters[0].value, 10).toString(16);
 			const buyer         = parameters[1].value;
 			const price         = parameters[2].value;
-			const soldTime      = parameters[3].value;
-			console.log(`Token Sold: tokenId=0x${tokenId}, buyer=${buyer}, price=${price}, soldAt=${moment.unix(soldTime).utc().format()}`);
+			console.log(`Token Sold: tokenId=0x${tokenId}, buyer=${buyer}, price=${price}, soldAt=${moment.unix(timestamp).utc().format()}`);
 			break;
 		}
 

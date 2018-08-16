@@ -70,9 +70,10 @@ contract('Testing Auction listing - main flow', async function (rpc_accounts) {
 				console.log(error);
 				return;
 			}
+			const blockTimestamp = await web3.eth.getBlock(result['blockNumber']).timestamp;
 
 			const events = abiDecoder.decodeLogs([result]);
-			await parseUnixMarketEvent(events[0]);
+			await parseUnixMarketEvent(events[0], blockTimestamp);
 		});
 
 

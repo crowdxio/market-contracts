@@ -63,8 +63,9 @@ contract('Adapt Market - test logging', function (rpc_accounts) {
 				return;
 			}
 
+			const blockTimestamp = await web3.eth.getBlock(result['blockNumber']).timestamp;
 			const events = abiDecoder.decodeLogs([result]);
-			await parseAdaptMarketEvent(events[0]);
+			await parseAdaptMarketEvent(events[0], blockTimestamp);
 		});
 	});
 
