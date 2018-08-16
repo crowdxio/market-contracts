@@ -66,7 +66,9 @@ contract UniqxMarketERC721 is NoOwner, Pausable, ReentrancyGuard {
 		uint[] tokenIds,
 
 		// common
-		uint listedAt, // MC: why do we still have this? Can't we get it from the block.timestamp of the event ?
+		// MC: why do we still have this? Can't we get it from the block.timestamp of the event ?
+		// IM: I don't get the block timestamp when filtering/watching logs, I only get the block number
+		uint listedAt,
 		address[] owners,
 		address seller,
 		uint[] buyPrices
@@ -78,7 +80,7 @@ contract UniqxMarketERC721 is NoOwner, Pausable, ReentrancyGuard {
 		uint[] tokenIds,
 
 		// common
-		uint listedAt,// MC: why do we still have this? Can't we get it from the block.timestamp of the event ?
+		uint listedAt,
 		address[] owners,
 		address seller,
 		uint[] buyPrices,
@@ -88,7 +90,6 @@ contract UniqxMarketERC721 is NoOwner, Pausable, ReentrancyGuard {
 		uint[] endTimes
 	);
 
-	// MC: same comment about all the timestamps in the next lines, do we need them ?
 	event LogBidPlaced(address token, uint tokenId, address bidder, uint bid, uint placedAt);
 	event LogTokenSold(address token, uint tokenId, address buyer, uint price, uint soldAt);
 	event LogTokensCancelled(address token, uint[] tokenIds, uint cancelledAt);
@@ -374,7 +375,7 @@ contract UniqxMarketERC721 is NoOwner, Pausable, ReentrancyGuard {
 		emit LogTokensListedAuction(
 			token,
 			tokenIds,
-			now, // MC: let's remove this
+			now,
 			owners,
 			msg.sender,
 			buyPrices,
@@ -420,13 +421,8 @@ contract UniqxMarketERC721 is NoOwner, Pausable, ReentrancyGuard {
 			// transfer token to buyer
 			tokenInstance.transferFrom(address(this), msg.sender, tokenIds[i]);
 
-			// mark the order as sold
-			// MC: is there any point is doing these if we are deleting the entire data structure at the end ?
-			// MC: we can put the values directly in the event below
-			order.status = OrderStatus.Sold;
-			order.buyer = msg.sender;
+			emit LogTokenSold(token, tokenIds[i], msg.sender, order.buyPrice, now);
 
-			emit LogTokenSold(token, tokenIds[i], order.buyer, order.buyPrice, now);
 			delete tokenContract.orders[tokenIds[i]];
 		}
 
@@ -491,9 +487,8 @@ contract UniqxMarketERC721 is NoOwner, Pausable, ReentrancyGuard {
 				// transfer token to buyer which is the same with sender and buyer
 				tokenInstance.transferFrom(address(this), msg.sender, tokenIds[i]);
 
-				// mark the order as sold
-				order.status = OrderStatus.Sold; // MC: no need to set this anymore, we are deleting
 				emit LogTokenSold(token, tokenIds[i], order.buyer, order.highestBid, now);
+
 				delete tokenContract.orders[tokenIds[i]];
 			}
 		}
@@ -539,9 +534,6 @@ contract UniqxMarketERC721 is NoOwner, Pausable, ReentrancyGuard {
 			// transfer the token back to the owner
 			tokenInstance.transferFrom(address(this), order.owner, tokenIds[i]);
 
-			// mark the order as cancelled
-			// MC: is it worth setting this anymore ?
-			order.status = OrderStatus.Cancelled;
 			delete tokenContract.orders[tokenIds[i]];
 		}
 
@@ -585,8 +577,6 @@ contract UniqxMarketERC721 is NoOwner, Pausable, ReentrancyGuard {
 				// transfer token to the highest bidder
 				tokenInstance.transferFrom(address(this), order.buyer, tokenIds[i]);
 
-				// mark the order as sold
-				order.status = OrderStatus.Sold;
 				emit LogTokenSold(token, tokenIds[i], order.buyer, order.highestBid, now);
 
 			} else {
@@ -596,8 +586,6 @@ contract UniqxMarketERC721 is NoOwner, Pausable, ReentrancyGuard {
 				// transfer the token back to the owner
 				tokenInstance.transferFrom(address(this), order.owner, tokenIds[i]);
 
-				// mark the order as unsold
-				order.status = OrderStatus.Unsold;
 				emit LogTokenUnsold(token, tokenIds[i], now);
 			}
 
