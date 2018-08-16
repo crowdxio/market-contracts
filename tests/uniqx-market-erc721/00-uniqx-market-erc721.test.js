@@ -69,12 +69,16 @@ contract('Testing FixedPrice listing - main flow', async function (rpc_accounts)
 				return;
 			}
 
+
 			const events = abiDecoder.decodeLogs([result]);
+
+			const blockTimestamp = await web3.eth.getBlock(result['blockNumber']).timestamp;
+
 
 			// MC: this parsing is very nice, but we need to enforce exact values
 			// MC: it is not enough to visually recognise that they are printed
 			// MC: I suppose we'll do this for each action and parse its events independently
-			await parseUnixMarketEvent(events[0]);
+			await parseUnixMarketEvent(events[0], blockTimestamp);
 		});
 
 		// adapt

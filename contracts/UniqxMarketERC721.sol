@@ -66,9 +66,6 @@ contract UniqxMarketERC721 is NoOwner, Pausable, ReentrancyGuard {
 		uint[] tokenIds,
 
 		// common
-		// MC: why do we still have this? Can't we get it from the block.timestamp of the event ?
-		// IM: I don't get the block timestamp when filtering/watching logs, I only get the block number
-		uint listedAt,
 		address[] owners,
 		address seller,
 		uint[] buyPrices
@@ -80,7 +77,6 @@ contract UniqxMarketERC721 is NoOwner, Pausable, ReentrancyGuard {
 		uint[] tokenIds,
 
 		// common
-		uint listedAt,
 		address[] owners,
 		address seller,
 		uint[] buyPrices,
@@ -90,10 +86,10 @@ contract UniqxMarketERC721 is NoOwner, Pausable, ReentrancyGuard {
 		uint[] endTimes
 	);
 
-	event LogBidPlaced(address token, uint tokenId, address bidder, uint bid, uint placedAt);
-	event LogTokenSold(address token, uint tokenId, address buyer, uint price, uint soldAt);
-	event LogTokensCancelled(address token, uint[] tokenIds, uint cancelledAt);
-	event LogTokenUnsold(address token, uint tokenId, uint unsoldAt);
+	event LogBidPlaced(address token, uint tokenId, address bidder, uint bid);
+	event LogTokenSold(address token, uint tokenId, address buyer, uint price);
+	event LogTokensCancelled(address token, uint[] tokenIds);
+	event LogTokenUnsold(address token, uint tokenId);
 
 	modifier whenOrdersEnabled() {
 		require(ORDERS_ENABLED, "Orders must be enabled");
@@ -312,7 +308,6 @@ contract UniqxMarketERC721 is NoOwner, Pausable, ReentrancyGuard {
 		emit LogTokensListedFixedPrice(
 			token,
 			tokenIds,
-			now,
 			owners,
 			msg.sender,
 			buyPrices
@@ -375,7 +370,6 @@ contract UniqxMarketERC721 is NoOwner, Pausable, ReentrancyGuard {
 		emit LogTokensListedAuction(
 			token,
 			tokenIds,
-			now,
 			owners,
 			msg.sender,
 			buyPrices,
@@ -421,7 +415,7 @@ contract UniqxMarketERC721 is NoOwner, Pausable, ReentrancyGuard {
 			// transfer token to buyer
 			tokenInstance.transferFrom(address(this), msg.sender, tokenIds[i]);
 
-			emit LogTokenSold(token, tokenIds[i], msg.sender, order.buyPrice, now);
+			emit LogTokenSold(token, tokenIds[i], msg.sender, order.buyPrice);
 
 			delete tokenContract.orders[tokenIds[i]];
 		}
@@ -469,7 +463,7 @@ contract UniqxMarketERC721 is NoOwner, Pausable, ReentrancyGuard {
 			order.buyer = msg.sender;
 			bidRunningSum += bids[i];
 
-			emit LogBidPlaced(token, tokenIds[i], order.buyer, order.highestBid, now);
+			emit LogBidPlaced(token, tokenIds[i], order.buyer, order.highestBid);
 
 			// buy it now?
 			// MC: bids[i] can only be == to the order.buyPrice according to the condition at the end of the function
@@ -487,7 +481,7 @@ contract UniqxMarketERC721 is NoOwner, Pausable, ReentrancyGuard {
 				// transfer token to buyer which is the same with sender and buyer
 				tokenInstance.transferFrom(address(this), msg.sender, tokenIds[i]);
 
-				emit LogTokenSold(token, tokenIds[i], order.buyer, order.highestBid, now);
+				emit LogTokenSold(token, tokenIds[i], order.buyer, order.highestBid);
 
 				delete tokenContract.orders[tokenIds[i]];
 			}
@@ -537,7 +531,7 @@ contract UniqxMarketERC721 is NoOwner, Pausable, ReentrancyGuard {
 			delete tokenContract.orders[tokenIds[i]];
 		}
 
-		emit LogTokensCancelled(token, tokenIds, now);
+		emit LogTokensCancelled(token, tokenIds);
 	}
 
 	// this will move the auctions into final states (Sold/Unsold)
@@ -577,7 +571,7 @@ contract UniqxMarketERC721 is NoOwner, Pausable, ReentrancyGuard {
 				// transfer token to the highest bidder
 				tokenInstance.transferFrom(address(this), order.buyer, tokenIds[i]);
 
-				emit LogTokenSold(token, tokenIds[i], order.buyer, order.highestBid, now);
+				emit LogTokenSold(token, tokenIds[i], order.buyer, order.highestBid);
 
 			} else {
 
@@ -586,7 +580,7 @@ contract UniqxMarketERC721 is NoOwner, Pausable, ReentrancyGuard {
 				// transfer the token back to the owner
 				tokenInstance.transferFrom(address(this), order.owner, tokenIds[i]);
 
-				emit LogTokenUnsold(token, tokenIds[i], now);
+				emit LogTokenUnsold(token, tokenIds[i]);
 			}
 
 			delete tokenContract.orders[tokenIds[i]];
