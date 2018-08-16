@@ -49,6 +49,56 @@ contract('Testing FixedPrice listing - main flow', async function (rpc_accounts)
 		console.log(`The adapt token has been successfully deployed at ${adaptCollectibles.address}`);
 	});
 
+	it('should watch and parse the logs', async function () {
+
+		// market
+		abiDecoder.addABI(UniqxMarketERC721Json['abi']);
+		// MC: is it worth having the same instance of the abiDecoder according to the problems we discovered on it ?
+
+		const marketFilter = web3.eth.filter(
+			{
+				fromBlock: 1,
+				toBlock: 'latest',
+				address: unixMarket.address,
+			}
+		);
+
+		marketFilter.watch(async (error, result ) => {
+			if (error) {
+				console.log(error);
+				return;
+			}
+
+			const events = abiDecoder.decodeLogs([result]);
+
+			// MC: this parsing is very nice, but we need to enforce exact values
+			// MC: it is not enough to visually recognise that they are printed
+			// MC: I suppose we'll do this for each action and parse its events independently
+			await parseUnixMarketEvent(events[0]);
+		});
+
+		// adapt
+		abiDecoder.addABI(AdaptCollectiblesJson['abi']);
+
+		const adaptCollectiblesFilter = web3.eth.filter(
+			{
+				fromBlock: 1,
+				toBlock: 'latest',
+				address: adaptCollectibles.address,
+			}
+		);
+
+		adaptCollectiblesFilter.watch(async (error, result ) => {
+			if (error) {
+				console.log(error);
+				return;
+			}
+
+			const events = abiDecoder.decodeLogs([result]);
+			await parseAdaptTokenEvent(events[0]);
+		});
+	});
+
 	it('should mint some test tokens', async function () {
 		const ret = await adaptCollectibles.massMint(
 			ac.ADAPT_ADMIN,
@@ -128,7 +178,7 @@ contract('Testing FixedPrice listing - main flow', async function (rpc_accounts)
 
 		console.log(`GAS - Cancel 2 adapt tokens: ${rec.receipt.gasUsed}`);
 
-		expectEvent.inLogs(rec.logs, 'LogTokensCanceled');
+		expectEvent.inLogs(rec.logs, 'LogTokensCancelled');
 
 		console.log(`Market balance: ${await getBalanceAsyncStr(ac.MARKET_FEES_MSIG)}`);
 		// MC: if you want to check that a balance has chanced, do so by comparison not printing only
@@ -176,55 +226,5 @@ contract('Testing FixedPrice listing - main flow', async function (rpc_accounts)
 
 		console.log(`Market balance: ${await getBalanceAsyncStr(ac.MARKET_FEES_MSIG)}`);
 		console.log(`GAS - Buy 8 adapt tokens: ${ret.receipt.gasUsed}`);
-	});
-
-	it('should watch and parse the logs', async function () {
-
-		// market
-		abiDecoder.addABI(UniqxMarketERC721Json['abi']);
-		// MC: is it worth having the same instance of the abiDecoder according to the problems we discovered on it ?
-
-		const marketFilter = web3.eth.filter(
-			{
-				fromBlock: 1,
-				toBlock: 'latest',
-				address: unixMarket.address,
-			}
-		);
-
-		marketFilter.watch(async (error, result ) => {
-			if (error) {
-				console.log(error);
-				return;
-			}
-
-			const events = abiDecoder.decodeLogs([result]);
-
-			// MC: this parsing is very nice, but we need to enforce exact values
-			// MC: it is not enough to visually recognise that they are printed
-			// MC: I suppose we'll do this for each action and parse its events independently
-			await parseUnixMarketEvent(events[0]);
-		});
-
-		// adapt
-		abiDecoder.addABI(AdaptCollectiblesJson['abi']);
-
-		const adaptCollectiblesFilter = web3.eth.filter(
-			{
-				fromBlock: 1,
-				toBlock: 'latest',
-				address: adaptCollectibles.address,
-			}
-		);
-
-		adaptCollectiblesFilter.watch(async (error, result ) => {
-			if (error) {
-				console.log(error);
-				return;
-			}
-
-			const events = abiDecoder.decodeLogs([result]);
-			await parseAdaptTokenEvent(events[0]);
-		});
 	});
 });

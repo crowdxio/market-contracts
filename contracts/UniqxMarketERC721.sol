@@ -95,12 +95,12 @@ contract UniqxMarketERC721 is NoOwner, Pausable, ReentrancyGuard {
 	event LogTokenUnsold(address token, uint tokenId, uint unsoldAt);
 
 	modifier whenOrdersEnabled() {
-		require(ORDERS_ENABLED); // MC: check out the new feature to add a message to the require, for all requires
+		require(ORDERS_ENABLED, "Orders must be enabled");
 		_;
 	}
 
 	modifier whenOrdersDisabled() {
-		require(!ORDERS_ENABLED);
+		require(!ORDERS_ENABLED, "Orders must be disabled");
 		_;
 	}
 
@@ -150,7 +150,7 @@ contract UniqxMarketERC721 is NoOwner, Pausable, ReentrancyGuard {
 		onlyOwner
 	public {
 
-		require(!tokenContracts[token].registered);
+		require(!tokenContracts[token].registered, "Token should not be registered already");
 
 		TokenContract memory tokenContract = TokenContract(
 			{
@@ -177,16 +177,12 @@ contract UniqxMarketERC721 is NoOwner, Pausable, ReentrancyGuard {
 		onlyOwner
 		public
 	{
-
 		TokenContract storage tokenContract = tokenContracts[token];
 
-		// token contract must be registered
-		require(tokenContract.registered);
-
-		// orders must be disabled for this token
-		require(!tokenContract.ordersEnabled);
-
+		require(tokenContract.registered, "Token must be registered");
+		require(!tokenContract.ordersEnabled, "Orders must be disabled for this token");
 		tokenContract.ordersEnabled = true;
+
 		emit LogTokenOrdersEnabled(token);
 	}
 
@@ -197,13 +193,10 @@ contract UniqxMarketERC721 is NoOwner, Pausable, ReentrancyGuard {
 	{
 		TokenContract storage tokenContract = tokenContracts[token];
 
-		// token contract must be registered
-		require(tokenContract.registered);
-
-		// orders must be enabled for this token
-		require(tokenContract.ordersEnabled);
-
+		require(tokenContract.registered, "Token must be registered");
+		require(tokenContract.ordersEnabled, "Orders must be enabled for this token");
 		tokenContract.ordersEnabled = false;
+
 		emit LogTokenOrdersDisabled(token);
 	}
 
@@ -214,8 +207,7 @@ contract UniqxMarketERC721 is NoOwner, Pausable, ReentrancyGuard {
 	{
 		TokenContract storage tokenContract = tokenContracts[token];
 
-		// token contract must be registered
-		require(tokenContract.registered);
+		require(tokenContract.registered, "Token must be registered");
 
 		ERC721Token tokenInstance = ERC721Token(token);
 		address owner = tokenInstance.ownerOf(tokenId);
@@ -232,8 +224,7 @@ contract UniqxMarketERC721 is NoOwner, Pausable, ReentrancyGuard {
 	{
 		TokenContract storage tokenContract = tokenContracts[token];
 
-		// token contract must be registered
-		require(tokenContract.registered);
+		require(tokenContract.registered, "Token must be registered");
 
 		return tokenContract.orders[tokenId].status;
 	}
@@ -255,8 +246,7 @@ contract UniqxMarketERC721 is NoOwner, Pausable, ReentrancyGuard {
 	{
 		TokenContract storage tokenContract = tokenContracts[token];
 
-		// token contract must be registered
-		require(tokenContract.registered);
+		require(tokenContract.registered, "Token must be registered");
 
 		OrderInfo storage order = tokenContract.orders[tokenId];
 
@@ -285,24 +275,16 @@ contract UniqxMarketERC721 is NoOwner, Pausable, ReentrancyGuard {
 		ERC721Token tokenInstance = ERC721Token(token);
 		address[] memory owners = new address[](buyPrices.length);
 
-		// token contract must be registered
-		require(tokenContract.registered);
-
-		// orders must be enabled for this token
-		require(tokenContract.ordersEnabled);
-
-		// validate parameters
-		require(tokenIds.length == buyPrices.length);
+		require(tokenContract.registered, "Token must be registered");
+		require(tokenContract.ordersEnabled, "Orders must be enabled for this token");
+		require(tokenIds.length == buyPrices.length, "Array lengths must match");
 
 		for(uint i = 0; i < tokenIds.length; i++) {
 
 			OrderInfo storage order = tokenContract.orders[tokenIds[i]];
 
-			// make sure the token is not listed already
-			require(order.status != OrderStatus.Listed);
-
-			// make sure the seller is allowed to sell the token
-			require(isSpenderApproved(msg.sender, token , tokenIds[i]));
+			require(order.status != OrderStatus.Listed, "Token must not be listed already");
+			require(isSpenderApproved(msg.sender, token , tokenIds[i]), "The seller must be allowed to sell the token");
 
 			// market will now escrow the token (owner or seller must approve unix market before listing)
 			address owner = tokenInstance.ownerOf(tokenIds[i]);
@@ -352,32 +334,20 @@ contract UniqxMarketERC721 is NoOwner, Pausable, ReentrancyGuard {
 		ERC721Token tokenInstance = ERC721Token(token);
 		address[] memory owners = new address[](buyPrices.length);
 
-		// token contract must be registered
-		require(tokenContract.registered);
-
-		// orders must be enabled for this token
-		require(tokenContract.ordersEnabled);
-
-		// validate parameters
-		require(tokenIds.length == startPrices.length);
-		require(tokenIds.length == buyPrices.length);
-		require(tokenIds.length == endTimes.length);
+		require(tokenContract.registered, "Token must be registered");
+		require(tokenContract.ordersEnabled, "Orders must be enabled for this token");
+		require(tokenIds.length == buyPrices.length, "Array lengths must match");
+		require(tokenIds.length == startPrices.length, "Array lengths must match");
+		require(tokenIds.length == endTimes.length, "Array lengths must match");
 
 		for(uint i = 0; i < tokenIds.length; i++) {
 
 			OrderInfo storage order = tokenContract.orders[tokenIds[i]];
 
-			// make sure the token is not listed already
-			require(order.status != OrderStatus.Listed);
-
-			// start price should be smaller than the buy price
-			require(startPrices[i] < buyPrices[i]);
-
-			// enforce minimum duration
-			require(endTimes[i] > now + AUCTION_MIN_DURATION);
-
-			// make sure the seller is allowed to sell the token
-			require(isSpenderApproved(msg.sender, token , tokenIds[i]));
+			require(order.status != OrderStatus.Listed, "Token must not be listed already");
+			require(startPrices[i] <= buyPrices[i], "Start price must be less than or equal to the buy price");
+			require(endTimes[i] > now + AUCTION_MIN_DURATION, "A minimum auction duration is enforced by the market");
+			require(isSpenderApproved(msg.sender, token , tokenIds[i]), "The seller must be allowed to sell the token");
 
 			// market will now escrow the token (owner or seller must approve unix market before listing)
 			address owner = tokenInstance.ownerOf(tokenIds[i]);
@@ -425,22 +395,16 @@ contract UniqxMarketERC721 is NoOwner, Pausable, ReentrancyGuard {
 		TokenContract storage tokenContract = tokenContracts[token];
 		ERC721Token tokenInstance = ERC721Token(token);
 
-		// token contract must be registered
-		require(tokenContract.registered);
+		require(tokenContract.registered, "Token must be registered");
 
 		uint ordersAmount = 0;
 		for(uint i = 0; i < tokenIds.length; i++) {
 
 			OrderInfo storage order = tokenContract.orders[tokenIds[i]];
 
-			// make sure token is listed
-			require(order.status == OrderStatus.Listed);
-
-			// make sure the list is fixed price type
-			require(order.format == OrderFormat.FixedPrice);
-
-			// the amount passed must cover the buy prices so far
-			require(msg.value >= ordersAmount + order.buyPrice);
+			require(order.status == OrderStatus.Listed, "Token must be listed");
+			require(order.format == OrderFormat.FixedPrice, "Order type must be fixed price");
+			require(msg.value >= ordersAmount + order.buyPrice, "The amount passed must cover the value of the tokens as listed");
 
 			// update the orders amount
 			ordersAmount += order.buyPrice;
@@ -483,29 +447,22 @@ contract UniqxMarketERC721 is NoOwner, Pausable, ReentrancyGuard {
 		TokenContract storage tokenContract = tokenContracts[token];
 		ERC721Token tokenInstance = ERC721Token(token);
 
-		// token contract must be registered
-		require(tokenContract.registered);
-
-		// validate parameters
-		require(tokenIds.length == bids.length);
+		require(tokenContract.registered, "Token must be registered");
+		require(tokenIds.length == bids.length, "Array lengths must match");
 
 		uint bidRunningSum = 0;
 		for(uint i = 0; i < tokenIds.length; i++) {
 
 			OrderInfo storage order = tokenContract.orders[tokenIds[i]];
 
-			// make sure token is listed
-			require(order.status == OrderStatus.Listed);
-
-			// make sure the order is auction
-			require(order.format == OrderFormat.Auction);
-
-			// make sure the auction not ended yet
-			require(now <= order.endTime);
+			require(order.status == OrderStatus.Listed, "Token must be listed");
+			require(order.format == OrderFormat.Auction, "Order type must be auction");
+			require(now <= order.endTime, "Action must be open");
 
 			// bid must be higher than the the current highest bid and by the start price
-			require(bids[i] > order.startPrice);
-			require(bids[i] > order.highestBid);
+			require(bids[i] >= order.startPrice, "The bid must be greater than or equal to the start price");
+			require(bids[i] >  order.highestBid, "The bid must be greater than the current highest bid");
+			require(bids[i] <= order.buyPrice, "The bid must be less than or equal to the buy price");
 
 			// refund the old bidder if there is any
 			if (order.buyer != address(0)) {
@@ -514,13 +471,14 @@ contract UniqxMarketERC721 is NoOwner, Pausable, ReentrancyGuard {
 
 			order.highestBid = bids[i];
 			order.buyer = msg.sender;
-
 			bidRunningSum += bids[i];
+
 			emit LogBidPlaced(token, tokenIds[i], order.buyer, order.highestBid, now);
 
 			// buy it now?
 			// MC: bids[i] can only be == to the order.buyPrice according to the condition at the end of the function
-			if (bids[i] >= order.buyPrice) {
+			// IM: rrrrright, I enforced the bid value above
+			if (bids[i] == order.buyPrice) {
 
 				// transfer fee to market
 				uint marketFee = order.highestBid.mul(marketFeeNum).div(marketFeeDen);
@@ -540,11 +498,12 @@ contract UniqxMarketERC721 is NoOwner, Pausable, ReentrancyGuard {
 			}
 		}
 
-		require(bidRunningSum == msg.value);
+		require(bidRunningSum == msg.value, "The amount passed must match the sum of the bids");
 	}
 
 
 	// MC: isn't this better called cancelOrders ?
+	// Can we do a separate branch for renaming and involve Solo as well?
 	function cancelTokens(
 		address token,
 		uint[] tokenIds
@@ -556,29 +515,25 @@ contract UniqxMarketERC721 is NoOwner, Pausable, ReentrancyGuard {
 		TokenContract storage tokenContract = tokenContracts[token];
 		ERC721Token tokenInstance = ERC721Token(token);
 
-		// token contract must be registered
-		require(tokenContract.registered);
+		require(tokenContract.registered, "Token must be registered");
 
 		for(uint i = 0; i < tokenIds.length; i++) {
 
 			OrderInfo storage order = tokenContract.orders[tokenIds[i]];
 
-			// order must be listed
-			require(order.status == OrderStatus.Listed);
+			require(order.status == OrderStatus.Listed, "Token must be listed");
 
-			// only the owner or the seller can cancel an order
 			require(
 				msg.sender == order.seller ||
-				msg.sender == order.owner
+				msg.sender == order.owner,
+				"Only the owner or the seller can cancel a token"
 			);
 
 			// few restrictions for auctions
 			if (order.format == OrderFormat.Auction) {
 				// ended auctions cannot be canceled - these are called Unsold
-				require(now < order.endTime);
-
-				// only zero bids auctions can be canceled - a bid is binding for both parties
-				require(order.highestBid == 0);
+				require(now < order.endTime, "Auction must be open");
+				require(order.highestBid == 0, "Only zero bids auctions can be cancelled");
 			}
 
 			// transfer the token back to the owner
@@ -607,17 +562,15 @@ contract UniqxMarketERC721 is NoOwner, Pausable, ReentrancyGuard {
 		TokenContract storage tokenContract = tokenContracts[token];
 		ERC721Token tokenInstance = ERC721Token(token);
 
-	// token contract must be registered
-		require(tokenContract.registered);
+		require(tokenContract.registered, "Token must be registered");
 
 		for(uint i = 0; i < tokenIds.length; i++) {
 
 			OrderInfo storage order = tokenContract.orders[tokenIds[i]];
 
-			// order must be listed
-			require(order.status == OrderStatus.Listed);
-			// order must be ended auction
-			require(order.format == OrderFormat.Auction && now >= order.endTime);
+			require(order.status == OrderStatus.Listed, "Token must be listed");
+			require(order.format == OrderFormat.Auction, "Order type must be auction");
+			require(now >= order.endTime, "Auction must be ended");
 
 			if (order.highestBid > 0) {
 

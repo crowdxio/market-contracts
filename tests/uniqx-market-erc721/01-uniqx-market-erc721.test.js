@@ -51,6 +51,55 @@ contract('Testing Auction listing - main flow', async function (rpc_accounts) {
 		console.log(`The adapt token has been successfully deployed at ${adaptCollectibles.address}`);
 	});
 
+	it('should watch and parse the the logs', async function () {
+
+		// market
+
+		abiDecoder.addABI(UniqxMarketERC721Json['abi']);
+
+		const marketFilter = web3.eth.filter(
+			{
+				fromBlock: 1,
+				toBlock: 'latest',
+				address: unixMarket.address,
+			}
+		);
+
+		marketFilter.watch(async (error, result ) => {
+			if (error) {
+				console.log(error);
+				return;
+			}
+
+			const events = abiDecoder.decodeLogs([result]);
+			await parseUnixMarketEvent(events[0]);
+		});
+
+
+		// adapt
+
+		abiDecoder.addABI(AdaptCollectiblesJson['abi']);
+
+		const adaptCollectiblesFilter = web3.eth.filter(
+			{
+				fromBlock: 1,
+				toBlock: 'latest',
+				address: adaptCollectibles.address,
+			}
+		);
+
+		adaptCollectiblesFilter.watch(async (error, result ) => {
+			if (error) {
+				console.log(error);
+				return;
+			}
+
+			const events = abiDecoder.decodeLogs([result]);
+			await parseAdaptTokenEvent(events[0]);
+		});
+	});
+
+
 	it('should mint some test tokens', async function () {
 
 		const ret = await adaptCollectibles.massMint(
@@ -132,7 +181,7 @@ contract('Testing Auction listing - main flow', async function (rpc_accounts) {
 		console.log(`GAS - Cancel 2 adapt tokens: ${rec.receipt.gasUsed}`);
 
 		// MC: should check insistence of orders and content of logs
-		expectEvent.inLogs(rec.logs, 'LogTokensCanceled');
+		expectEvent.inLogs(rec.logs, 'LogTokensCancelled');
 		// MC: should enforce the change in balance with an assert
 		console.log(`Market balance: ${await getBalanceAsyncStr(ac.MARKET_FEES_MSIG)}`);
 	});
@@ -240,53 +289,5 @@ contract('Testing Auction listing - main flow', async function (rpc_accounts) {
 
 		// MC: should check content of orders and content of logs
 		expectEvent.inLogs(ret.logs, 'LogTokenUnsold');
-	});
-
-	it('should watch and parse the the logs', async function () {
-
-		// market
-
-		abiDecoder.addABI(UniqxMarketERC721Json['abi']);
-
-		const marketFilter = web3.eth.filter(
-			{
-				fromBlock: 1,
-				toBlock: 'latest',
-				address: unixMarket.address,
-			}
-		);
-
-		marketFilter.watch(async (error, result ) => {
-			if (error) {
-				console.log(error);
-				return;
-			}
-
-			const events = abiDecoder.decodeLogs([result]);
-			await parseUnixMarketEvent(events[0]);
-		});
-
-
-		// adapt
-
-		abiDecoder.addABI(AdaptCollectiblesJson['abi']);
-
-		const adaptCollectiblesFilter = web3.eth.filter(
-			{
-				fromBlock: 1,
-				toBlock: 'latest',
-				address: adaptCollectibles.address,
-			}
-		);
-
-		adaptCollectiblesFilter.watch(async (error, result ) => {
-			if (error) {
-				console.log(error);
-				return;
-			}
-
-			const events = abiDecoder.decodeLogs([result]);
-			await parseAdaptTokenEvent(events[0]);
-		});
 	});
 });
