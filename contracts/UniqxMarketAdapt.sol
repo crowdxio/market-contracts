@@ -134,6 +134,10 @@ contract UniqxMarketAdapt is NoOwner, Pausable, ReentrancyGuard {
 				existingOrder.status != OrderStatus.Reserved
 			);
 
+			(uint256 timestamp, uint256 donation, uint256 copy) = ADAPT_TOKEN.getTokenMetadata(tokenIds[i]);
+			require(timestamp == 0 && donation == 0, "Timestamp and donation must not be set");
+			copy; // silence unused parameter warning
+
 			// make sure the seller is approved to sell this item
 			require(isSpenderApproved(msg.sender, tokenIds[i]));
 
