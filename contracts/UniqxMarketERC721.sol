@@ -466,8 +466,6 @@ contract UniqxMarketERC721 is NoOwner, Pausable, ReentrancyGuard {
 			emit LogBidPlaced(token, tokenIds[i], order.buyer, order.highestBid);
 
 			// buy it now?
-			// MC: bids[i] can only be == to the order.buyPrice according to the condition at the end of the function
-			// IM: rrrrright, I enforced the bid value above
 			if (bids[i] == order.buyPrice) {
 
 				// transfer fee to market
