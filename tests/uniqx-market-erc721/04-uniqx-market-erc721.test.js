@@ -1,5 +1,5 @@
 import {
-	accounts, assert
+	accounts, assert, OrderFormat, OrderStatus, BigNumber
 } from '../common/common';
 import ether from "../helpers/ether";
 import expectEvent from "../helpers/expectEvent";
@@ -195,6 +195,25 @@ contract('Testing token listing', async function (rpc_accounts) {
 		for (let i = 0; i < tokensCount; i++) {
 			const owner = await adaptCollectibles.ownerOf(tokens[i]);
 			assert.equal(owner, uniqxMarket.address, 'unexpected owner - market should own the token');
+
+			const info = await uniqxMarket.getOrderInfo(adaptCollectibles.address, tokens[i]);
+			//console.log(`order info: ${JSON.stringify(info, null, '\t')}`);
+
+			assert.equal(info[0], OrderFormat.Auction, 'unexpected format - should be auction');
+			assert.equal(info[1], OrderStatus.Listed, 'unexpected status - should be listed');
+			assert.equal(info[2], i === 0 ? ac.ACCOUNT1 : ac.ADAPT_ADMIN, 'unexpected owner - should be auction');
+			assert.equal(info[3], ac.SELLER, 'unexpected seller - should be auction');
+
+			const buyPrice = new BigNumber(info[4]);
+			buyPrice.should.be.bignumber.equal(buyPrices[i]);
+
+			assert.equal(info[5], '0x0000000000000000000000000000000000000000', 'unexpected buyer - should be auction');
+
+			const startPrice = new BigNumber(info[6]);
+			startPrice.should.be.bignumber.equal(startPrices[i]);
+
+			assert.equal(info[7], endTimes[i], 'unexpected end time - should be auction');
+			assert.equal(info[8], 0, 'unexpected highest bid - should be auction');
 		}
 	});
 

@@ -1,4 +1,26 @@
 const moment = require('moment');
+const Bluebird = require('bluebird');
+const BigNumber = web3.BigNumber;
+const assert = require('chai').assert;
+const should = require('chai')
+	.use(require('chai-as-promised'))
+	.use(require('chai-bignumber')(BigNumber))
+	.should();
+
+const OrderFormat  = {
+	Unknown:    0,
+	FixedPrice: 1,
+	Auction:    2,
+};
+
+const OrderStatus = {
+	Unknown:    0,
+	Listed:     1,
+	Reserved:   2,
+	Cancelled:  3,
+	Sold:       4,
+	Unsold:     5,
+};
 
 export function accounts(rpc_accounts) {
 	return {
@@ -22,28 +44,11 @@ export function printTime(timestamp) {
 	console.log('Time is: ', moment.unix(timestamp).utc().format());
 }
 
-const Bluebird = require('bluebird');
-const BigNumber = web3.BigNumber;
-const assert = require('chai').assert;
-const should = require('chai')
-	.use(require('chai-as-promised'))
-	.use(require('chai-bignumber')(BigNumber))
-	.should();
-
 const getBalanceAsync = Bluebird.promisify(web3.eth.getBalance);
 
 export async function getBalanceAsyncStr(address, base = 10) {
 	return (await getBalanceAsync(address)).toString(base);
 }
-
-const OrderStatus = {
-	Unknown:    0,
-	Listed:     1,
-	Reserved:   2,
-	Cancelled:  3,
-	Sold:       4,
-	Unsold:     5,
-};
 
 async function parseAdaptTokenEvent(event) {
 
@@ -207,6 +212,7 @@ module.exports = {
 	Bluebird: Bluebird,
 	assert: assert,
 	should: should,
+	OrderFormat: OrderFormat,
 	OrderStatus: OrderStatus,
 	getBalanceAsync: getBalanceAsync,
 	getBalanceAsyncStr: getBalanceAsyncStr,
