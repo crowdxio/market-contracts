@@ -5,15 +5,15 @@ export function accounts(rpc_accounts) {
 		OPERATOR: rpc_accounts[0],
 		MARKET_ADMIN_MSIG: rpc_accounts[1],
 		MARKET_FEES_MSIG: rpc_accounts[2],
-
 		ADAPT_OWNER: rpc_accounts[3],
 		ADAPT_ADMIN: rpc_accounts[4],
-		BUYER1: rpc_accounts[5],
-		BUYER2: rpc_accounts[6],
-		ACCOUNT1: rpc_accounts[7],
-		ACCOUNT2: rpc_accounts[8],
-		ACCOUNT3: rpc_accounts[9],
-		BUYER3: rpc_accounts[10]
+		SELLER: rpc_accounts[5],
+		BUYER1: rpc_accounts[6],
+		BUYER2: rpc_accounts[7],
+		BUYER3: rpc_accounts[8],
+		ACCOUNT1: rpc_accounts[9],
+		ACCOUNT2: rpc_accounts[10],
+		ACCOUNT3: rpc_accounts[11],
 	};
 }
 
