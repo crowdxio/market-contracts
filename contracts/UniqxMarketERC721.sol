@@ -17,6 +17,7 @@ contract UniqxMarketERC721 is NoOwner, Pausable, ReentrancyGuard {
 	uint public marketFeeDen = 100;
 
 	enum OrderFormat {
+		Unknown,
 		FixedPrice,
 		Auction
 	}
