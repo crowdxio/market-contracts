@@ -16,7 +16,7 @@ const UniqxMarketERC721Json = require('../../build/contracts/UniqxMarketERC721.j
 contract('Testing FixedPrice listing - main flow', async function (rpc_accounts) {
 
 	const ac = accounts(rpc_accounts);
-	let unixMarket;
+	let uniqxMarket;
 	let adaptCollectibles;
 
 	const tokensCount = 10;
@@ -27,7 +27,7 @@ contract('Testing FixedPrice listing - main flow', async function (rpc_accounts)
 
 		console.log('Deploying the market contract...');
 
-		unixMarket = await UniqxMarketERC721.new(
+		uniqxMarket = await UniqxMarketERC721.new(
 			ac.MARKET_ADMIN_MSIG,
 			ac.MARKET_FEES_MSIG,
 			{
@@ -36,7 +36,7 @@ contract('Testing FixedPrice listing - main flow', async function (rpc_accounts)
 			}
 		).should.be.fulfilled;
 
-		console.log(`The market contract has been successfully deployed at ${unixMarket.address}`);
+		console.log(`The market contract has been successfully deployed at ${uniqxMarket.address}`);
 
 		// MC: we should change this to the generic ERC721 contract instead of ADAPT
 		// MC: this needs to work with any contract and this is the cleanest way to enforce
@@ -59,7 +59,7 @@ contract('Testing FixedPrice listing - main flow', async function (rpc_accounts)
 			{
 				fromBlock: 1,
 				toBlock: 'latest',
-				address: unixMarket.address,
+				address: uniqxMarket.address,
 			}
 		);
 
@@ -117,7 +117,7 @@ contract('Testing FixedPrice listing - main flow', async function (rpc_accounts)
 
 	it('should register the adapt token', async function () {
 
-		const ret = await unixMarket.registerToken(
+		const ret = await uniqxMarket.registerToken(
 			adaptCollectibles.address,
 			{
 				from: ac.MARKET_ADMIN_MSIG,
@@ -137,7 +137,7 @@ contract('Testing FixedPrice listing - main flow', async function (rpc_accounts)
 	it('should allow the market to escrow the adapt tokens', async function () {
 		// approve market to transfer all erc721 tokens hold by admin
 		await adaptCollectibles.setApprovalForAll(
-			unixMarket.address,
+			uniqxMarket.address,
 			true,
 			{
 				from: ac.ADAPT_ADMIN,
@@ -154,7 +154,7 @@ contract('Testing FixedPrice listing - main flow', async function (rpc_accounts)
 			prices[i] = ether(1);
 		}
 
-		const rec = await unixMarket.listTokensFixedPrice(
+		const rec = await uniqxMarket.listTokensFixedPrice(
 			adaptCollectibles.address,
 			tokens,
 			prices,
@@ -171,7 +171,7 @@ contract('Testing FixedPrice listing - main flow', async function (rpc_accounts)
 	});
 
 	it('should be able to cancel 2 tokens', async () => {
-		const rec = await unixMarket.cancelTokens(
+		const rec = await uniqxMarket.cancelTokens(
 			adaptCollectibles.address,
 			[tokens[0], tokens[1]],
 			{
@@ -205,7 +205,7 @@ contract('Testing FixedPrice listing - main flow', async function (rpc_accounts)
 		console.log(`ownerBalanceBefore: ${ownerBalanceBefore.toString(10)}`);
 		console.log(`marketBalanceBefore: ${marketBalanceBefore.toString(10)}`);
 
-		const ret = await unixMarket.buyTokens(
+		const ret = await uniqxMarket.buyTokens(
 			adaptCollectibles.address,
 			tokensToBuy,
 			{

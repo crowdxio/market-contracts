@@ -17,7 +17,7 @@ const UniqxMarketERC721Json = require('../../build/contracts/UniqxMarketERC721.j
 contract('Testing Auction listing - main flow', async function (rpc_accounts) {
 
 	const ac = accounts(rpc_accounts);
-	let unixMarket;
+	let uniqxMarket;
 	let adaptCollectibles;
 
 	const tokensCount = 10;
@@ -30,7 +30,7 @@ contract('Testing Auction listing - main flow', async function (rpc_accounts) {
 
 		console.log('Deploying the market contract...');
 
-		unixMarket = await UniqxMarketERC721.new(
+		uniqxMarket = await UniqxMarketERC721.new(
 			ac.MARKET_ADMIN_MSIG,
 			ac.MARKET_FEES_MSIG,
 			{
@@ -39,7 +39,7 @@ contract('Testing Auction listing - main flow', async function (rpc_accounts) {
 			}
 		).should.be.fulfilled;
 
-		console.log(`The market contract has been successfully deployed at ${unixMarket.address}`);
+		console.log(`The market contract has been successfully deployed at ${uniqxMarket.address}`);
 
 		// MC: let's change to the generic ERC21 token instead of ADAPT
 		adaptCollectibles = await AdaptCollectibles.new(
@@ -61,7 +61,7 @@ contract('Testing Auction listing - main flow', async function (rpc_accounts) {
 			{
 				fromBlock: 1,
 				toBlock: 'latest',
-				address: unixMarket.address,
+				address: uniqxMarket.address,
 			}
 		);
 
@@ -116,7 +116,7 @@ contract('Testing Auction listing - main flow', async function (rpc_accounts) {
 
 	it('should register the adapt token', async function () {
 
-		const ret = await unixMarket.registerToken(
+		const ret = await uniqxMarket.registerToken(
 			adaptCollectibles.address,
 			{
 				from: ac.MARKET_ADMIN_MSIG,
@@ -132,7 +132,7 @@ contract('Testing Auction listing - main flow', async function (rpc_accounts) {
 	it('should allow the market to escrow the adapt tokens', async function () {
 		// approve market to transfer all erc721 tokens hold by admin
 		await adaptCollectibles.setApprovalForAll(
-			unixMarket.address,
+			uniqxMarket.address,
 			true,
 			{
 				from: ac.ADAPT_ADMIN,
@@ -151,7 +151,7 @@ contract('Testing Auction listing - main flow', async function (rpc_accounts) {
 			endTimes[i] = threeDaysLater;
 		}
 
-		const rec = await unixMarket.listTokensAuction(
+		const rec = await uniqxMarket.listTokensAuction(
 			adaptCollectibles.address,
 			tokens,
 			buyPrices,
@@ -170,7 +170,7 @@ contract('Testing Auction listing - main flow', async function (rpc_accounts) {
 	});
 
 	it('should be able to cancel 2 tokens', async () => {
-		const rec = await unixMarket.cancelTokens(
+		const rec = await uniqxMarket.cancelTokens(
 			adaptCollectibles.address,
 			[tokens[0], tokens[1]],
 			{
@@ -189,7 +189,7 @@ contract('Testing Auction listing - main flow', async function (rpc_accounts) {
 
 
 	it('BUYER1 should be able to place bids on 3 tokens', async function () {
-		const ret = await unixMarket.placeBids(
+		const ret = await uniqxMarket.placeBids(
 			adaptCollectibles.address,
 			[tokens[2], tokens[3], tokens[4]],
 			[ether(2), ether(2), ether(2)],
@@ -206,7 +206,7 @@ contract('Testing Auction listing - main flow', async function (rpc_accounts) {
 	});
 
 	it('BUYER2 should be able to overbid BUYER1', async function () {
-		const ret = await unixMarket.placeBids(
+		const ret = await uniqxMarket.placeBids(
 			adaptCollectibles.address,
 			[tokens[4]],
 			[ether(4)],
@@ -224,7 +224,7 @@ contract('Testing Auction listing - main flow', async function (rpc_accounts) {
 
 
 	it('BUYER2 should be able to place a bid big enough to buy the token', async function () {
-		const ret = await unixMarket.placeBids(
+		const ret = await uniqxMarket.placeBids(
 			adaptCollectibles.address,
 			[tokens[5]],
 			[ether(9)],
@@ -246,7 +246,7 @@ contract('Testing Auction listing - main flow', async function (rpc_accounts) {
 		const threeDaysLater = latestTime() + duration.days(3);
 		increaseTimeTo(threeDaysLater + duration.minutes(1));
 
-		const ret = await unixMarket.finalizeAuctions(
+		const ret = await uniqxMarket.finalizeAuctions(
 			adaptCollectibles.address,
 			[tokens[2], tokens[3]],
 			{
@@ -262,7 +262,7 @@ contract('Testing Auction listing - main flow', async function (rpc_accounts) {
 
 	it('should allow BUYER2 to finalize the auctions he won', async function () {
 
-		const ret = await unixMarket.finalizeAuctions(
+		const ret = await uniqxMarket.finalizeAuctions(
 			adaptCollectibles.address,
 			[tokens[4]],
 			{
@@ -279,7 +279,7 @@ contract('Testing Auction listing - main flow', async function (rpc_accounts) {
 		const threeDaysLater = latestTime() + duration.days(3);
 		increaseTimeTo(threeDaysLater + duration.minutes(1));
 
-		const ret = await unixMarket.finalizeAuctions(
+		const ret = await uniqxMarket.finalizeAuctions(
 			adaptCollectibles.address,
 			tokens.slice(6),
 			{
