@@ -230,4 +230,16 @@ contract('Testing token listing - auction', async function (rpc_accounts) {
 			}
 		).should.be.rejectedWith(EVMRevert);
 	});
+
+	it('the SELLER should NOT be able to list a token which is already listed - fixed price format', async function () {
+		await uniqxMarket.listTokensFixedPrice(
+			adaptCollectibles.address,
+			[tokens[0]],
+			[buyPrices[0]],
+			{
+				from: ac.SELLER,
+				gas: 7000000
+			}
+		).should.be.rejectedWith(EVMRevert);
+	});
 });
