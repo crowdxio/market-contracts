@@ -163,7 +163,42 @@ contract('Testing Auction listing - main flow', async function (rpc_accounts) {
 			}
 		).should.be.fulfilled;
 
-		console.log(`GAS - List ${tokensCount} adapt tokens fixed price: ${rec.receipt.gasUsed}`);
+		console.log(`GAS - List for auction ${tokensCount} adapt tokens: ${rec.receipt.gasUsed}`);
+
+		// MC: should check the details of the orders here; both content of logs and content of data
+		expectEvent.inLogs(rec.logs, 'LogTokensListedAuction');
+	});
+
+	it('should mint some test tokens', async function () {
+
+		const ret = await adaptCollectibles.mint(
+			ac.ADAPT_ADMIN,
+			'json hash',			// json hash
+			11,				        // copy
+			{from: ac.ADAPT_ADMIN}
+		).should.be.fulfilled;
+
+		console.log(`GAS - Mint 1 adapt tokens: ${ret.receipt.gasUsed}`);
+	});
+
+	it('should be able to list 1 token', async () => {
+
+		const fourDaysLater = moment().add(4, 'days').unix();
+
+		tokens[10] = await adaptCollectibles.tokenByIndex(10);
+		buyPrices[10] = ether(9);
+		startPrices[10] = ether(1);
+
+		let rec = await uniqxMarket.listTokensAuction(
+			adaptCollectibles.address,
+			[ tokens[10] ],
+			[ buyPrices[10] ],
+			[ startPrices[10] ],
+			[ fourDaysLater ],
+			{ from: ac.ADAPT_ADMIN , gas: 7000000 }
+		).should.be.fulfilled;
+
+		console.log(`GAS - List for auction 1 adapt token: ${rec.receipt.gasUsed}`);
 
 		// MC: should check the details of the orders here; both content of logs and content of data
 		expectEvent.inLogs(rec.logs, 'LogTokensListedAuction');
@@ -187,6 +222,24 @@ contract('Testing Auction listing - main flow', async function (rpc_accounts) {
 		console.log(`Market balance: ${await getBalanceAsyncStr(ac.MARKET_FEES_MSIG)}`);
 	});
 
+	it('should be able to re-list 1 token after cancelled', async () => {
+
+		const fourDaysLater = moment().add(4, 'days').unix();
+
+		let rec = await uniqxMarket.listTokensAuction(
+			adaptCollectibles.address,
+			[ tokens[0] ],
+			[ ether(2) ],
+			[ ether(1) ],
+			[ fourDaysLater ],
+			{ from: ac.ADAPT_ADMIN , gas: 7000000 }
+		).should.be.fulfilled;
+
+		console.log(`GAS - Re-list for auction 1 adapt token after it was cancel: ${rec.receipt.gasUsed}`);
+
+		// MC: should check the details of the orders here; both content of logs and content of data
+		expectEvent.inLogs(rec.logs, 'LogTokensListedAuction');
+	});
 
 	it('BUYER1 should be able to place bids on 3 tokens', async function () {
 		const ret = await uniqxMarket.placeBids(
