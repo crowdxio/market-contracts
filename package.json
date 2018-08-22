@@ -43,6 +43,7 @@
 		"chai-as-promised": "^7.1.1",
 		"chai-bignumber": "^2.0.2",
 		"coveralls": "^3.0.0",
+		"eth-gas-reporter": "^0.1.10",
 		"ethereumjs-testrpc-sc": "^6.1.2",
 		"ganache-cli": "6.1.0",
 		"solidity-coverage": "^0.4.14",
