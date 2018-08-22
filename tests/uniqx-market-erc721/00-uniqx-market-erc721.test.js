@@ -19,7 +19,7 @@ contract('Testing FixedPrice listing - main flow', async function (rpc_accounts)
 	let uniqxMarket;
 	let adaptCollectibles;
 
-	const tokensCount = 10;
+	const tokensCount = 11;
 	let tokens = [];
 	let prices = [];
 
@@ -108,11 +108,11 @@ contract('Testing FixedPrice listing - main flow', async function (rpc_accounts)
 			ac.ADAPT_ADMIN,
 			'json hash',			// json hash
 			1,				        // start
-			tokensCount,		    // count
+			tokensCount - 1,		    // count
 			{ from: ac.ADAPT_ADMIN }
 		).should.be.fulfilled;
 
-		console.log(`GAS - Mass mint ${tokensCount} adapt tokens: ${ret.receipt.gasUsed}`);
+		console.log(`GAS - Mass mint ${tokensCount - 1} adapt tokens: ${ret.receipt.gasUsed}`);
 	});
 
 	it('should register the adapt token', async function () {
@@ -149,7 +149,7 @@ contract('Testing FixedPrice listing - main flow', async function (rpc_accounts)
 
 	it('should be able to list 10 adapt tokens for sale - fixed price', async () => {
 
-		for (let i = 0; i < tokensCount; i++) {
+		for (let i = 0; i < tokensCount - 1; i++) {
 			tokens[i] = await adaptCollectibles.tokenByIndex(i);
 			prices[i] = ether(1);
 		}
@@ -164,9 +164,40 @@ contract('Testing FixedPrice listing - main flow', async function (rpc_accounts)
 			}
 		).should.be.fulfilled;
 
-		console.log(`GAS - List ${tokensCount} adapt tokens fixed price: ${rec.receipt.gasUsed}`);
+		console.log(`GAS - List for a fixed price ${tokensCount - 1} adapt tokens: ${rec.receipt.gasUsed}`);
 
 		// MC: we should check here for each and every order the exact details by reading data back
+		expectEvent.inLogs(rec.logs, 'LogTokensListedFixedPrice');
+	});
+
+
+	it('should mint 1 test token', async function () {
+
+		const ret = await adaptCollectibles.mint(
+			ac.ADAPT_ADMIN,
+			'json hash',			// json hash
+			11,				        // copy
+			{from: ac.ADAPT_ADMIN}
+		).should.be.fulfilled;
+
+		console.log(`GAS - Mint 1 adapt tokens: ${ret.receipt.gasUsed}`);
+	});
+
+	it('should be able to list 1 token', async () => {
+
+		tokens[10] = await adaptCollectibles.tokenByIndex(10);
+		prices[10] = ether(1);
+
+		let rec = await uniqxMarket.listTokensFixedPrice(
+			adaptCollectibles.address,
+			[ tokens[10] ],
+			[ prices[10] ],
+			{ from: ac.ADAPT_ADMIN , gas: 7000000 }
+		).should.be.fulfilled;
+
+		console.log(`GAS - List for a fixed price 1 adapt token: ${rec.receipt.gasUsed}`);
+
+		// MC: should check the details of the orders here; both content of logs and content of data
 		expectEvent.inLogs(rec.logs, 'LogTokensListedFixedPrice');
 	});
 
@@ -188,11 +219,28 @@ contract('Testing FixedPrice listing - main flow', async function (rpc_accounts)
 		// MC: if you want to check that a balance has chanced, do so by comparison not printing only
 	});
 
-	it('should be able to buy 8 tokens', async () => {
+	it('should be able to re-list 1 token after cancelled', async () => {
+
+		const fourDaysLater = moment().add(4, 'days').unix();
+
+		let rec = await uniqxMarket.listTokensFixedPrice(
+			adaptCollectibles.address,
+			[ tokens[0] ],
+			[ prices[0] ],
+			{ from: ac.ADAPT_ADMIN , gas: 7000000 }
+		).should.be.fulfilled;
+
+		console.log(`GAS - Re-list for fixed price 1 adapt token after it was cancel: ${rec.receipt.gasUsed}`);
+
+		// MC: should check the details of the orders here; both content of logs and content of data
+		expectEvent.inLogs(rec.logs, 'LogTokensListedFixedPrice');
+	});
+
+	it('should be able to buy 9 tokens', async () => {
 
 		const tokensToBuy = tokens.slice(2);
 		//console.log(`Tokens to buy: ${JSON.stringify(tokensToBuy)}`);
-		const priceToPay = new BigNumber(ether(8));
+		const priceToPay = new BigNumber(ether(9));
 		const marketFee = priceToPay.dividedToIntegerBy(100);
 		const ownerDue = priceToPay - marketFee;
 
@@ -229,6 +277,6 @@ contract('Testing FixedPrice listing - main flow', async function (rpc_accounts)
 		ownerBalanceAfter.should.be.bignumber.equal(ownerBalanceBefore.plus(ownerDue));
 
 		console.log(`Market balance: ${await getBalanceAsyncStr(ac.MARKET_FEES_MSIG)}`);
-		console.log(`GAS - Buy 8 adapt tokens: ${ret.receipt.gasUsed}`);
+		console.log(`GAS - Buy 9 adapt tokens: ${ret.receipt.gasUsed}`);
 	});
 });

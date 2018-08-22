@@ -20,7 +20,7 @@ contract('Testing Auction listing - main flow', async function (rpc_accounts) {
 	let uniqxMarket;
 	let adaptCollectibles;
 
-	const tokensCount = 10;
+	const tokensCount = 11;
 	let tokens = [];
 	let buyPrices = [];
 	let startPrices = [];
@@ -107,11 +107,11 @@ contract('Testing Auction listing - main flow', async function (rpc_accounts) {
 			ac.ADAPT_ADMIN,
 			'json hash',			// json hash
 			1,				        // start
-			tokensCount,		    // count
+			tokensCount - 1,		// count
 			{from: ac.ADAPT_ADMIN}
 		).should.be.fulfilled;
 
-		console.log(`GAS - Mass mint ${tokensCount} adapt tokens: ${ret.receipt.gasUsed}`);
+		console.log(`GAS - Mass mint ${tokensCount - 1} adapt tokens: ${ret.receipt.gasUsed}`);
 	});
 
 	it('should register the adapt token', async function () {
@@ -144,7 +144,7 @@ contract('Testing Auction listing - main flow', async function (rpc_accounts) {
 	it('should be able to list 10 adapt tokens for sale - auction format', async () => {
 
 		const threeDaysLater = moment().add(3, 'days').unix();
-		for (let i = 0; i < tokensCount; i++) {
+		for (let i = 0; i < tokensCount - 1; i++) {
 			tokens[i] = await adaptCollectibles.tokenByIndex(i);
 			buyPrices[i] = ether(9);
 			startPrices[i] = ether(1);
@@ -163,13 +163,13 @@ contract('Testing Auction listing - main flow', async function (rpc_accounts) {
 			}
 		).should.be.fulfilled;
 
-		console.log(`GAS - List for auction ${tokensCount} adapt tokens: ${rec.receipt.gasUsed}`);
+		console.log(`GAS - List for auction ${tokensCount - 1} adapt tokens: ${rec.receipt.gasUsed}`);
 
 		// MC: should check the details of the orders here; both content of logs and content of data
 		expectEvent.inLogs(rec.logs, 'LogTokensListedAuction');
 	});
 
-	it('should mint some test tokens', async function () {
+	it('should mint 1 test token', async function () {
 
 		const ret = await adaptCollectibles.mint(
 			ac.ADAPT_ADMIN,
