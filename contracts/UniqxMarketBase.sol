@@ -17,6 +17,7 @@ contract UniqxMarketBase is NoOwner, Pausable, ReentrancyGuard {
 		bool ordersEnabled;
 	}
 
+	/////////////////////////////////////// EVENTS //////////////////////////////////////////
 	event LogOrdersEnabled();
 	event LogOrdersDisabled();
 	event LogTokenRegistered(address token);
