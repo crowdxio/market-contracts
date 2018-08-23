@@ -12,7 +12,6 @@ contract UniqxMarketERC721Instant is UniqxMarketBase {
 		OrderStatus status;
 		address owner; 				// the user who owns the token sold via this order
 		uint buyPrice;				// holds the 'buy it now' price
-		address buyer;				// holds the address of the buyer or the address of the highest bidder
 	}
 
 	struct TokenContract {
@@ -122,8 +121,7 @@ contract UniqxMarketERC721Instant is UniqxMarketBase {
 		returns (
 			OrderStatus status,
 			address owner,
-			uint buyPrice,
-			address buyer
+			uint buyPrice
 		)
 	{
 		TokenContract storage tokenContract = tokenContracts[token];
@@ -135,7 +133,6 @@ contract UniqxMarketERC721Instant is UniqxMarketBase {
 		status          = order.status;
 		owner           = order.owner;
 		buyPrice 	    = order.buyPrice;
-		buyer 		    = order.buyer;
 	}
 
 	function listTokensFixedPrice(
@@ -173,8 +170,7 @@ contract UniqxMarketERC721Instant is UniqxMarketBase {
 				{
 					status: OrderStatus.Listed,
 					owner: owner,
-					buyPrice: buyPrices[i],
-					buyer: address(0)
+					buyPrice: buyPrices[i]
 				}
 			);
 

@@ -194,8 +194,6 @@ contract('Testing token listing', async function (rpc_accounts) {
 
 			const buyPrice = new BigNumber(info[2]);
 			buyPrice.should.be.bignumber.equal(buyPrices[i]);
-
-			assert.equal(info[3], '0x0000000000000000000000000000000000000000', 'unexpected buyer');
 		}
 	});
 });
