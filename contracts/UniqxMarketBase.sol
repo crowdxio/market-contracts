@@ -12,15 +12,6 @@ contract UniqxMarketBase is NoOwner, Pausable, ReentrancyGuard {
 
 	/////////////////////////////////////// CONSTANTS ///////////////////////////////////////
 	/////////////////////////////////////// TYPES ///////////////////////////////////////////
-	enum OrderStatus {
-		Unknown,
-		Listed,			// token listed by owner or seller
-		Reserved,		// not used in this contract
-		Cancelled,		// order canceled by owner or seller (some restrictions are applied on auction orders)
-		Sold,			// token sold, the item goes to the buyer or to the highest bidder on auction orders
-		Unsold			// auction ended with zero bids, token goes back to owner
-	}
-
 	struct TokenContract {
 		bool registered;
 		bool ordersEnabled;
