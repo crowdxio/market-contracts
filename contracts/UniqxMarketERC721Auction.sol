@@ -76,11 +76,9 @@ contract UniqxMarketERC721Auction is UniqxMarketBase
 		)
 	{
 		TokenContract storage tokenContract = tokenContracts[token];
-
 		require(tokenContract.registered, "Token must be registered");
 
 		OrderInfo storage order = orders[token][tokenId];
-
 		owner           = order.owner;
 		buyPrice 	    = order.buyPrice;
 		buyer 		    = order.buyer;
