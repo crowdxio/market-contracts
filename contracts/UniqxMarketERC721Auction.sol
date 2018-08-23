@@ -13,7 +13,6 @@ contract UniqxMarketERC721Auction is UniqxMarketBase
 	/////////////////////////////////////// TYPES ///////////////////////////////////////////
 
 	struct OrderInfo {
-		OrderStatus status;
 		address owner; 				// the user who owns the token sold via this order
 		uint buyPrice;				// holds the 'buy it now' price
 		address buyer;				// holds the address of the buyer or the address of the highest bidder
@@ -39,23 +38,23 @@ contract UniqxMarketERC721Auction is UniqxMarketBase
 		transferOwnership(admin);
 	}
 
-	function getOrderStatus(address token, uint tokenId)
-		public
-		view
-		returns (OrderStatus status)
+	function tokenIsListed(address token, uint tokenId)
+	public
+	view
+	returns(bool listed)
 	{
 		TokenContract storage tokenContract = tokenContracts[token];
-
 		require(tokenContract.registered, "Token must be registered");
 
-		return orders[token][tokenId].status;
+		OrderInfo storage order = orders[token][tokenId];
+
+		return (order.owner != address(0x0));
 	}
 
 	function getOrderInfo(address token, uint tokenId)
 		public
 		view
 		returns (
-			OrderStatus status,
 			address owner,
 			uint buyPrice,
 			address buyer,
@@ -70,30 +69,12 @@ contract UniqxMarketERC721Auction is UniqxMarketBase
 
 		OrderInfo storage order = orders[token][tokenId];
 
-		status          = order.status;
 		owner           = order.owner;
 		buyPrice 	    = order.buyPrice;
 		buyer 		    = order.buyer;
 		startPrice 	    = order.startPrice;
 		endTime 		= order.endTime;
 		highestBid 	    = order.highestBid;
-	}
-
-	function isSpenderApproved(address spender, address token, uint256 tokenId)
-		internal
-		view
-		returns (bool)
-	{
-		TokenContract storage tokenContract = tokenContracts[token];
-
-		require(tokenContract.registered, "Token must be registered");
-
-		ERC721Token tokenInstance = ERC721Token(token);
-		address owner = tokenInstance.ownerOf(tokenId);
-
-		return (spender == owner
-				|| tokenInstance.getApproved(tokenId) == spender
-				|| tokenInstance.isApprovedForAll(owner, spender));
 	}
 
 	function listTokensAuction(
@@ -124,7 +105,7 @@ contract UniqxMarketERC721Auction is UniqxMarketBase
 
 			OrderInfo storage order = orders[token][tokenIds[i]];
 
-			require(order.status != OrderStatus.Listed, "Token must not be listed already");
+			require(!orderExists(order), "Token must not be listed already");
 			require(startPrices[i] <= buyPrices[i], "Start price must be less than or equal to the buy price");
 			require(endTimes[i] > now + AUCTION_MIN_DURATION, "A minimum auction duration is enforced by the market");
 			require(isSpenderApproved(msg.sender, token , tokenIds[i]), "The seller must be allowed to sell the token");
@@ -136,7 +117,6 @@ contract UniqxMarketERC721Auction is UniqxMarketBase
 
 			OrderInfo memory newOrder = OrderInfo(
 				{
-					status: OrderStatus.Listed,
 					owner: owner,
 					buyPrice: buyPrices[i],
 					buyer: address(0),
@@ -183,7 +163,7 @@ contract UniqxMarketERC721Auction is UniqxMarketBase
 
 			OrderInfo storage order = orders[token][tokenIds[i]];
 
-			require(order.status == OrderStatus.Listed, "Token must be listed");
+			require(orderExists(order), "Token must be listed");
 			require(now <= order.endTime, "Action must be open");
 
 			// bid must be higher than the the current highest bid and by the start price
@@ -247,7 +227,7 @@ contract UniqxMarketERC721Auction is UniqxMarketBase
 
 			OrderInfo storage order = orders[token][tokenIds[i]];
 
-			require(order.status == OrderStatus.Listed, "Token must be listed");
+			require(orderExists(order), "Token must be listed");
 
 			require(
 				msg.sender == order.owner
@@ -291,7 +271,7 @@ contract UniqxMarketERC721Auction is UniqxMarketBase
 
 			OrderInfo storage order = orders[token][tokenIds[i]];
 
-			require(order.status == OrderStatus.Listed, "Token must be listed");
+			require(orderExists(order), "Token must be listed");
 			require(now >= order.endTime, "Auction must be ended");
 
 			if (order.highestBid > 0) {
@@ -344,7 +324,7 @@ contract UniqxMarketERC721Auction is UniqxMarketBase
 
 			OrderInfo storage order = orders[token][tokenIds[i]];
 
-			require(order.status == OrderStatus.Listed, "Token must be listed");
+			require(orderExists(order), "Token must be listed");
 			require(msg.value >= ordersAmount + order.buyPrice, "The amount passed must cover the value of the tokens as listed");
 
 			// update the orders amount
@@ -371,4 +351,12 @@ contract UniqxMarketERC721Auction is UniqxMarketBase
 	}
 
 	/////////////////////////////////////// INTERNAL ////////////////////////////////////////
+
+	function orderExists(OrderInfo order)
+		private
+		pure
+		returns(bool listed)
+	{
+		return (order.owner != address(0x0));
+	}
 }

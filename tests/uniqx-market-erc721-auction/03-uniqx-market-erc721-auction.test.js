@@ -199,19 +199,18 @@ contract('Testing token listing - auction', async function (rpc_accounts) {
 			const info = await uniqxMarket.getOrderInfo(adaptCollectibles.address, tokens[i]);
 			//console.log(`order info: ${JSON.stringify(info, null, '\t')}`);
 
-			assert.equal(info[0], OrderStatus.Listed, 'unexpected status - should be listed');
-			assert.equal(info[1], i === 0 ? ac.ACCOUNT1 : ac.ADAPT_ADMIN, 'unexpected owner');
+			assert.equal(info[0], i === 0 ? ac.ACCOUNT1 : ac.ADAPT_ADMIN, 'unexpected owner');
 
-			const buyPrice = new BigNumber(info[2]);
+			const buyPrice = new BigNumber(info[1]);
 			buyPrice.should.be.bignumber.equal(buyPrices[i]);
 
-			assert.equal(info[3], '0x0000000000000000000000000000000000000000', 'unexpected buyer');
+			assert.equal(info[2], '0x0000000000000000000000000000000000000000', 'unexpected buyer');
 
-			const startPrice = new BigNumber(info[4]);
+			const startPrice = new BigNumber(info[3]);
 			startPrice.should.be.bignumber.equal(startPrices[i]);
 
-			assert.equal(info[5], endTimes[i], 'unexpected end time');
-			assert.equal(info[6], 0, 'unexpected highest bid');
+			assert.equal(info[4], endTimes[i], 'unexpected end time');
+			assert.equal(info[5], 0, 'unexpected highest bid');
 		}
 	});
 

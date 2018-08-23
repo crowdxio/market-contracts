@@ -232,7 +232,7 @@ contract('Testing auction functionality', async function (rpc_accounts) {
 		const info = await uniqxMarket.getOrderInfo(adaptCollectibles.address, tokens[1]);
 		console.log(`order info: ${JSON.stringify(info, null, '\t')}`);
 
-		const highestBid = new BigNumber(info[6]);
+		const highestBid = new BigNumber(info[5]);
 		highestBid.should.be.bignumber.equal(bid);
 	});
 
@@ -296,7 +296,7 @@ contract('Testing auction functionality', async function (rpc_accounts) {
 		const info = await uniqxMarket.getOrderInfo(adaptCollectibles.address, tokens[1]);
 		console.log(`order info: ${JSON.stringify(info, null, '\t')}`);
 
-		const highestBid = new BigNumber(info[6]);
+		const highestBid = new BigNumber(info[5]);
 		highestBid.should.be.bignumber.equal(bid);
 	});
 
@@ -319,7 +319,7 @@ contract('Testing auction functionality', async function (rpc_accounts) {
 		const info = await uniqxMarket.getOrderInfo(adaptCollectibles.address, tokens[1]);
 		console.log(`order info: ${JSON.stringify(info, null, '\t')}`);
 
-		const highestBid = new BigNumber(info[6]);
+		const highestBid = new BigNumber(info[5]);
 		highestBid.should.be.bignumber.equal(bid);
 	});
 
@@ -383,11 +383,11 @@ contract('Testing auction functionality', async function (rpc_accounts) {
 		expectEvent.inLogs(ret.logs, 'LogBidPlaced');
 
 		let info = await uniqxMarket.getOrderInfo(adaptCollectibles.address, tokens[2]);
-		let highestBid = new BigNumber(info[6]);
+		let highestBid = new BigNumber(info[5]);
 		highestBid.should.be.bignumber.equal(bid);
 
 		info = await uniqxMarket.getOrderInfo(adaptCollectibles.address, tokens[3]);
-		highestBid = new BigNumber(info[6]);
+		highestBid = new BigNumber(info[5]);
 		highestBid.should.be.bignumber.equal(bid);
 	});
 

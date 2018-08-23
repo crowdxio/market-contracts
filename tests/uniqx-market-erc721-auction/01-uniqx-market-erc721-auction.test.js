@@ -153,8 +153,8 @@ contract('testing allow/disallow orders - ', function (rpc_accounts) {
 	});
 
 	it('should be able take/cancel orders for contract with orders disallowed', async () => {
-		let orderStatus = await market.getOrderStatus(erc721Token1.address, tokens1[0]);
-		assert.equal(orderStatus, OrderStatus.Listed, 'Order should be in \'Listed\' State');
+		let listed = await market.tokenIsListed(erc721Token1.address, tokens1[0]);
+		assert.equal(listed, true, 'Token should be listed');
 
 		await market.buyTokens(
 			erc721Token1.address,
@@ -162,8 +162,8 @@ contract('testing allow/disallow orders - ', function (rpc_accounts) {
 			{ from: ac.BUYER2 , gas: 7000000, value: ether(1) }
 		).should.be.fulfilled;
 
-		orderStatus = await market.getOrderStatus(erc721Token1.address, tokens1[0]);
-		assert.equal(orderStatus, OrderStatus.Unknown, 'Order should be in `Unknown` state');
+		listed = await market.tokenIsListed(erc721Token1.address, tokens1[0]);
+		assert.equal(listed, false, 'Token should not be listed');
 
 		await market.cancelTokens(
 			erc721Token1.address,
@@ -171,9 +171,9 @@ contract('testing allow/disallow orders - ', function (rpc_accounts) {
 			{ from: ac.ADAPT_ADMIN , gas: 7000000 }
 		).should.be.fulfilled;
 
-		orderStatus = await market.getOrderStatus(erc721Token1.address, tokens1[1]);
-		console.log('@@ Order status token 1', orderStatus);
-		assert.equal(orderStatus, OrderStatus.Unknown, 'Order should be in `Unknown` state');
+		listed = await market.tokenIsListed(erc721Token1.address, tokens1[1]);
+		console.log('@@ Order status token 1', listed);
+		assert.equal(listed, false, 'Token should not be listed');
 	});
 
 	it('should be able make orders for other contracts with orders allowed', async () => {

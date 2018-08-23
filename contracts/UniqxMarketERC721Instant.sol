@@ -220,7 +220,7 @@ contract UniqxMarketERC721Instant is UniqxMarketBase {
 
 	/////////////////////////////////////// INTERNAL ////////////////////////////////////////
 
-	function isListed(OrderInfo order)
+	function orderExists(OrderInfo order)
 		private
 		pure
 		returns(bool listed)
@@ -239,7 +239,7 @@ contract UniqxMarketERC721Instant is UniqxMarketBase {
 		returns(address _owner)
 	{
 		OrderInfo storage order = orders[token][tokenId];
-		require(!isListed(order), "Token must not be listed already");
+		require(!orderExists(order), "Token must not be listed already");
 		require(isSpenderApproved(msg.sender, token , tokenId), "The seller must be allowed to sell the token");
 
 		// market will now escrow the token (owner and seller(if any) must approve the market before listing)
@@ -268,7 +268,7 @@ contract UniqxMarketERC721Instant is UniqxMarketBase {
 		returns(uint price)
 	{
 		OrderInfo storage order = orders[token][tokenId];
-		require(isListed(order), "Token must be listed");
+		require(orderExists(order), "Token must be listed");
 
 		price = order.buyPrice;
 
@@ -298,7 +298,7 @@ contract UniqxMarketERC721Instant is UniqxMarketBase {
 		private
 	{
 		OrderInfo storage order = orders[token][tokenId];
-		require(isListed(order), "Token must be listed");
+		require(orderExists(order), "Token must be listed");
 
 		require(
 			order.owner == msg.sender

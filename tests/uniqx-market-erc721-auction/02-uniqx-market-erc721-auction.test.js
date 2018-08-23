@@ -1,5 +1,5 @@
 import {
-	accounts, assert, should, BigNumber, Bluebird, OrderStatus
+	accounts, assert, should, BigNumber, Bluebird, listed
 } from '../common/common';
 import ether from "../helpers/ether";
 import wei from "../helpers/wei";
@@ -98,8 +98,8 @@ contract('Freeride testing', async function (rpc_accounts) {
 
 		expectEvent.inLogs(rec.logs, 'LogTokensListedAuction');
 		for (let i = 0; i < 3; i++) {
-			const orderStatus = await market.getOrderStatus(erc721Token.address, tokens[i]);
-			assert.equal(orderStatus, OrderStatus.Listed);
+			const listed = await market.tokenIsListed(erc721Token.address, tokens[i]);
+			assert.equal(listed, true);
 		}
 	});
 
@@ -128,8 +128,8 @@ contract('Freeride testing', async function (rpc_accounts) {
 		).should.be.fulfilled;
 
 		expectEvent.inLogs(rec.logs, 'LogTokenSold');
-		const orderStatus = await market.getOrderStatus(erc721Token.address, tokens[0]);
-		assert.equal(orderStatus, OrderStatus.Unknown);
+		const listed = await market.tokenIsListed(erc721Token.address, tokens[0]);
+		assert.equal(listed, listed);
 
 		const balanceBuyer1AfterOutbided = await pGetBalance(ac.BUYER1);
 		balanceBuyer1AfterOutbided.should.be.bignumber.equal(buyer1BalanceShouldBeAfterOutbided);
@@ -218,8 +218,8 @@ contract('Freeride testing', async function (rpc_accounts) {
 		).should.be.fulfilled;
 
 		expectEvent.inLogs(rec.logs, 'LogTokensListedAuction');
-		let orderStatus = await market.getOrderStatus(erc721Token.address, tokens[3]);
-		assert.equal(orderStatus, OrderStatus.Listed);
+		let listed = await market.tokenIsListed(erc721Token.address, tokens[3]);
+		assert.equal(listed, true);
 
 		rec = await market.cancelTokens(
 			erc721Token.address,
@@ -228,8 +228,8 @@ contract('Freeride testing', async function (rpc_accounts) {
 		).should.be.fulfilled;
 
 		expectEvent.inLogs(rec.logs, 'LogTokensCancelled');
-		orderStatus = await market.getOrderStatus(erc721Token.address, tokens[3]);
-		assert.equal(orderStatus, OrderStatus.Unknown);
+		listed = await market.tokenIsListed(erc721Token.address, tokens[3]);
+		assert.equal(listed, false);
 	});
 
 	it('should not be able to make auction with expiry date in the past', async () => {
@@ -274,8 +274,8 @@ contract('Freeride testing', async function (rpc_accounts) {
 		).should.be.fulfilled;
 
 		expectEvent.inLogs(rec.logs, 'LogTokensListedAuction');
-		let orderStatus = await market.getOrderStatus(erc721Token.address, tokens[3]);
-		assert.equal(orderStatus, OrderStatus.Listed);
+		let listed = await market.tokenIsListed(erc721Token.address, tokens[3]);
+		assert.equal(listed, true);
 
 		rec = await market.placeBids(
 			erc721Token.address,
@@ -312,8 +312,8 @@ contract('Freeride testing', async function (rpc_accounts) {
 		).should.be.fulfilled;
 
 		expectEvent.inLogs(rec.logs, 'LogTokensListedAuction');
-		let orderStatus = await market.getOrderStatus(erc721Token.address, tokens[4]);
-		assert.equal(orderStatus, OrderStatus.Listed);
+		let listed = await market.tokenIsListed(erc721Token.address, tokens[4]);
+		assert.equal(listed, true);
 
 		increaseTimeTo(oneDayLater + duration.minutes(1));
 
