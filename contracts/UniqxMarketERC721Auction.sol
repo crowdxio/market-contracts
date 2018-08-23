@@ -7,7 +7,10 @@ import {UniqxMarketBase} from "./UniqxMarketBase.sol";
 contract UniqxMarketERC721Auction is UniqxMarketBase
 {
 	using SafeMath for uint;
+
+	/////////////////////////////////////// CONSTANTS ///////////////////////////////////////
 	uint constant AUCTION_MIN_DURATION = 1 hours;
+	/////////////////////////////////////// TYPES ///////////////////////////////////////////
 
 	struct OrderInfo {
 		OrderStatus status;
@@ -19,16 +22,14 @@ contract UniqxMarketERC721Auction is UniqxMarketBase
 		uint highestBid; 			// holds the highest bid at any given time
 	}
 
-	struct TokenContract {
-		bool registered;
-		bool ordersEnabled;
-	}
-
-	mapping(address => TokenContract) tokenContracts;
+	/////////////////////////////////////// EVENTS //////////////////////////////////////////
+	/////////////////////////////////////// VARIABLES ///////////////////////////////////////
 
 	// TokenContract -> TokenId -> OrderInfo
 	mapping(address => mapping(uint => OrderInfo)) orders;
 
+	/////////////////////////////////////// MODIFIERS ///////////////////////////////////////
+	/////////////////////////////////////// PUBLIC //////////////////////////////////////////
 	constructor(
 		address admin,
 		address marketFeeCollector
@@ -36,77 +37,6 @@ contract UniqxMarketERC721Auction is UniqxMarketBase
 
 		MARKET_FEE_COLLECTOR = marketFeeCollector;
 		transferOwnership(admin);
-	}
-
-	function registerToken(address token)
-		onlyOwner
-		public
-	{
-		require(!tokenContracts[token].registered, "Token should not be registered already");
-
-		TokenContract memory tokenContract = TokenContract(
-			{
-				registered: true,
-				ordersEnabled: true
-			}
-		);
-
-		tokenContracts[token] = tokenContract;
-		emit LogTokenRegistered(token);
-	}
-
-	function getTokenContractStatus(address token)
-		public
-		view
-		returns(bool registered, bool ordersEnabled)
-	{
-		TokenContract storage tokenContract = tokenContracts[token];
-		registered = tokenContract.registered;
-		ordersEnabled = tokenContract.ordersEnabled;
-	}
-
-	function enableTokenOrders(address token)
-		onlyOwner
-		public
-	{
-		TokenContract storage tokenContract = tokenContracts[token];
-
-		require(tokenContract.registered, "Token must be registered");
-		require(!tokenContract.ordersEnabled, "Orders must be disabled for this token");
-		tokenContract.ordersEnabled = true;
-
-		emit LogTokenOrdersEnabled(token);
-	}
-
-
-	function disableTokenOrders(address token)
-		onlyOwner
-		public
-	{
-		TokenContract storage tokenContract = tokenContracts[token];
-
-		require(tokenContract.registered, "Token must be registered");
-		require(tokenContract.ordersEnabled, "Orders must be enabled for this token");
-		tokenContract.ordersEnabled = false;
-
-		emit LogTokenOrdersDisabled(token);
-	}
-
-	function isSpenderApproved(address spender, address token, uint256 tokenId)
-		internal
-		view
-		returns (bool)
-	{
-		TokenContract storage tokenContract = tokenContracts[token];
-
-		require(tokenContract.registered, "Token must be registered");
-
-		ERC721Token tokenInstance = ERC721Token(token);
-		address owner = tokenInstance.ownerOf(tokenId);
-
-		return (spender == owner
-				|| tokenInstance.getApproved(tokenId) == spender
-				|| tokenInstance.isApprovedForAll(owner, spender));
 	}
 
 	function getOrderStatus(address token, uint tokenId)
@@ -147,6 +77,23 @@ contract UniqxMarketERC721Auction is UniqxMarketBase
 		startPrice 	    = order.startPrice;
 		endTime 		= order.endTime;
 		highestBid 	    = order.highestBid;
+	}
+
+	function isSpenderApproved(address spender, address token, uint256 tokenId)
+		internal
+		view
+		returns (bool)
+	{
+		TokenContract storage tokenContract = tokenContracts[token];
+
+		require(tokenContract.registered, "Token must be registered");
+
+		ERC721Token tokenInstance = ERC721Token(token);
+		address owner = tokenInstance.ownerOf(tokenId);
+
+		return (spender == owner
+				|| tokenInstance.getApproved(tokenId) == spender
+				|| tokenInstance.isApprovedForAll(owner, spender));
 	}
 
 	function listTokensAuction(
@@ -422,4 +369,6 @@ contract UniqxMarketERC721Auction is UniqxMarketBase
 		// the bundled value should match the price of all orders
 		require(ordersAmount == msg.value);
 	}
+
+	/////////////////////////////////////// INTERNAL ////////////////////////////////////////
 }

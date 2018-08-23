@@ -8,16 +8,14 @@ contract UniqxMarketERC721Instant is UniqxMarketBase {
 
 	using SafeMath for uint;
 
+	/////////////////////////////////////// CONSTANTS ///////////////////////////////////////
+	/////////////////////////////////////// TYPES ///////////////////////////////////////////
 	struct OrderInfo {
 		address owner; 				// the user who owns the token sold via this order
 		uint buyPrice;				// holds the 'buy it now' price
 	}
 
-	struct TokenContract {
-		bool registered;
-		bool ordersEnabled;
-	}
-
+	/////////////////////////////////////// EVENTS //////////////////////////////////////////
 	event LogTokensListed(
 		address token,
 		uint[] tokenIds,
@@ -34,11 +32,12 @@ contract UniqxMarketERC721Instant is UniqxMarketBase {
 		uint buyPrice
 	);
 
-	mapping(address => TokenContract) tokenContracts;
-
+	/////////////////////////////////////// VARIABLES ///////////////////////////////////////
 	// TokenContract -> TokenId -> OrderInfo
 	mapping(address => mapping(uint => OrderInfo)) orders;
 
+	/////////////////////////////////////// MODIFIERS ///////////////////////////////////////
+	/////////////////////////////////////// PUBLIC //////////////////////////////////////////
 	constructor(
 		address admin,
 		address marketFeeCollector
@@ -46,6 +45,20 @@ contract UniqxMarketERC721Instant is UniqxMarketBase {
 
 		MARKET_FEE_COLLECTOR = marketFeeCollector;
 		transferOwnership(admin);
+	}
+
+	function getOrderInfo(address token, uint tokenId)
+		public
+		view
+		returns (address owner, uint buyPrice)
+	{
+		TokenContract storage tokenContract = tokenContracts[token];
+		require(tokenContract.registered, "Token must be registered");
+
+		OrderInfo storage order = orders[token][tokenId];
+
+		owner		= order.owner;
+		buyPrice 	= order.buyPrice;
 	}
 
 	function tokenIsListed(address token, uint tokenId)
@@ -59,90 +72,6 @@ contract UniqxMarketERC721Instant is UniqxMarketBase {
 		OrderInfo storage order = orders[token][tokenId];
 
 		return (order.owner != address(0x0));
-	}
-
-	function getOrderInfo(address token, uint tokenId)
-		public
-		view
-		returns (address owner, uint buyPrice)
-	{
-		TokenContract storage tokenContract = tokenContracts[token];
-		require(tokenContract.registered, "Token must be registered");
-
-		OrderInfo storage order = orders[token][tokenId];
-
-		owner           = order.owner;
-		buyPrice 	    = order.buyPrice;
-	}
-
-	function registerToken(address token)
-		onlyOwner
-		public
-	{
-		require(!tokenContracts[token].registered, "Token should not be registered already");
-
-		TokenContract memory tokenContract = TokenContract(
-			{
-				registered: true,
-				ordersEnabled: true
-			}
-		);
-
-		tokenContracts[token] = tokenContract;
-		emit LogTokenRegistered(token);
-	}
-
-	function getTokenContractStatus(address token)
-		public
-		view
-		returns(bool registered, bool ordersEnabled)
-	{
-		TokenContract storage tokenContract = tokenContracts[token];
-		registered = tokenContract.registered;
-		ordersEnabled = tokenContract.ordersEnabled;
-	}
-
-	function enableTokenOrders(address token)
-		onlyOwner
-		public
-	{
-		TokenContract storage tokenContract = tokenContracts[token];
-
-		require(tokenContract.registered, "Token must be registered");
-		require(!tokenContract.ordersEnabled, "Orders must be disabled for this token");
-		tokenContract.ordersEnabled = true;
-
-		emit LogTokenOrdersEnabled(token);
-	}
-
-	function disableTokenOrders(address token)
-		onlyOwner
-		public
-	{
-		TokenContract storage tokenContract = tokenContracts[token];
-
-		require(tokenContract.registered, "Token must be registered");
-		require(tokenContract.ordersEnabled, "Orders must be enabled for this token");
-		tokenContract.ordersEnabled = false;
-
-		emit LogTokenOrdersDisabled(token);
-	}
-
-	function isSpenderApproved(address spender, address token, uint256 tokenId)
-		internal
-		view
-		returns (bool)
-	{
-		TokenContract storage tokenContract = tokenContracts[token];
-
-		require(tokenContract.registered, "Token must be registered");
-
-		ERC721Token tokenInstance = ERC721Token(token);
-		address owner = tokenInstance.ownerOf(tokenId);
-
-		return (spender == owner
-				|| tokenInstance.getApproved(tokenId) == spender
-				|| tokenInstance.isApprovedForAll(owner, spender));
 	}
 
 	function listToken(
@@ -203,7 +132,7 @@ contract UniqxMarketERC721Instant is UniqxMarketBase {
 		emit LogTokenCancelled(token, tokenId);
 	}
 
-	// batch functions
+	/////////////////////////////////////// BATCH ///////////////////////////////////////////
 
 	function listTokens(
 		address token, // MC: rename to tokenContract
@@ -289,11 +218,11 @@ contract UniqxMarketERC721Instant is UniqxMarketBase {
 		emit LogTokensCancelled(token, tokenIds);
 	}
 
-	// internal functions
+	/////////////////////////////////////// INTERNAL ////////////////////////////////////////
 
 	function isListed(OrderInfo order)
 		private
-		view
+		pure
 		returns(bool listed)
 	{
 		return (order.owner != address(0x0));
