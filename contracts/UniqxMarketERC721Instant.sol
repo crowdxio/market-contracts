@@ -309,9 +309,6 @@ contract UniqxMarketERC721Instant is UniqxMarketBase {
 		private
 		returns(address _owner)
 	{
-		// assume the token is registered and orders are enabled for this token
-		TokenContract storage tokenContract = tokenContracts[token];
-
 		OrderInfo storage order = orders[token][tokenId];
 		require(!isListed(order), "Token must not be listed already");
 		require(isSpenderApproved(msg.sender, token , tokenId), "The seller must be allowed to sell the token");
@@ -341,9 +338,6 @@ contract UniqxMarketERC721Instant is UniqxMarketBase {
 		private
 		returns(uint price)
 	{
-		// assume the token is registered and orders are enabled for this token
-		TokenContract storage tokenContract = tokenContracts[token];
-
 		OrderInfo storage order = orders[token][tokenId];
 		require(isListed(order), "Token must be listed");
 
@@ -375,13 +369,12 @@ contract UniqxMarketERC721Instant is UniqxMarketBase {
 		private
 	{
 		OrderInfo storage order = orders[token][tokenId];
-
 		require(isListed(order), "Token must be listed");
 
 		require(
-			msg.sender == order.owner
+			order.owner == msg.sender
 			|| tokenInstance.getApproved(tokenId) == msg.sender
-		|| tokenInstance.isApprovedForAll(order.owner, msg.sender),
+			|| tokenInstance.isApprovedForAll(order.owner, msg.sender),
 			"Only the owner or the seller can cancel a token"
 		);
 
