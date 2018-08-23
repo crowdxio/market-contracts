@@ -154,7 +154,7 @@ contract('Testing FixedPrice listing - main flow', async function (rpc_accounts)
 			prices[i] = ether(1);
 		}
 
-		const rec = await uniqxMarket.listTokensFixedPrice(
+		const rec = await uniqxMarket.listTokens(
 			adaptCollectibles.address,
 			tokens,
 			prices,
@@ -167,7 +167,7 @@ contract('Testing FixedPrice listing - main flow', async function (rpc_accounts)
 		console.log(`GAS - List ${tokensCount - 1} adapt tokens - fixed price: ${rec.receipt.gasUsed}`);
 
 		// MC: we should check here for each and every order the exact details by reading data back
-		expectEvent.inLogs(rec.logs, 'LogTokensListedFixedPrice');
+		expectEvent.inLogs(rec.logs, 'LogTokensListed');
 	});
 
 
@@ -198,7 +198,7 @@ contract('Testing FixedPrice listing - main flow', async function (rpc_accounts)
 		console.log(`GAS - List 1 adapt token - fixed price: ${rec.receipt.gasUsed}`);
 
 		// MC: should check the details of the orders here; both content of logs and content of data
-		expectEvent.inLogs(rec.logs, 'LogTokensListedFixedPrice');
+		expectEvent.inLogs(rec.logs, 'LogTokensListed');
 	});
 
 	it('should be able to cancel 2 tokens', async () => {
@@ -223,7 +223,7 @@ contract('Testing FixedPrice listing - main flow', async function (rpc_accounts)
 
 		const fourDaysLater = moment().add(4, 'days').unix();
 
-		let rec = await uniqxMarket.listTokensFixedPrice(
+		let rec = await uniqxMarket.listTokens(
 			adaptCollectibles.address,
 			[ tokens[0] ],
 			[ prices[0] ],
@@ -233,7 +233,7 @@ contract('Testing FixedPrice listing - main flow', async function (rpc_accounts)
 		console.log(`GAS - Re-list for fixed price 1 adapt token after it was cancel: ${rec.receipt.gasUsed}`);
 
 		// MC: should check the details of the orders here; both content of logs and content of data
-		expectEvent.inLogs(rec.logs, 'LogTokensListedFixedPrice');
+		expectEvent.inLogs(rec.logs, 'LogTokensListed');
 	});
 
 	it('should be able to buy 9 tokens', async () => {

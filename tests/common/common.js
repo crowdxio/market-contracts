@@ -126,7 +126,7 @@ async function parseUnixMarketEvent(event, timestamp) {
 
 	switch (name) {
 
-		case 'LogTokenListedFixedPrice': {
+		case 'LogTokenListed': {
 
 			const token        = parameters[0].value;
 			const tokenId      = parameters[1].value;
@@ -145,7 +145,7 @@ async function parseUnixMarketEvent(event, timestamp) {
 			break;
 		}
 
-		case 'LogTokensListedFixedPrice': {
+		case 'LogTokensListed': {
 
 			const token         = parameters[0].value;
 			const tokenIds      = parameters[1].value;
@@ -177,6 +177,13 @@ async function parseUnixMarketEvent(event, timestamp) {
 			}
 			break;
 
+		}
+
+		case 'LogTokenCancelled': {
+			const token   = parameters[0].value;
+			const tokenId = new BigNumber(parameters[1].value, 10).toString(16);
+			console.log(`Token Canceled: token=${token}, tokenId=0x${tokenId}, cancelledAt=${moment.unix(timestamp).utc().format()}`);
+			break;
 		}
 
 		case 'LogTokensCancelled': {

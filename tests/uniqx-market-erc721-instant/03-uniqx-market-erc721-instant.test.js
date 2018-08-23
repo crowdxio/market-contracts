@@ -95,7 +95,7 @@ contract('Testing buy now functionality', async function (rpc_accounts) {
 			prices[i] = ether(1);
 		}
 
-		const rec = await uniqxMarket.listTokensFixedPrice(
+		const rec = await uniqxMarket.listTokens(
 			adaptCollectibles.address,
 			tokens,
 			prices,

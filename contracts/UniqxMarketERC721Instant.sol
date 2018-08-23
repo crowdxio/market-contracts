@@ -16,10 +16,28 @@ contract UniqxMarketERC721Instant is UniqxMarketBase {
 	struct TokenContract {
 		bool registered;
 		bool ordersEnabled;
-		mapping(uint => OrderInfo) orders;
 	}
 
+	event LogTokensListed(
+		address token,
+		uint[] tokenIds,
+		address[] owners,
+		address seller,
+		uint[] buyPrices
+	);
+
+	event LogTokenListed(
+		address token,
+		uint tokenId,
+		address owner,
+		address seller,
+		uint buyPrice
+	);
+
 	mapping(address => TokenContract) tokenContracts;
+
+	// TokenContract -> TokenId -> OrderInfo
+	mapping(address => mapping(uint => OrderInfo)) orders;
 
 	constructor(
 		address admin,
@@ -38,7 +56,7 @@ contract UniqxMarketERC721Instant is UniqxMarketBase {
 		TokenContract storage tokenContract = tokenContracts[token];
 		require(tokenContract.registered, "Token must be registered");
 
-		OrderInfo storage order = tokenContract.orders[tokenId];
+		OrderInfo storage order = orders[token][tokenId];
 
 		return (order.owner != address(0x0));
 	}
@@ -51,7 +69,7 @@ contract UniqxMarketERC721Instant is UniqxMarketBase {
 		TokenContract storage tokenContract = tokenContracts[token];
 		require(tokenContract.registered, "Token must be registered");
 
-		OrderInfo storage order = tokenContract.orders[tokenId];
+		OrderInfo storage order = orders[token][tokenId];
 
 		owner           = order.owner;
 		buyPrice 	    = order.buyPrice;
@@ -145,7 +163,7 @@ contract UniqxMarketERC721Instant is UniqxMarketBase {
 
 		address owner = listTokenInternal(token, tokenInstance, tokenId, buyPrice);
 
-		emit LogTokenListedFixedPrice(
+		emit LogTokenListed(
 			token,
 			tokenId,
 			owner,
@@ -171,55 +189,31 @@ contract UniqxMarketERC721Instant is UniqxMarketBase {
 		buyTokenInternal(token, tokenInstance, tokenId, 0);
 	}
 
-	// MC: isn't this better called cancelOrders ?
-	// Can we do a separate branch for renaming and involve Solo as well?
-	function cancelTokens(
+	function cancelToken(
 		address token,
-		uint[] tokenIds
+		uint tokenId
 	)
 		whenNotPaused
 		nonReentrant
-	public
+		public
 	{
 		TokenContract storage tokenContract = tokenContracts[token];
-		ERC721Token tokenInstance = ERC721Token(token);
-
 		require(tokenContract.registered, "Token must be registered");
-		require(tokenIds.length > 0, "Array must have at least one entry");
 
-		for(uint i = 0; i < tokenIds.length; i++) {
-
-			OrderInfo storage order = tokenContract.orders[tokenIds[i]];
-
-			require(isListed(order), "Token must be listed");
-
-			require(
-				msg.sender == order.owner
-				|| tokenInstance.getApproved(tokenIds[i]) == msg.sender
-				|| tokenInstance.isApprovedForAll(order.owner, msg.sender),
-				"Only the owner or the seller can cancel a token"
-			);
-
-			// transfer the token back to the owner
-			tokenInstance.transferFrom(address(this), order.owner, tokenIds[i]);
-
-			delete tokenContract.orders[tokenIds[i]];
-		}
-
-		emit LogTokensCancelled(token, tokenIds);
+		emit LogTokenCancelled(token, tokenId);
 	}
 
 	// batch functions
 
-	function listTokensFixedPrice(
+	function listTokens(
 		address token, // MC: rename to tokenContract
 		uint[] tokenIds,
 		uint[] buyPrices
 	)
-	whenNotPaused
-	whenOrdersEnabled
-	nonReentrant
-	public
+		whenNotPaused
+		whenOrdersEnabled
+		nonReentrant
+		public
 	{
 		require(tokenIds.length > 0, "Array must have at least one entry");
 		require(tokenIds.length == buyPrices.length, "Array lengths must match");
@@ -235,7 +229,7 @@ contract UniqxMarketERC721Instant is UniqxMarketBase {
 			owners[i] = listTokenInternal(token, tokenInstance, tokenIds[i], buyPrices[i]);
 		}
 
-		emit LogTokensListedFixedPrice(
+		emit LogTokensListed(
 			token,
 			tokenIds,
 			owners,
@@ -248,10 +242,10 @@ contract UniqxMarketERC721Instant is UniqxMarketBase {
 		address token,
 		uint[] tokenIds
 	)
-	whenNotPaused
-	nonReentrant
-	public
-	payable
+		whenNotPaused
+		nonReentrant
+		public
+		payable
 	{
 		require(tokenIds.length > 0, "Array must have at least one entry");
 
@@ -268,6 +262,31 @@ contract UniqxMarketERC721Instant is UniqxMarketBase {
 
 		// the bundled value should match the price of all orders
 		require(ordersAmount == msg.value);
+	}
+
+
+	// MC: isn't this better called cancelOrders ?
+	// Can we do a separate branch for renaming and involve Solo as well?
+	function cancelTokens(
+		address token,
+		uint[] tokenIds
+	)
+		whenNotPaused
+		nonReentrant
+		public
+	{
+		require(tokenIds.length > 0, "Array must have at least one entry");
+
+		TokenContract storage tokenContract = tokenContracts[token];
+		require(tokenContract.registered, "Token must be registered");
+
+		ERC721Token tokenInstance = ERC721Token(token);
+
+		for(uint i = 0; i < tokenIds.length; i++) {
+			cancelTokenInternal(token, tokenInstance, tokenIds[i]);
+		}
+
+		emit LogTokensCancelled(token, tokenIds);
 	}
 
 	// internal functions
@@ -293,7 +312,7 @@ contract UniqxMarketERC721Instant is UniqxMarketBase {
 		// assume the token is registered and orders are enabled for this token
 		TokenContract storage tokenContract = tokenContracts[token];
 
-		OrderInfo storage order = tokenContract.orders[tokenId];
+		OrderInfo storage order = orders[token][tokenId];
 		require(!isListed(order), "Token must not be listed already");
 		require(isSpenderApproved(msg.sender, token , tokenId), "The seller must be allowed to sell the token");
 
@@ -308,7 +327,7 @@ contract UniqxMarketERC721Instant is UniqxMarketBase {
 			}
 		);
 
-		tokenContracts[token].orders[tokenId] = newOrder;
+		orders[token][tokenId] = newOrder;
 
 		return owner;
 	}
@@ -325,7 +344,7 @@ contract UniqxMarketERC721Instant is UniqxMarketBase {
 		// assume the token is registered and orders are enabled for this token
 		TokenContract storage tokenContract = tokenContracts[token];
 
-		OrderInfo storage order = tokenContract.orders[tokenId];
+		OrderInfo storage order = orders[token][tokenId];
 		require(isListed(order), "Token must be listed");
 
 		price = order.buyPrice;
@@ -345,6 +364,30 @@ contract UniqxMarketERC721Instant is UniqxMarketBase {
 
 		emit LogTokenSold(token, tokenId, msg.sender, order.buyPrice);
 
-		delete tokenContract.orders[tokenId];
+		delete orders[token][tokenId];
+	}
+
+	function cancelTokenInternal(
+		address token,
+		ERC721Token tokenInstance,
+		uint tokenId
+	)
+		private
+	{
+		OrderInfo storage order = orders[token][tokenId];
+
+		require(isListed(order), "Token must be listed");
+
+		require(
+			msg.sender == order.owner
+			|| tokenInstance.getApproved(tokenId) == msg.sender
+		|| tokenInstance.isApprovedForAll(order.owner, msg.sender),
+			"Only the owner or the seller can cancel a token"
+		);
+
+		// transfer the token back to the owner
+		tokenInstance.transferFrom(address(this), order.owner, tokenId);
+
+		delete orders[token][tokenId];
 	}
 }

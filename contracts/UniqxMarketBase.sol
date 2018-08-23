@@ -30,25 +30,6 @@ contract UniqxMarketBase is NoOwner, Pausable, ReentrancyGuard {
 	event LogTokenOrdersEnabled(address token);
 	event LogTokenOrdersDisabled(address token);
 
-	event LogTokenListedFixedPrice(
-		address token,
-		uint tokenId,
-		address owner,
-		address seller,
-		uint buyPrice
-	);
-
-	event LogTokensListedFixedPrice(
-		// lookup
-		address token,
-		uint[] tokenIds,
-
-		// common
-		address[] owners,
-		address seller,
-		uint[] buyPrices
-	);
-
 	event LogTokensListedAuction(
 		// lookup
 		address token,
@@ -66,6 +47,7 @@ contract UniqxMarketBase is NoOwner, Pausable, ReentrancyGuard {
 
 	event LogBidPlaced(address token, uint tokenId, address bidder, uint bid);
 	event LogTokenSold(address token, uint tokenId, address buyer, uint price);
+	event LogTokenCancelled(address token, uint tokenIds);
 	event LogTokensCancelled(address token, uint[] tokenIds);
 	event LogTokenUnsold(address token, uint tokenId);
 

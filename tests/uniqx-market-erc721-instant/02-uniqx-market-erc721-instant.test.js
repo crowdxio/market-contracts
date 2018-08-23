@@ -77,7 +77,7 @@ contract('Testing token listing', async function (rpc_accounts) {
 	});
 
 	it('should not be able to list zero tokens', async function () {
-		await uniqxMarket.listTokensFixedPrice(
+		await uniqxMarket.listTokens(
 			adaptCollectibles.address,
 			[],
 			[],
@@ -107,7 +107,7 @@ contract('Testing token listing', async function (rpc_accounts) {
 	});
 
 	it('the SELLER should NOT be able to list 10 adapt tokens for sale unless he gets approval - fixed price format', async () => {
-		await uniqxMarket.listTokensFixedPrice(
+		await uniqxMarket.listTokens(
 			adaptCollectibles.address,
 			tokens,
 			buyPrices,
@@ -166,7 +166,7 @@ contract('Testing token listing', async function (rpc_accounts) {
 
 	it('the SELLER should be able to list 10 adapt tokens for sale - fixed price', async () => {
 
-		const ret = await uniqxMarket.listTokensFixedPrice(
+		const ret = await uniqxMarket.listTokens(
 			adaptCollectibles.address,
 			tokens,
 			buyPrices,
@@ -180,7 +180,7 @@ contract('Testing token listing', async function (rpc_accounts) {
 
 		console.log(`GAS - List ${tokensCount} adapt tokens fixed price: ${ret.receipt.gasUsed}`);
 
-		expectEvent.inLogs(ret.logs, 'LogTokensListedFixedPrice');
+		expectEvent.inLogs(ret.logs, 'LogTokensListed');
 
 		for (let i = 0; i < tokensCount; i++) {
 			const owner = await adaptCollectibles.ownerOf(tokens[i]);

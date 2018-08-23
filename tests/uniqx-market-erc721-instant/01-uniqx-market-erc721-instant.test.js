@@ -105,14 +105,14 @@ contract('testing allow/disallow orders - ', function (rpc_accounts) {
 	});
 
 	it('should be able to make orders by default', async () => {
-		await market.listTokensFixedPrice(
+		await market.listTokens(
 			erc721Token1.address,
 			[ tokens1[0], tokens1[1], tokens1[2] ],
 			[ ether(1), ether(1), ether(1) ],
 			{ from: ac.ADAPT_ADMIN , gas: 7000000 }
 		).should.be.fulfilled;
 
-		await market.listTokensFixedPrice(
+		await market.listTokens(
 			erc721Token2.address,
 			[ tokens2[0], tokens2[1], tokens2[2] ],
 			[ ether(1), ether(1), ether(1) ],
@@ -130,7 +130,7 @@ contract('testing allow/disallow orders - ', function (rpc_accounts) {
 	});
 
 	it('should not be able make orders for contract with orders disallowed', async () => {
-		await market.listTokensFixedPrice(
+		await market.listTokens(
 			erc721Token1.address,
 			[ tokens1[3] ],
 			[ ether(1) ],
@@ -162,7 +162,7 @@ contract('testing allow/disallow orders - ', function (rpc_accounts) {
 	});
 
 	it('should be able make orders for other contracts with orders allowed', async () => {
-		await market.listTokensFixedPrice(
+		await market.listTokens(
 			erc721Token2.address,
 			[ tokens2[3] ],
 			[ ether(1) ],
@@ -191,7 +191,7 @@ contract('testing allow/disallow orders - ', function (rpc_accounts) {
 	});
 
 	it('should be able make orders for contract with allowed orders', async () => {
-		await market.listTokensFixedPrice(
+		await market.listTokens(
 			erc721Token1.address,
 			[ tokens1[3] ],
 			[ ether(1) ],
@@ -207,14 +207,14 @@ contract('testing allow/disallow orders - ', function (rpc_accounts) {
 	});
 
 	it('should not be able make orders for any contracts when orders are disallowed globally', async () => {
-		await market.listTokensFixedPrice(
+		await market.listTokens(
 			erc721Token1.address,
 			[ tokens1[4] ],
 			[ ether(1) ],
 			{ from: ac.ADAPT_ADMIN, gas: 7000000 }
 		).should.be.rejectedWith(EVMRevert);
 
-		await market.listTokensFixedPrice(
+		await market.listTokens(
 			erc721Token2.address,
 			[ tokens2[4] ],
 			[ ether(1) ],
@@ -249,5 +249,3 @@ contract('testing allow/disallow orders - ', function (rpc_accounts) {
 		).should.be.fulfilled;
 	});
 });
-
-
