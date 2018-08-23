@@ -11,7 +11,6 @@ contract UniqxMarketERC721Auction is UniqxMarketBase
 	/////////////////////////////////////// CONSTANTS ///////////////////////////////////////
 	uint constant AUCTION_MIN_DURATION = 1 hours;
 	/////////////////////////////////////// TYPES ///////////////////////////////////////////
-
 	struct OrderInfo {
 		address owner; 				// the user who owns the token sold via this order
 		uint buyPrice;				// holds the 'buy it now' price
@@ -35,7 +34,6 @@ contract UniqxMarketERC721Auction is UniqxMarketBase
 	event LogTokenSold(address token, uint tokenId, address buyer, uint price);
 
 	/////////////////////////////////////// VARIABLES ///////////////////////////////////////
-
 	// TokenContract -> TokenId -> OrderInfo
 	mapping(address => mapping(uint => OrderInfo)) orders;
 
@@ -215,7 +213,6 @@ contract UniqxMarketERC721Auction is UniqxMarketBase
 		require(bidRunningSum == msg.value, "The amount passed must match the sum of the bids");
 	}
 
-
 	// MC: isn't this better called cancelOrders ?
 	// Can we do a separate branch for renaming and involve Solo as well?
 	function cancelTokens(
@@ -361,7 +358,6 @@ contract UniqxMarketERC721Auction is UniqxMarketBase
 	}
 
 	/////////////////////////////////////// INTERNAL ////////////////////////////////////////
-
 	function orderExists(OrderInfo order)
 		private
 		pure

@@ -11,15 +11,13 @@ contract UniqxMarketERC721Instant is UniqxMarketBase {
 	/////////////////////////////////////// CONSTANTS ///////////////////////////////////////
 	/////////////////////////////////////// TYPES ///////////////////////////////////////////
 	struct OrderInfo {
-		address owner; 				// the user who owns the token sold via this order
-		uint buyPrice;				// holds the 'buy it now' price
+		address owner;	// the user who owns the token sold via this order
+		uint buyPrice;	// holds the 'buy it now' price
 	}
 
 	/////////////////////////////////////// EVENTS //////////////////////////////////////////
-
 	event LogTokenSold(address token, uint tokenId, address buyer);
 	event LogTokensSold(address token, uint[] tokenIds, address buyer);
-
 	event LogTokenListed(
 		address token,
 		uint tokenId,
@@ -27,7 +25,6 @@ contract UniqxMarketERC721Instant is UniqxMarketBase {
 		address seller,
 		uint buyPrice
 	);
-
 	event LogTokensListed(
 		address token,
 		uint[] tokenIds,
@@ -139,7 +136,6 @@ contract UniqxMarketERC721Instant is UniqxMarketBase {
 	}
 
 	/////////////////////////////////////// BATCH ///////////////////////////////////////////
-
 	function listTokens(
 		address token, // MC: rename to tokenContract
 		uint[] tokenIds,
@@ -227,7 +223,6 @@ contract UniqxMarketERC721Instant is UniqxMarketBase {
 	}
 
 	/////////////////////////////////////// INTERNAL ////////////////////////////////////////
-
 	function orderExists(OrderInfo order)
 		private
 		pure
