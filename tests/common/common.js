@@ -117,7 +117,7 @@ async function parseAdaptMarketEvent(event, timestamp) {
 	}
 }
 
-async function parseUnixMarketEvent(event, timestamp) {
+async function parseUnixInstantMarketEvent(event, timestamp) {
 
 	//console.log(JSON.stringify(event, null, '\t'));
 
@@ -161,22 +161,24 @@ async function parseUnixMarketEvent(event, timestamp) {
 			break;
 		}
 
-		case 'LogTokensListedAuction': {
+		case 'LogTokenSold': {
+			const token         = parameters[0].value;
+			const tokenId       = new BigNumber(parameters[1].value, 10).toString(16);
+			const buyer         = parameters[2].value;
+			console.log(`Token Sold: token=${token}, tokenId=0x${tokenId}, buyer=${buyer}, soldAt=${moment.unix(timestamp).utc().format()}`);
+			break;
+		}
+
+		case 'LogTokensSold': {
 			const token         = parameters[0].value;
 			const tokenIds      = parameters[1].value;
-			const owners        = parameters[2].value;
-			const seller        = parameters[3].value;
-			const buyPrices     = parameters[4].value;
-			const endPrices     = parameters[5].value;
-			const endTimes      = parameters[6].value;
-
+			const buyer         = parameters[2].value;
 			const tokensCount = tokenIds.length;
 			for(let i = 0; i < tokensCount; i++) {
 				const tokenId = new BigNumber(tokenIds[i], 10).toString(16);
-				console.log(`Token Listed Auction: token=${token}, tokenId=0x${tokenId}, listedAt=${moment.unix(timestamp).utc().format()}, owner=${owners[i]}, seller=${seller}, buyPrices=${buyPrices[i]}, endPrice=${endPrices[i]}, endTime=${moment.unix(endTimes[i]).utc().format()}`);
+				console.log(`Token Sold: token=${token}, tokenId=0x${tokenId}, buyer=${buyer}, soldAt=${moment.unix(timestamp).utc().format()}`);
 			}
 			break;
-
 		}
 
 		case 'LogTokenCancelled': {
@@ -198,6 +200,47 @@ async function parseUnixMarketEvent(event, timestamp) {
 			break;
 		}
 
+		default:
+			console.log(`Skipping event ${name}...`);
+	}
+}
+
+
+async function parseUnixAuctionMarketEvent(event, timestamp) {
+
+	//console.log(JSON.stringify(event, null, '\t'));
+
+	const name = event['name'];
+	const parameters = event['events']; // it's called events for some reason...
+
+	switch (name) {
+
+		case 'LogTokensListed': {
+			const token         = parameters[0].value;
+			const tokenIds      = parameters[1].value;
+			const owners        = parameters[2].value;
+			const seller        = parameters[3].value;
+			const buyPrices     = parameters[4].value;
+			const endPrices     = parameters[5].value;
+			const endTimes      = parameters[6].value;
+
+			const tokensCount = tokenIds.length;
+			for(let i = 0; i < tokensCount; i++) {
+				const tokenId = new BigNumber(tokenIds[i], 10).toString(16);
+				console.log(`Token Listed Auction: token=${token}, tokenId=0x${tokenId}, listedAt=${moment.unix(timestamp).utc().format()}, owner=${owners[i]}, seller=${seller}, buyPrices=${buyPrices[i]}, endPrice=${endPrices[i]}, endTime=${moment.unix(endTimes[i]).utc().format()}`);
+			}
+			break;
+		}
+
+		case 'LogBidPlaced': {
+			const token         = parameters[0].value;
+			const tokenId       = new BigNumber(parameters[1].value, 10).toString(16);
+			const bidder        = parameters[2].value;
+			const bid           = parameters[3].value;
+			console.log(`Bid Placed : token=${token}, tokenId=0x${tokenId}, bidder=${bidder}, bid=${bid}, bidPlacedAt=${moment.unix(timestamp).utc().format()}`);
+			break;
+		}
+
 		case 'LogTokenSold': {
 			const token         = parameters[0].value;
 			const tokenId       = new BigNumber(parameters[1].value, 10).toString(16);
@@ -214,14 +257,18 @@ async function parseUnixMarketEvent(event, timestamp) {
 			break;
 		}
 
-		case 'LogBidPlaced': {
+		case 'LogTokensCancelled': {
 			const token         = parameters[0].value;
-			const tokenId       = new BigNumber(parameters[1].value, 10).toString(16);
-			const bidder        = parameters[2].value;
-			const bid           = parameters[3].value;
-			console.log(`Bid Placed : token=${token}, tokenId=0x${tokenId}, bidder=${bidder}, bid=${bid}, bidPlacedAt=${moment.unix(timestamp).utc().format()}`);
+			const tokenIds      = parameters[1].value;
+
+			const tokensCount = tokenIds.length;
+			for(let i = 0; i < tokensCount; i++) {
+				const tokenId = new BigNumber(tokenIds[i], 10).toString(16);
+				console.log(`Token Canceled: token=${token}, tokenId=0x${tokenId}, cancelledAt=${moment.unix(timestamp).utc().format()}`);
+			}
 			break;
 		}
+
 		default:
 			console.log(`Skipping event ${name}...`);
 	}
@@ -237,6 +284,6 @@ module.exports = {
 	getBalanceAsync: getBalanceAsync,
 	getBalanceAsyncStr: getBalanceAsyncStr,
 	parseAdaptTokenEvent: parseAdaptTokenEvent,
-	parseUnixMarketEvent: parseUnixMarketEvent,
-	parseAdaptMarketEvent: parseAdaptMarketEvent
+	parseUnixInstantMarketEvent: parseUnixInstantMarketEvent,
+	parseUnixAuctionMarketEvent: parseUnixAuctionMarketEvent
 };

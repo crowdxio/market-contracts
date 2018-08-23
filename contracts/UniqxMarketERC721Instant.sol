@@ -16,13 +16,9 @@ contract UniqxMarketERC721Instant is UniqxMarketBase {
 	}
 
 	/////////////////////////////////////// EVENTS //////////////////////////////////////////
-	event LogTokensListed(
-		address token,
-		uint[] tokenIds,
-		address[] owners,
-		address seller,
-		uint[] buyPrices
-	);
+
+	event LogTokenSold(address token, uint tokenId, address buyer);
+	event LogTokensSold(address token, uint[] tokenIds, address buyer);
 
 	event LogTokenListed(
 		address token,
@@ -30,6 +26,14 @@ contract UniqxMarketERC721Instant is UniqxMarketBase {
 		address owner,
 		address seller,
 		uint buyPrice
+	);
+
+	event LogTokensListed(
+		address token,
+		uint[] tokenIds,
+		address[] owners,
+		address seller,
+		uint[] buyPrices
 	);
 
 	/////////////////////////////////////// VARIABLES ///////////////////////////////////////
@@ -116,6 +120,8 @@ contract UniqxMarketERC721Instant is UniqxMarketBase {
 		ERC721Token tokenInstance = ERC721Token(token);
 
 		buyTokenInternal(token, tokenInstance, tokenId, 0);
+
+		emit LogTokenSold(token, tokenId, msg.sender);
 	}
 
 	function cancelToken(
@@ -191,6 +197,8 @@ contract UniqxMarketERC721Instant is UniqxMarketBase {
 
 		// the bundled value should match the price of all orders
 		require(ordersAmount == msg.value);
+
+		emit LogTokensSold(token, tokenIds, msg.sender);
 	}
 
 
@@ -284,8 +292,6 @@ contract UniqxMarketERC721Instant is UniqxMarketBase {
 
 		// transfer token to buyer
 		tokenInstance.transferFrom(address(this), msg.sender, tokenId);
-
-		emit LogTokenSold(token, tokenId, msg.sender, order.buyPrice);
 
 		delete orders[token][tokenId];
 	}

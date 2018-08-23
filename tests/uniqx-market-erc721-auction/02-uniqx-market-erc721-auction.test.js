@@ -96,7 +96,7 @@ contract('Freeride testing', async function (rpc_accounts) {
 		).should.be.fulfilled;
 
 
-		expectEvent.inLogs(rec.logs, 'LogTokensListedAuction');
+		expectEvent.inLogs(rec.logs, 'LogTokensListed');
 		for (let i = 0; i < 3; i++) {
 			const listed = await market.tokenIsListed(erc721Token.address, tokens[i]);
 			assert.equal(listed, true);
@@ -217,7 +217,7 @@ contract('Freeride testing', async function (rpc_accounts) {
 			{ from: ac.ADAPT_ADMIN , gas: 7000000 }
 		).should.be.fulfilled;
 
-		expectEvent.inLogs(rec.logs, 'LogTokensListedAuction');
+		expectEvent.inLogs(rec.logs, 'LogTokensListed');
 		let listed = await market.tokenIsListed(erc721Token.address, tokens[3]);
 		assert.equal(listed, true);
 
@@ -273,7 +273,7 @@ contract('Freeride testing', async function (rpc_accounts) {
 			{ from: ac.ADAPT_ADMIN , gas: 7000000 }
 		).should.be.fulfilled;
 
-		expectEvent.inLogs(rec.logs, 'LogTokensListedAuction');
+		expectEvent.inLogs(rec.logs, 'LogTokensListed');
 		let listed = await market.tokenIsListed(erc721Token.address, tokens[3]);
 		assert.equal(listed, true);
 
@@ -311,7 +311,7 @@ contract('Freeride testing', async function (rpc_accounts) {
 			{ from: ac.ADAPT_ADMIN , gas: 7000000 }
 		).should.be.fulfilled;
 
-		expectEvent.inLogs(rec.logs, 'LogTokensListedAuction');
+		expectEvent.inLogs(rec.logs, 'LogTokensListed');
 		let listed = await market.tokenIsListed(erc721Token.address, tokens[4]);
 		assert.equal(listed, true);
 

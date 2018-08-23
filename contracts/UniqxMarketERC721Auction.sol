@@ -22,6 +22,18 @@ contract UniqxMarketERC721Auction is UniqxMarketBase
 	}
 
 	/////////////////////////////////////// EVENTS //////////////////////////////////////////
+	event LogTokensListed(
+		address token,
+		uint[] tokenIds,
+		address[] owners,
+		address seller,
+		uint[] buyPrices,
+		uint[] startPrices,
+		uint[] endTimes
+	);
+	event LogBidPlaced(address token, uint tokenId, address bidder, uint bid);
+	event LogTokenSold(address token, uint tokenId, address buyer, uint price);
+
 	/////////////////////////////////////// VARIABLES ///////////////////////////////////////
 
 	// TokenContract -> TokenId -> OrderInfo
@@ -129,7 +141,7 @@ contract UniqxMarketERC721Auction is UniqxMarketBase
 			orders[token][tokenIds[i]] = newOrder;
 		}
 
-		emit LogTokensListedAuction(
+		emit LogTokensListed(
 			token,
 			tokenIds,
 			owners,

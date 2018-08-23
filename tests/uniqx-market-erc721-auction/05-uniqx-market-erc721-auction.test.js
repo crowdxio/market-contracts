@@ -5,8 +5,7 @@ import {
 	OrderStatus,
 	getBalanceAsync,
 	getBalanceAsyncStr,
-	parseAdaptTokenEvent,
-	parseUnixMarketEvent
+	parseAdaptTokenEvent
 } from '../common/common';
 import ether from "../helpers/ether";
 import expectEvent from "../helpers/expectEvent";

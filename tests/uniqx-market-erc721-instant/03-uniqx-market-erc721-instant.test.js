@@ -1,5 +1,5 @@
 import {
-	accounts, assert, BigNumber, getBalanceAsync, getBalanceAsyncStr, parseAdaptTokenEvent, parseUnixMarketEvent
+	accounts, assert, BigNumber, getBalanceAsync, getBalanceAsyncStr, parseAdaptTokenEvent
 } from '../common/common';
 import ether from "../helpers/ether";
 import expectEvent from "../helpers/expectEvent";
@@ -167,7 +167,7 @@ contract('Testing buy now functionality', async function (rpc_accounts) {
 
 		console.log(`GAS - Buy 10 adapt tokens: ${ret.receipt.gasUsed}`);
 
-		expectEvent.inLogs(ret.logs, 'LogTokenSold');
+		expectEvent.inLogs(ret.logs, 'LogTokensSold');
 
 		// TODO: get these from contract
 		const marketFee = priceToPay.dividedToIntegerBy(100);

@@ -191,7 +191,7 @@ contract('Testing token listing - auction', async function (rpc_accounts) {
 
 		console.log(`GAS - List for auction ${tokensCount} adapt tokens: ${ret.receipt.gasUsed}`);
 
-		expectEvent.inLogs(ret.logs, 'LogTokensListedAuction');
+		expectEvent.inLogs(ret.logs, 'LogTokensListed');
 		for (let i = 0; i < tokensCount; i++) {
 			const owner = await adaptCollectibles.ownerOf(tokens[i]);
 			assert.equal(owner, uniqxMarket.address, 'unexpected owner - market should own the token');

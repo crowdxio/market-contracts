@@ -1,5 +1,5 @@
 import {
-	accounts, assert, BigNumber, getBalanceAsync, getBalanceAsyncStr, parseAdaptTokenEvent, parseUnixMarketEvent
+	accounts, assert, BigNumber, getBalanceAsync, getBalanceAsyncStr, parseAdaptTokenEvent, parseUnixInstantMarketEvent
 } from '../common/common';
 import ether from "../helpers/ether";
 import expectEvent from "../helpers/expectEvent";
@@ -78,7 +78,7 @@ contract('Testing FixedPrice listing - main flow', async function (rpc_accounts)
 			// MC: this parsing is very nice, but we need to enforce exact values
 			// MC: it is not enough to visually recognise that they are printed
 			// MC: I suppose we'll do this for each action and parse its events independently
-			await parseUnixMarketEvent(events[0], blockTimestamp);
+			await parseUnixInstantMarketEvent(events[0], blockTimestamp);
 		});
 
 		// adapt
@@ -263,7 +263,7 @@ contract('Testing FixedPrice listing - main flow', async function (rpc_accounts)
 			}
 		).should.be.fulfilled;
 
-		expectEvent.inLogs(ret.logs, 'LogTokenSold');
+		expectEvent.inLogs(ret.logs, 'LogTokensSold');
 
 		for (let token of tokensToBuy) {
 			const owner = await adaptCollectibles.ownerOf(token);
