@@ -189,10 +189,9 @@ contract('Testing token listing', async function (rpc_accounts) {
 			const info = await uniqxMarket.getOrderInfo(adaptCollectibles.address, tokens[i]);
 			//console.log(`order info: ${JSON.stringify(info, null, '\t')}`);
 
-			assert.equal(info[0], OrderStatus.Listed, 'unexpected status - should be listed');
-			assert.equal(info[1], i === 0 ? ac.ACCOUNT1 : ac.ADAPT_ADMIN, 'unexpected owner');
+			assert.equal(info[0], i === 0 ? ac.ACCOUNT1 : ac.ADAPT_ADMIN, 'unexpected owner');
 
-			const buyPrice = new BigNumber(info[2]);
+			const buyPrice = new BigNumber(info[1]);
 			buyPrice.should.be.bignumber.equal(buyPrices[i]);
 		}
 	});
