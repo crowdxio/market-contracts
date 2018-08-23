@@ -6,7 +6,6 @@ import {UniqxMarketBase} from "./UniqxMarketBase.sol";
 
 contract UniqxMarketERC721Auction is UniqxMarketBase
 {
-
 	using SafeMath for uint;
 	uint constant AUCTION_MIN_DURATION = 1 hours;
 
@@ -23,10 +22,12 @@ contract UniqxMarketERC721Auction is UniqxMarketBase
 	struct TokenContract {
 		bool registered;
 		bool ordersEnabled;
-		mapping(uint => OrderInfo) orders;
 	}
 
 	mapping(address => TokenContract) tokenContracts;
+
+	// TokenContract -> TokenId -> OrderInfo
+	mapping(address => mapping(uint => OrderInfo)) orders;
 
 	constructor(
 		address admin,
@@ -117,7 +118,7 @@ contract UniqxMarketERC721Auction is UniqxMarketBase
 
 		require(tokenContract.registered, "Token must be registered");
 
-		return tokenContract.orders[tokenId].status;
+		return orders[token][tokenId].status;
 	}
 
 	function getOrderInfo(address token, uint tokenId)
@@ -137,7 +138,7 @@ contract UniqxMarketERC721Auction is UniqxMarketBase
 
 		require(tokenContract.registered, "Token must be registered");
 
-		OrderInfo storage order = tokenContract.orders[tokenId];
+		OrderInfo storage order = orders[token][tokenId];
 
 		status          = order.status;
 		owner           = order.owner;
@@ -160,20 +161,21 @@ contract UniqxMarketERC721Auction is UniqxMarketBase
 		nonReentrant
 		public
 	{
-		TokenContract storage tokenContract = tokenContracts[token];
-		ERC721Token tokenInstance = ERC721Token(token);
-		address[] memory owners = new address[](buyPrices.length);
-
-		require(tokenContract.registered, "Token must be registered");
-		require(tokenContract.ordersEnabled, "Orders must be enabled for this token");
 		require(tokenIds.length > 0, "Array must have at least one entry");
 		require(tokenIds.length == buyPrices.length, "Array lengths must match");
 		require(tokenIds.length == startPrices.length, "Array lengths must match");
 		require(tokenIds.length == endTimes.length, "Array lengths must match");
 
+		TokenContract storage tokenContract = tokenContracts[token];
+		require(tokenContract.registered, "Token must be registered");
+		require(tokenContract.ordersEnabled, "Orders must be enabled for this token");
+
+		ERC721Token tokenInstance = ERC721Token(token);
+
+		address[] memory owners = new address[](tokenIds.length);
 		for(uint i = 0; i < tokenIds.length; i++) {
 
-			OrderInfo storage order = tokenContract.orders[tokenIds[i]];
+			OrderInfo storage order = orders[token][tokenIds[i]];
 
 			require(order.status != OrderStatus.Listed, "Token must not be listed already");
 			require(startPrices[i] <= buyPrices[i], "Start price must be less than or equal to the buy price");
@@ -197,7 +199,7 @@ contract UniqxMarketERC721Auction is UniqxMarketBase
 				}
 			);
 
-			tokenContracts[token].orders[tokenIds[i]] = newOrder;
+			orders[token][tokenIds[i]] = newOrder;
 		}
 
 		emit LogTokensListedAuction(
@@ -221,17 +223,18 @@ contract UniqxMarketERC721Auction is UniqxMarketBase
 		public
 		payable
 	{
-		TokenContract storage tokenContract = tokenContracts[token];
-		ERC721Token tokenInstance = ERC721Token(token);
-
-		require(tokenContract.registered, "Token must be registered");
 		require(tokenIds.length > 0, "Array must have at least one entry");
 		require(tokenIds.length == bids.length, "Array lengths must match");
+
+		TokenContract storage tokenContract = tokenContracts[token];
+		require(tokenContract.registered, "Token must be registered");
+
+		ERC721Token tokenInstance = ERC721Token(token);
 
 		uint bidRunningSum = 0;
 		for(uint i = 0; i < tokenIds.length; i++) {
 
-			OrderInfo storage order = tokenContract.orders[tokenIds[i]];
+			OrderInfo storage order = orders[token][tokenIds[i]];
 
 			require(order.status == OrderStatus.Listed, "Token must be listed");
 			require(now <= order.endTime, "Action must be open");
@@ -268,7 +271,7 @@ contract UniqxMarketERC721Auction is UniqxMarketBase
 
 				emit LogTokenSold(token, tokenIds[i], order.buyer, order.highestBid);
 
-				delete tokenContract.orders[tokenIds[i]];
+				delete orders[token][tokenIds[i]];
 			}
 		}
 
@@ -286,15 +289,16 @@ contract UniqxMarketERC721Auction is UniqxMarketBase
 		nonReentrant
 		public
 	{
-		TokenContract storage tokenContract = tokenContracts[token];
-		ERC721Token tokenInstance = ERC721Token(token);
-
-		require(tokenContract.registered, "Token must be registered");
 		require(tokenIds.length > 0, "Array must have at least one entry");
+
+		TokenContract storage tokenContract = tokenContracts[token];
+		require(tokenContract.registered, "Token must be registered");
+
+		ERC721Token tokenInstance = ERC721Token(token);
 
 		for(uint i = 0; i < tokenIds.length; i++) {
 
-			OrderInfo storage order = tokenContract.orders[tokenIds[i]];
+			OrderInfo storage order = orders[token][tokenIds[i]];
 
 			require(order.status == OrderStatus.Listed, "Token must be listed");
 
@@ -312,7 +316,7 @@ contract UniqxMarketERC721Auction is UniqxMarketBase
 			// transfer the token back to the owner
 			tokenInstance.transferFrom(address(this), order.owner, tokenIds[i]);
 
-			delete tokenContract.orders[tokenIds[i]];
+			delete orders[token][tokenIds[i]];
 		}
 
 		emit LogTokensCancelled(token, tokenIds);
@@ -329,15 +333,16 @@ contract UniqxMarketERC721Auction is UniqxMarketBase
 		nonReentrant
 		public
 	{
-		TokenContract storage tokenContract = tokenContracts[token];
-		ERC721Token tokenInstance = ERC721Token(token);
-
-		require(tokenContract.registered, "Token must be registered");
 		require(tokenIds.length > 0, "Array must have at least one entry");
+
+		TokenContract storage tokenContract = tokenContracts[token];
+		require(tokenContract.registered, "Token must be registered");
+
+		ERC721Token tokenInstance = ERC721Token(token);
 
 		for(uint i = 0; i < tokenIds.length; i++) {
 
-			OrderInfo storage order = tokenContract.orders[tokenIds[i]];
+			OrderInfo storage order = orders[token][tokenIds[i]];
 
 			require(order.status == OrderStatus.Listed, "Token must be listed");
 			require(now >= order.endTime, "Auction must be ended");
@@ -367,7 +372,7 @@ contract UniqxMarketERC721Auction is UniqxMarketBase
 				emit LogTokenUnsold(token, tokenIds[i]);
 			}
 
-			delete tokenContract.orders[tokenIds[i]];
+			delete orders[token][tokenIds[i]];
 		}
 	}
 
@@ -375,21 +380,22 @@ contract UniqxMarketERC721Auction is UniqxMarketBase
 		address token,
 		uint [] tokenIds
 	)
-	whenNotPaused
-	nonReentrant
-	public
-	payable
+		whenNotPaused
+		nonReentrant
+		public
+		payable
 	{
-		TokenContract storage tokenContract = tokenContracts[token];
-		ERC721Token tokenInstance = ERC721Token(token);
-
-		require(tokenContract.registered, "Token must be registered");
 		require(tokenIds.length > 0, "Array must have at least one entry");
+
+		TokenContract storage tokenContract = tokenContracts[token];
+		require(tokenContract.registered, "Token must be registered");
+
+		ERC721Token tokenInstance = ERC721Token(token);
 
 		uint ordersAmount = 0;
 		for(uint i = 0; i < tokenIds.length; i++) {
 
-			OrderInfo storage order = tokenContract.orders[tokenIds[i]];
+			OrderInfo storage order = orders[token][tokenIds[i]];
 
 			require(order.status == OrderStatus.Listed, "Token must be listed");
 			require(msg.value >= ordersAmount + order.buyPrice, "The amount passed must cover the value of the tokens as listed");
@@ -410,7 +416,7 @@ contract UniqxMarketERC721Auction is UniqxMarketBase
 
 			emit LogTokenSold(token, tokenIds[i], msg.sender, order.buyPrice);
 
-			delete tokenContract.orders[tokenIds[i]];
+			delete orders[token][tokenIds[i]];
 		}
 
 		// the bundled value should match the price of all orders
