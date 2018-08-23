@@ -35,7 +35,6 @@ contract UniqxMarketERC721Instant is UniqxMarketBase {
 		onlyOwner
 		public
 	{
-
 		require(!tokenContracts[token].registered, "Token should not be registered already");
 
 		TokenContract memory tokenContract = TokenContract(
@@ -135,10 +134,45 @@ contract UniqxMarketERC721Instant is UniqxMarketBase {
 		buyPrice 	    = order.buyPrice;
 	}
 
-	function listTokensFixedPrice(
-		address token, // MC: rename to tokenContract
-		uint[] tokenIds,
-		uint[] buyPrices
+	// list token and return previous owner
+	function listTokenInternal(
+		address token,
+		uint tokenId,
+		uint buyPrice
+	)
+		private
+		returns(address _owner)
+	{
+		// assume the token is registered and orders are enabled for this token
+
+		TokenContract storage tokenContract = tokenContracts[token];
+
+		OrderInfo storage order = tokenContract.orders[tokenId];
+		require(order.status != OrderStatus.Listed, "Token must not be listed already");
+		require(isSpenderApproved(msg.sender, token , tokenId), "The seller must be allowed to sell the token");
+
+		// market will now escrow the token (owner and seller(if any) must approve the market before listing)
+		ERC721Token tokenInstance = ERC721Token(token);
+		address owner = tokenInstance.ownerOf(tokenId);
+		tokenInstance.transferFrom(owner, address(this), tokenId);
+
+		OrderInfo memory newOrder = OrderInfo(
+			{
+				status: OrderStatus.Listed,
+				owner: owner,
+				buyPrice: buyPrice
+			}
+		);
+
+		tokenContracts[token].orders[tokenId] = newOrder;
+
+		return owner;
+	}
+
+	function listToken(
+		address token,
+		uint tokenId,
+		uint buyPrice
 	)
 		whenNotPaused
 		whenOrdersEnabled
@@ -146,43 +180,17 @@ contract UniqxMarketERC721Instant is UniqxMarketBase {
 		public
 	{
 		TokenContract storage tokenContract = tokenContracts[token];
-		ERC721Token tokenInstance = ERC721Token(token);
-		address[] memory owners = new address[](buyPrices.length);
-
 		require(tokenContract.registered, "Token must be registered");
 		require(tokenContract.ordersEnabled, "Orders must be enabled for this token");
-		require(tokenIds.length > 0, "Array must have at least one entry");
-		require(tokenIds.length == buyPrices.length, "Array lengths must match");
 
-		for(uint i = 0; i < tokenIds.length; i++) {
+		address owner = listTokenInternal(token, tokenId, buyPrice);
 
-			OrderInfo storage order = tokenContract.orders[tokenIds[i]];
-
-			require(order.status != OrderStatus.Listed, "Token must not be listed already");
-			require(isSpenderApproved(msg.sender, token , tokenIds[i]), "The seller must be allowed to sell the token");
-
-			// market will now escrow the token (owner or seller must approve unix market before listing)
-			address owner = tokenInstance.ownerOf(tokenIds[i]);
-			tokenInstance.transferFrom(owner, address(this), tokenIds[i]);
-			owners[i] = owner;
-
-			OrderInfo memory newOrder = OrderInfo(
-				{
-					status: OrderStatus.Listed,
-					owner: owner,
-					buyPrice: buyPrices[i]
-				}
-			);
-
-			tokenContracts[token].orders[tokenIds[i]] = newOrder;
-		}
-
-		emit LogTokensListedFixedPrice(
+		emit LogTokenListedFixedPrice(
 			token,
-			tokenIds,
-			owners,
+			tokenId,
+			owner,
 			msg.sender,
-			buyPrices
+			buyPrice
 		);
 	}
 
@@ -238,8 +246,8 @@ contract UniqxMarketERC721Instant is UniqxMarketBase {
 		address token,
 		uint[] tokenIds
 	)
-	whenNotPaused
-	nonReentrant
+		whenNotPaused
+		nonReentrant
 	public
 	{
 		TokenContract storage tokenContract = tokenContracts[token];
@@ -268,5 +276,38 @@ contract UniqxMarketERC721Instant is UniqxMarketBase {
 		}
 
 		emit LogTokensCancelled(token, tokenIds);
+	}
+
+	// batch functions
+
+	function listTokensFixedPrice(
+		address token, // MC: rename to tokenContract
+		uint[] tokenIds,
+		uint[] buyPrices
+	)
+		whenNotPaused
+		whenOrdersEnabled
+		nonReentrant
+		public
+	{
+		require(tokenIds.length > 0, "Array must have at least one entry");
+		require(tokenIds.length == buyPrices.length, "Array lengths must match");
+
+		TokenContract storage tokenContract = tokenContracts[token];
+		require(tokenContract.registered, "Token must be registered");
+		require(tokenContract.ordersEnabled, "Orders must be enabled for this token");
+
+		address[] memory owners = new address[](tokenIds.length);
+		for(uint i = 0; i < tokenIds.length; i++) {
+			owners[i] = listTokenInternal(token, tokenIds[i], buyPrices[i]);
+		}
+
+		emit LogTokensListedFixedPrice(
+			token,
+			tokenIds,
+			owners,
+			msg.sender,
+			buyPrices
+		);
 	}
 }

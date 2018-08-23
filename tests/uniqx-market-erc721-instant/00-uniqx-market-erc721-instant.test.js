@@ -164,7 +164,7 @@ contract('Testing FixedPrice listing - main flow', async function (rpc_accounts)
 			}
 		).should.be.fulfilled;
 
-		console.log(`GAS - List for a fixed price ${tokensCount - 1} adapt tokens: ${rec.receipt.gasUsed}`);
+		console.log(`GAS - List ${tokensCount - 1} adapt tokens - fixed price: ${rec.receipt.gasUsed}`);
 
 		// MC: we should check here for each and every order the exact details by reading data back
 		expectEvent.inLogs(rec.logs, 'LogTokensListedFixedPrice');
@@ -183,19 +183,19 @@ contract('Testing FixedPrice listing - main flow', async function (rpc_accounts)
 		console.log(`GAS - Mint 1 adapt tokens: ${ret.receipt.gasUsed}`);
 	});
 
-	it('should be able to list 1 token', async () => {
+	it('should be able to list 1 token - fixed price', async () => {
 
 		tokens[10] = await adaptCollectibles.tokenByIndex(10);
 		prices[10] = ether(1);
 
-		let rec = await uniqxMarket.listTokensFixedPrice(
+		let rec = await uniqxMarket.listToken(
 			adaptCollectibles.address,
-			[ tokens[10] ],
-			[ prices[10] ],
+			tokens[10],
+			prices[10],
 			{ from: ac.ADAPT_ADMIN , gas: 7000000 }
 		).should.be.fulfilled;
 
-		console.log(`GAS - List for a fixed price 1 adapt token: ${rec.receipt.gasUsed}`);
+		console.log(`GAS - List 1 adapt token - fixed price: ${rec.receipt.gasUsed}`);
 
 		// MC: should check the details of the orders here; both content of logs and content of data
 		expectEvent.inLogs(rec.logs, 'LogTokensListedFixedPrice');

@@ -125,6 +125,26 @@ async function parseUnixMarketEvent(event, timestamp) {
 	const parameters = event['events']; // it's called events for some reason...
 
 	switch (name) {
+
+		case 'LogTokenListedFixedPrice': {
+
+			const token        = parameters[0].value;
+			const tokenId      = parameters[1].value;
+			const owner        = parameters[2].value;
+			const seller       = parameters[3].value;
+			const buyPrice     = parameters[4].value;
+
+			console.log(`Token Listed FixedPrice: 
+				token=${token}, 
+				tokenId=0x${new BigNumber(tokenId, 10).toString(16)}, 
+				listedAt=${moment.unix(timestamp).utc().format()}, 
+				owner=${owner}, 
+				seller=${seller}, 
+				buyPrices=${buyPrice}
+			`);
+			break;
+		}
+
 		case 'LogTokensListedFixedPrice': {
 
 			const token         = parameters[0].value;
