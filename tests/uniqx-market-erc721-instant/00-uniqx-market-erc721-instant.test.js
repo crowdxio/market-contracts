@@ -1,5 +1,5 @@
 import {
-	accounts, assert, BigNumber, getBalanceAsync, getBalanceAsyncStr, parseAdaptTokenEvent, parseUnixInstantMarketEvent
+	accounts, assert, BigNumber, getBalanceAsync, getBalanceAsyncStr, parseAdaptTokenEvent, parseAdapt
 } from '../common/common';
 import ether from "../helpers/ether";
 import expectEvent from "../helpers/expectEvent";
@@ -78,7 +78,7 @@ contract('Testing FixedPrice listing - main flow', async function (rpc_accounts)
 			// MC: this parsing is very nice, but we need to enforce exact values
 			// MC: it is not enough to visually recognise that they are printed
 			// MC: I suppose we'll do this for each action and parse its events independently
-			await parseUnixInstantMarketEvent(events[0], blockTimestamp);
+			await parseUniqxInstantMarketEvent(events[0], blockTimestamp);
 		});
 
 		// adapt

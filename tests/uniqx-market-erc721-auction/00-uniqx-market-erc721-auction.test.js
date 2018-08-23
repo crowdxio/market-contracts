@@ -1,5 +1,5 @@
 import {
-	accounts, assert, BigNumber, getBalanceAsync, getBalanceAsyncStr, parseAdaptTokenEvent, parseUnixAuctionMarketEvent
+	accounts, assert, BigNumber, getBalanceAsync, getBalanceAsyncStr, parseAdaptTokenEvent, parseUniqxAuctionMarketEvent
 } from '../common/common';
 import ether from "../helpers/ether";
 import expectEvent from "../helpers/expectEvent";
@@ -73,7 +73,7 @@ contract('Testing Auction listing - main flow', async function (rpc_accounts) {
 			const blockTimestamp = await web3.eth.getBlock(result['blockNumber']).timestamp;
 
 			const events = abiDecoder.decodeLogs([result]);
-			await parseUnixAuctionMarketEvent(events[0], blockTimestamp);
+			await parseUniqxAuctionMarketEvent(events[0], blockTimestamp);
 		});
 
 

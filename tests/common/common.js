@@ -117,7 +117,7 @@ async function parseAdaptMarketEvent(event, timestamp) {
 	}
 }
 
-async function parseUnixInstantMarketEvent(event, timestamp) {
+async function parseUniqxInstantMarketEvent(event, timestamp) {
 
 	//console.log(JSON.stringify(event, null, '\t'));
 
@@ -206,7 +206,7 @@ async function parseUnixInstantMarketEvent(event, timestamp) {
 }
 
 
-async function parseUnixAuctionMarketEvent(event, timestamp) {
+async function parseUniqxAuctionMarketEvent(event, timestamp) {
 
 	//console.log(JSON.stringify(event, null, '\t'));
 
@@ -284,6 +284,7 @@ module.exports = {
 	getBalanceAsync: getBalanceAsync,
 	getBalanceAsyncStr: getBalanceAsyncStr,
 	parseAdaptTokenEvent: parseAdaptTokenEvent,
-	parseUnixInstantMarketEvent: parseUnixInstantMarketEvent,
-	parseUnixAuctionMarketEvent: parseUnixAuctionMarketEvent
+	parseAdaptMarketEvent: parseAdaptMarketEvent,
+	parseUniqxInstantMarketEvent: parseUniqxInstantMarketEvent,
+	parseUniqxAuctionMarketEvent: parseUniqxAuctionMarketEvent
 };
