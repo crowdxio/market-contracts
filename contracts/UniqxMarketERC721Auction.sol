@@ -1,47 +1,20 @@
 pragma solidity ^0.4.24;
 
-import "../zeppelin/contracts/ownership/NoOwner.sol";
-import "../zeppelin/contracts/lifecycle/Pausable.sol";
-import "../zeppelin/contracts/ReentrancyGuard.sol";
 import {SafeMath} from "../zeppelin/contracts/math/SafeMath.sol";
 import {ERC721Token} from "../zeppelin/contracts/token/ERC721/ERC721Token.sol";
+import {UniqxMarketBase} from "./UniqxMarketBase.sol";
 
-contract UniqxMarketERC721 is NoOwner, Pausable, ReentrancyGuard {
+contract UniqxMarketERC721Auction is UniqxMarketBase
+{
 
 	using SafeMath for uint;
-
 	uint constant AUCTION_MIN_DURATION = 1 hours;
-	address public MARKET_FEE_COLLECTOR;
-	bool public ORDERS_ENABLED = true;
-	uint public marketFeeNum = 1;
-	uint public marketFeeDen = 100;
-
-	enum OrderFormat {
-		Unknown,
-		FixedPrice,
-		Auction
-	}
-
-	enum OrderStatus {
-		Unknown,
-		Listed,			// token listed by owner or seller
-		Reserved,		// not used in this contract
-		Cancelled,		// order canceled by owner or seller (some restrictions are applied on auction orders)
-		Sold,			// token sold, the item goes to the buyer or to the highest bidder on auction orders
-		Unsold			// auction ended with zero bids, token goes back to owner
-	}
 
 	struct OrderInfo {
-
-		// COMMON
-		OrderFormat format;
 		OrderStatus status;
 		address owner; 				// the user who owns the token sold via this order
-		address seller; 			// the seller (must be approved by the owner before listing)
 		uint buyPrice;				// holds the 'buy it now' price
 		address buyer;				// holds the address of the buyer or the address of the highest bidder
-
-		// AUCTION ONLY
 		uint startPrice; 			// holds the start price of an auction
 		uint endTime;				// holds the time when the auction ends
 		uint highestBid; 			// holds the highest bid at any given time
@@ -55,53 +28,6 @@ contract UniqxMarketERC721 is NoOwner, Pausable, ReentrancyGuard {
 
 	mapping(address => TokenContract) tokenContracts;
 
-	event LogOrdersEnabled();
-	event LogOrdersDisabled();
-	event LogTokenRegistered(address token);
-	event LogTokenOrdersEnabled(address token);
-	event LogTokenOrdersDisabled(address token);
-
-	event LogTokensListedFixedPrice(
-		// lookup
-		address token,
-		uint[] tokenIds,
-
-		// common
-		address[] owners,
-		address seller,
-		uint[] buyPrices
-	);
-
-	event LogTokensListedAuction(
-		// lookup
-		address token,
-		uint[] tokenIds,
-
-		// common
-		address[] owners,
-		address seller,
-		uint[] buyPrices,
-
-		// auction
-		uint[] startPrices,
-		uint[] endTimes
-	);
-
-	event LogBidPlaced(address token, uint tokenId, address bidder, uint bid);
-	event LogTokenSold(address token, uint tokenId, address buyer, uint price);
-	event LogTokensCancelled(address token, uint[] tokenIds);
-	event LogTokenUnsold(address token, uint tokenId);
-
-	modifier whenOrdersEnabled() {
-		require(ORDERS_ENABLED, "Orders must be enabled");
-		_;
-	}
-
-	modifier whenOrdersDisabled() {
-		require(!ORDERS_ENABLED, "Orders must be disabled");
-		_;
-	}
-
 	constructor(
 		address admin,
 		address marketFeeCollector
@@ -111,43 +37,10 @@ contract UniqxMarketERC721 is NoOwner, Pausable, ReentrancyGuard {
 		transferOwnership(admin);
 	}
 
-	function setMarketFee(uint _marketFeeNum, uint _marketFeeDen)
-		onlyOwner
-	public {
-
-		marketFeeNum = _marketFeeNum;
-		marketFeeDen = _marketFeeDen;
-	}
-
-	function setMarketFeeCollector(address _marketFeeCollector)
-		onlyOwner
-	public {
-
-		MARKET_FEE_COLLECTOR = _marketFeeCollector;
-	}
-
-	function enableOrders()
-		onlyOwner
-		whenOrdersDisabled
-	public {
-
-		ORDERS_ENABLED = true;
-		emit LogOrdersEnabled();
-	}
-
-	function disableOrders()
-		onlyOwner
-		whenOrdersEnabled
-	public {
-
-		ORDERS_ENABLED = false;
-		emit LogOrdersDisabled();
-	}
-
 	function registerToken(address token)
 		onlyOwner
-	public {
-
+		public
+	{
 		require(!tokenContracts[token].registered, "Token should not be registered already");
 
 		TokenContract memory tokenContract = TokenContract(
@@ -231,10 +124,8 @@ contract UniqxMarketERC721 is NoOwner, Pausable, ReentrancyGuard {
 		public
 		view
 		returns (
-			OrderFormat format,
 			OrderStatus status,
 			address owner,
-			address seller,
 			uint buyPrice,
 			address buyer,
 			uint startPrice,
@@ -248,72 +139,13 @@ contract UniqxMarketERC721 is NoOwner, Pausable, ReentrancyGuard {
 
 		OrderInfo storage order = tokenContract.orders[tokenId];
 
-		format 		= order.format;
-		status 		= order.status;
-		owner 		= order.owner;
-		seller 		= order.seller;
-		buyPrice 	= order.buyPrice;
-		buyer 		= order.buyer;
-		startPrice 	= order.startPrice;
+		status          = order.status;
+		owner           = order.owner;
+		buyPrice 	    = order.buyPrice;
+		buyer 		    = order.buyer;
+		startPrice 	    = order.startPrice;
 		endTime 		= order.endTime;
-		highestBid 	= order.highestBid;
-	}
-
-	function listTokensFixedPrice(
-		address token, // MC: rename to tokenContract
-		uint[] tokenIds,
-		uint[] buyPrices
-	)
-		whenNotPaused
-		whenOrdersEnabled
-		nonReentrant
-		public
-	{
-		TokenContract storage tokenContract = tokenContracts[token];
-		ERC721Token tokenInstance = ERC721Token(token);
-		address[] memory owners = new address[](buyPrices.length);
-
-		require(tokenContract.registered, "Token must be registered");
-		require(tokenContract.ordersEnabled, "Orders must be enabled for this token");
-		require(tokenIds.length > 0, "Array must have at least one entry");
-		require(tokenIds.length == buyPrices.length, "Array lengths must match");
-
-		for(uint i = 0; i < tokenIds.length; i++) {
-
-			OrderInfo storage order = tokenContract.orders[tokenIds[i]];
-
-			require(order.status != OrderStatus.Listed, "Token must not be listed already");
-			require(isSpenderApproved(msg.sender, token , tokenIds[i]), "The seller must be allowed to sell the token");
-
-			// market will now escrow the token (owner or seller must approve unix market before listing)
-			address owner = tokenInstance.ownerOf(tokenIds[i]);
-			tokenInstance.transferFrom(owner, address(this), tokenIds[i]);
-			owners[i] = owner;
-
-			OrderInfo memory newOrder = OrderInfo(
-				{
-					format: OrderFormat.FixedPrice,
-					status: OrderStatus.Listed,
-					owner: owner,
-					seller: msg.sender,
-					buyPrice: buyPrices[i],
-					buyer: address(0),
-					startPrice: 0,
-					endTime: 0,
-					highestBid: 0
-				}
-			);
-
-			tokenContracts[token].orders[tokenIds[i]] = newOrder;
-		}
-
-		emit LogTokensListedFixedPrice(
-			token,
-			tokenIds,
-			owners,
-			msg.sender,
-			buyPrices
-		);
+		highestBid 	    = order.highestBid;
 	}
 
 	function listTokensAuction(
@@ -355,10 +187,8 @@ contract UniqxMarketERC721 is NoOwner, Pausable, ReentrancyGuard {
 
 			OrderInfo memory newOrder = OrderInfo(
 				{
-					format: OrderFormat.Auction,
 					status: OrderStatus.Listed,
 					owner: owner,
-					seller: msg.sender,
 					buyPrice: buyPrices[i],
 					buyer: address(0),
 					startPrice: startPrices[i],
@@ -379,53 +209,6 @@ contract UniqxMarketERC721 is NoOwner, Pausable, ReentrancyGuard {
 			startPrices,
 			endTimes
 		);
-	}
-
-	function buyTokens(
-		address token,
-		uint [] tokenIds
-	)
-		whenNotPaused
-		nonReentrant
-		public
-		payable
-	{
-		TokenContract storage tokenContract = tokenContracts[token];
-		ERC721Token tokenInstance = ERC721Token(token);
-
-		require(tokenContract.registered, "Token must be registered");
-		require(tokenIds.length > 0, "Array must have at least one entry");
-
-		uint ordersAmount = 0;
-		for(uint i = 0; i < tokenIds.length; i++) {
-
-			OrderInfo storage order = tokenContract.orders[tokenIds[i]];
-
-			require(order.status == OrderStatus.Listed, "Token must be listed");
-			require(order.format == OrderFormat.FixedPrice, "Order type must be fixed price");
-			require(msg.value >= ordersAmount + order.buyPrice, "The amount passed must cover the value of the tokens as listed");
-
-			// update the orders amount
-			ordersAmount += order.buyPrice;
-
-			// transfer fee to market
-			uint marketFee = order.buyPrice.mul(marketFeeNum).div(marketFeeDen);
-			MARKET_FEE_COLLECTOR.transfer(marketFee);
-
-			// transfer the rest to owner
-			uint ownerDue = order.buyPrice.sub(marketFee);
-			order.owner.transfer(ownerDue);
-
-			// transfer token to buyer
-			tokenInstance.transferFrom(address(this), msg.sender, tokenIds[i]);
-
-			emit LogTokenSold(token, tokenIds[i], msg.sender, order.buyPrice);
-
-			delete tokenContract.orders[tokenIds[i]];
-		}
-
-		// the bundled value should match the price of all orders
-		require(ordersAmount == msg.value);
 	}
 
 	function placeBids(
@@ -451,7 +234,6 @@ contract UniqxMarketERC721 is NoOwner, Pausable, ReentrancyGuard {
 			OrderInfo storage order = tokenContract.orders[tokenIds[i]];
 
 			require(order.status == OrderStatus.Listed, "Token must be listed");
-			require(order.format == OrderFormat.Auction, "Order type must be auction");
 			require(now <= order.endTime, "Action must be open");
 
 			// bid must be higher than the the current highest bid and by the start price
@@ -517,17 +299,15 @@ contract UniqxMarketERC721 is NoOwner, Pausable, ReentrancyGuard {
 			require(order.status == OrderStatus.Listed, "Token must be listed");
 
 			require(
-				msg.sender == order.seller ||
-				msg.sender == order.owner,
+				msg.sender == order.owner
+				|| tokenInstance.getApproved(tokenIds[i]) == msg.sender
+				|| tokenInstance.isApprovedForAll(order.owner, msg.sender),
 				"Only the owner or the seller can cancel a token"
 			);
 
-			// few restrictions for auctions
-			if (order.format == OrderFormat.Auction) {
-				// ended auctions cannot be canceled - these are called Unsold
-				require(now < order.endTime, "Auction must be open");
-				require(order.highestBid == 0, "Only zero bids auctions can be cancelled");
-			}
+			// ended auctions cannot be canceled - these are called Unsold
+			require(now < order.endTime, "Auction must be open");
+			require(order.highestBid == 0, "Only zero bids auctions can be cancelled");
 
 			// transfer the token back to the owner
 			tokenInstance.transferFrom(address(this), order.owner, tokenIds[i]);
@@ -560,7 +340,6 @@ contract UniqxMarketERC721 is NoOwner, Pausable, ReentrancyGuard {
 			OrderInfo storage order = tokenContract.orders[tokenIds[i]];
 
 			require(order.status == OrderStatus.Listed, "Token must be listed");
-			require(order.format == OrderFormat.Auction, "Order type must be auction");
 			require(now >= order.endTime, "Auction must be ended");
 
 			if (order.highestBid > 0) {
@@ -590,5 +369,51 @@ contract UniqxMarketERC721 is NoOwner, Pausable, ReentrancyGuard {
 
 			delete tokenContract.orders[tokenIds[i]];
 		}
+	}
+
+	function buyTokens(
+		address token,
+		uint [] tokenIds
+	)
+	whenNotPaused
+	nonReentrant
+	public
+	payable
+	{
+		TokenContract storage tokenContract = tokenContracts[token];
+		ERC721Token tokenInstance = ERC721Token(token);
+
+		require(tokenContract.registered, "Token must be registered");
+		require(tokenIds.length > 0, "Array must have at least one entry");
+
+		uint ordersAmount = 0;
+		for(uint i = 0; i < tokenIds.length; i++) {
+
+			OrderInfo storage order = tokenContract.orders[tokenIds[i]];
+
+			require(order.status == OrderStatus.Listed, "Token must be listed");
+			require(msg.value >= ordersAmount + order.buyPrice, "The amount passed must cover the value of the tokens as listed");
+
+			// update the orders amount
+			ordersAmount += order.buyPrice;
+
+			// transfer fee to market
+			uint marketFee = order.buyPrice.mul(marketFeeNum).div(marketFeeDen);
+			MARKET_FEE_COLLECTOR.transfer(marketFee);
+
+			// transfer the rest to owner
+			uint ownerDue = order.buyPrice.sub(marketFee);
+			order.owner.transfer(ownerDue);
+
+			// transfer token to buyer
+			tokenInstance.transferFrom(address(this), msg.sender, tokenIds[i]);
+
+			emit LogTokenSold(token, tokenIds[i], msg.sender, order.buyPrice);
+
+			delete tokenContract.orders[tokenIds[i]];
+		}
+
+		// the bundled value should match the price of all orders
+		require(ordersAmount == msg.value);
 	}
 }

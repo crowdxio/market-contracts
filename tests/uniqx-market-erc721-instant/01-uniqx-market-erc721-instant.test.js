@@ -6,7 +6,7 @@ import expectEvent from "../helpers/expectEvent";
 import EVMRevert from "../../zeppelin/test/helpers/EVMRevert";
 
 
-const UniqxMarketERC721 = artifacts.require('../../contracts/UniqxMarketERC721.sol');
+const UniqxMarketERC721 = artifacts.require('../../contracts/UniqxMarketERC721Instant.sol');
 const erc721Token = artifacts.require("../../../adapt/contracts/AdaptCollectibles.sol");
 
 contract('testing allow/disallow orders - ', function (rpc_accounts) {

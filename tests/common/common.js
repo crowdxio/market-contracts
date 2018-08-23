@@ -7,12 +7,6 @@ const should = require('chai')
 	.use(require('chai-bignumber')(BigNumber))
 	.should();
 
-const OrderFormat  = {
-	Unknown:    0,
-	FixedPrice: 1,
-	Auction:    2,
-};
-
 const OrderStatus = {
 	Unknown:    0,
 	Listed:     1,
@@ -212,7 +206,6 @@ module.exports = {
 	Bluebird: Bluebird,
 	assert: assert,
 	should: should,
-	OrderFormat: OrderFormat,
 	OrderStatus: OrderStatus,
 	getBalanceAsync: getBalanceAsync,
 	getBalanceAsyncStr: getBalanceAsyncStr,

@@ -7,7 +7,7 @@ const moment = require('moment');
 import EVMRevert from "../../zeppelin/test/helpers/EVMRevert";
 
 const AdaptCollectibles = artifacts.require("../../../adapt/contracts/AdaptCollectibles.sol");
-const UniqxMarketERC721 = artifacts.require('../../contracts/UniqxMarketERC721.sol');
+const UniqxMarketERC721 = artifacts.require('../../contracts/UniqxMarketERC721Instant.sol');
 
 contract('Testing buy now functionality', async function (rpc_accounts) {
 

@@ -2,9 +2,9 @@ import {
 	accounts,
 	assert,
 	BigNumber,
+	OrderStatus,
 	getBalanceAsync,
 	getBalanceAsyncStr,
-	OrderFormat, OrderStatus,
 	parseAdaptTokenEvent,
 	parseUnixMarketEvent
 } from '../common/common';
@@ -16,7 +16,7 @@ import { duration, increaseTimeTo } from '../../zeppelin/test/helpers/increaseTi
 import latestTime from '../../zeppelin/test/helpers/latestTime';
 
 const AdaptCollectibles = artifacts.require("../../../adapt/contracts/AdaptCollectibles.sol");
-const UniqxMarketERC721 = artifacts.require('../../contracts/UniqxMarketERC721.sol');
+const UniqxMarketERC721 = artifacts.require('../../contracts/UniqxMarketERC721Auction.sol');
 
 contract('Testing auction functionality', async function (rpc_accounts) {
 
@@ -232,7 +232,7 @@ contract('Testing auction functionality', async function (rpc_accounts) {
 		const info = await uniqxMarket.getOrderInfo(adaptCollectibles.address, tokens[1]);
 		console.log(`order info: ${JSON.stringify(info, null, '\t')}`);
 
-		const highestBid = new BigNumber(info[8]);
+		const highestBid = new BigNumber(info[6]);
 		highestBid.should.be.bignumber.equal(bid);
 	});
 
@@ -296,7 +296,7 @@ contract('Testing auction functionality', async function (rpc_accounts) {
 		const info = await uniqxMarket.getOrderInfo(adaptCollectibles.address, tokens[1]);
 		console.log(`order info: ${JSON.stringify(info, null, '\t')}`);
 
-		const highestBid = new BigNumber(info[8]);
+		const highestBid = new BigNumber(info[6]);
 		highestBid.should.be.bignumber.equal(bid);
 	});
 
@@ -319,7 +319,7 @@ contract('Testing auction functionality', async function (rpc_accounts) {
 		const info = await uniqxMarket.getOrderInfo(adaptCollectibles.address, tokens[1]);
 		console.log(`order info: ${JSON.stringify(info, null, '\t')}`);
 
-		const highestBid = new BigNumber(info[8]);
+		const highestBid = new BigNumber(info[6]);
 		highestBid.should.be.bignumber.equal(bid);
 	});
 
@@ -346,7 +346,7 @@ contract('Testing auction functionality', async function (rpc_accounts) {
 
 		const info = await uniqxMarket.getOrderInfo(adaptCollectibles.address, tokens[1]);
 		//console.log(`order info: ${JSON.stringify(info, null, '\t')}`);
-		assert.equal(info[1], OrderStatus.Unknown, 'unexpected status - should be unknwon');
+		assert.equal(info[0], OrderStatus.Unknown, 'unexpected status - should be unknwon');
 	});
 
 	it('BUYER2 should not be able to place a bid on a sold token', async function () {
@@ -383,11 +383,11 @@ contract('Testing auction functionality', async function (rpc_accounts) {
 		expectEvent.inLogs(ret.logs, 'LogBidPlaced');
 
 		let info = await uniqxMarket.getOrderInfo(adaptCollectibles.address, tokens[2]);
-		let highestBid = new BigNumber(info[8]);
+		let highestBid = new BigNumber(info[6]);
 		highestBid.should.be.bignumber.equal(bid);
 
 		info = await uniqxMarket.getOrderInfo(adaptCollectibles.address, tokens[3]);
-		highestBid = new BigNumber(info[8]);
+		highestBid = new BigNumber(info[6]);
 		highestBid.should.be.bignumber.equal(bid);
 	});
 

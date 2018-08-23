@@ -9,10 +9,10 @@ const moment = require('moment');
 import * as abiDecoder from 'abi-decoder';
 
 const AdaptCollectibles = artifacts.require("../../../adapt/contracts/AdaptCollectibles.sol");
-const UniqxMarketERC721 = artifacts.require('../../contracts/UniqxMarketERC721.sol');
+const UniqxMarketERC721 = artifacts.require('../../contracts/UniqxMarketERC721Auction.sol');
 
 const AdaptCollectiblesJson = require("../../build/contracts/AdaptCollectibles.json");
-const UniqxMarketERC721Json = require('../../build/contracts/UniqxMarketERC721.json');
+const UniqxMarketERC721Json = require('../../build/contracts/UniqxMarketERC721Auction.json');
 
 contract('Testing Auction listing - main flow', async function (rpc_accounts) {
 

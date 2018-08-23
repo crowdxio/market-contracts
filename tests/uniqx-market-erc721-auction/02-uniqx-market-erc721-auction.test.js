@@ -10,7 +10,7 @@ import latestTime from '../../zeppelin/test/helpers/latestTime';
 import EVMRevert from "../../zeppelin/test/helpers/EVMRevert";
 
 
-const UniqxMarketERC721 = artifacts.require('../../contracts/UniqxMarketERC721.sol');
+const UniqxMarketERC721 = artifacts.require('../../contracts/UniqxMarketERC721Auction.sol');
 const tokenContract = artifacts.require("../../../adapt/contracts/AdaptCollectibles.sol");
 
 
