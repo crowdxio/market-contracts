@@ -41,7 +41,6 @@ contract UniqxMarketERC721Auction is UniqxMarketBase
 	);
 	event LogBidPlaced(address token, uint tokenId, address bidder, uint bid);
 	event LogBidsPlaced(address token, uint[] tokenIds, address bidder, uint[] bids);
-	event LogTokenSold(address token, uint tokenId, address buyer, uint price);
 
 	/////////////////////////////////////// VARIABLES ///////////////////////////////////////
 	// TokenContract -> TokenId -> OrderInfo
@@ -140,7 +139,7 @@ contract UniqxMarketERC721Auction is UniqxMarketBase
 		ERC721Token tokenInstance = ERC721Token(token);
 		placeBidInternal(token, tokenInstance, tokenId, msg.value);
 
-		LogBidPlaced(token, tokenId, msg.sender, msg.value);
+		emit LogBidPlaced(token, tokenId, msg.sender, msg.value);
 	}
 
 	function cancelToken(
@@ -161,105 +160,26 @@ contract UniqxMarketERC721Auction is UniqxMarketBase
 		emit LogTokenCancelled(token, tokenId);
 	}
 
-	// this will move the auctions into final states (Sold/Unsold)
-	// if there are winners it will really do the exchange (tokens <-> ETH)
-	// otherwise it will just transfer the tokens back to the owners
-	function finalizeAuctions(
+	function buyToken(
 		address token,
-		uint[] tokenIds
-	)
-		whenNotPaused
-		nonReentrant
-		public
-	{
-		require(tokenIds.length > 0, "Array must have at least one entry");
-
-		TokenContract storage tokenContract = tokenContracts[token];
-		require(tokenContract.registered, "Token must be registered");
-
-		ERC721Token tokenInstance = ERC721Token(token);
-
-		for(uint i = 0; i < tokenIds.length; i++) {
-
-			OrderInfo storage order = orders[token][tokenIds[i]];
-
-			require(orderExists(order), "Token must be listed");
-			require(now >= order.endTime, "Auction must be ended");
-
-			if (order.highestBid > 0) {
-
-				// transfer fee to market
-				uint marketFee = order.highestBid.mul(marketFeeNum).div(marketFeeDen);
-				MARKET_FEE_COLLECTOR.transfer(marketFee);
-
-				// transfer the rest of the amount to the owner
-				uint ownerDue = order.highestBid.sub(marketFee);
-				order.owner.transfer(ownerDue);
-
-				// transfer token to the highest bidder
-				tokenInstance.transferFrom(address(this), order.buyer, tokenIds[i]);
-
-				emit LogTokenSold(token, tokenIds[i], order.buyer, order.highestBid);
-
-			} else {
-
-				// no bids, the token is unsold
-
-				// transfer the token back to the owner
-				tokenInstance.transferFrom(address(this), order.owner, tokenIds[i]);
-
-				emit LogTokenUnsold(token, tokenIds[i]);
-			}
-
-			delete orders[token][tokenIds[i]];
-		}
-	}
-
-	function buyTokens(
-		address token,
-		uint [] tokenIds
+		uint tokenId
 	)
 		whenNotPaused
 		nonReentrant
 		public
 		payable
 	{
-		require(tokenIds.length > 0, "Array must have at least one entry");
-
 		TokenContract storage tokenContract = tokenContracts[token];
 		require(tokenContract.registered, "Token must be registered");
 
 		ERC721Token tokenInstance = ERC721Token(token);
 
-		uint ordersAmount = 0;
-		for(uint i = 0; i < tokenIds.length; i++) {
+		uint tokenPrice = buyTokenInternal(token, tokenInstance, tokenId, 0);
 
-			OrderInfo storage order = orders[token][tokenIds[i]];
+		// the value should match the price of the token
+		require(tokenPrice == msg.value);
 
-			require(orderExists(order), "Token must be listed");
-			require(msg.value >= ordersAmount + order.buyPrice, "The amount passed must cover the value of the tokens as listed");
-
-			// update the orders amount
-			ordersAmount += order.buyPrice;
-
-			// transfer fee to market
-			uint marketFee = order.buyPrice.mul(marketFeeNum).div(marketFeeDen);
-			MARKET_FEE_COLLECTOR.transfer(marketFee);
-
-			// transfer the rest to owner
-			uint ownerDue = order.buyPrice.sub(marketFee);
-			order.owner.transfer(ownerDue);
-
-			// transfer token to buyer
-			tokenInstance.transferFrom(address(this), msg.sender, tokenIds[i]);
-
-			emit LogTokenSold(token, tokenIds[i], msg.sender, order.buyPrice);
-
-			delete orders[token][tokenIds[i]];
-		}
-
-		// the bundled value should match the price of all orders
-		require(ordersAmount == msg.value);
+		emit LogTokenSold(token, tokenId, msg.sender);
 	}
 
 	/////////////////////////////////////// MANY ////////////////////////////////////////////
@@ -327,7 +247,33 @@ contract UniqxMarketERC721Auction is UniqxMarketBase
 
 		require(bidRunningSum == msg.value, "The amount passed must match the sum of the bids");
 
-		LogBidsPlaced(token, tokenIds, msg.sender, bids);
+		emit LogBidsPlaced(token, tokenIds, msg.sender, bids);
+	}
+
+	function buyTokens(
+		address token,
+		uint [] tokenIds
+	)
+		whenNotPaused
+		nonReentrant
+		public
+		payable
+	{
+		TokenContract storage tokenContract = tokenContracts[token];
+		require(tokenContract.registered, "Token must be registered");
+
+		ERC721Token tokenInstance = ERC721Token(token);
+
+		uint priceRunningSum = 0;
+		for(uint i = 0; i < tokenIds.length; i++) {
+			uint tokenPrice = buyTokenInternal(token, tokenInstance, tokenIds[i], priceRunningSum);
+			priceRunningSum = priceRunningSum.add(tokenPrice);
+		}
+
+		// the value should match the sum price of all tokoen
+		require(priceRunningSum == msg.value);
+
+		emit LogTokensSold(token, tokenIds, msg.sender);
 	}
 
 	// MC: isn't this better called cancelOrders ?
@@ -352,6 +298,61 @@ contract UniqxMarketERC721Auction is UniqxMarketBase
 		}
 
 		emit LogTokensCancelled(token, tokenIds);
+	}
+
+
+	// this will move the auctions into final states (Sold/Unsold)
+	// if there are winners it will really do the exchange (tokens <-> ETH)
+	// otherwise it will just transfer the tokens back to the owners
+	function finalizeAuctions(
+		address token,
+		uint[] tokenIds
+	)
+		whenNotPaused
+		nonReentrant
+		public
+	{
+		require(tokenIds.length > 0, "Array must have at least one entry");
+
+		TokenContract storage tokenContract = tokenContracts[token];
+		require(tokenContract.registered, "Token must be registered");
+
+		ERC721Token tokenInstance = ERC721Token(token);
+
+		for(uint i = 0; i < tokenIds.length; i++) {
+
+			OrderInfo storage order = orders[token][tokenIds[i]];
+
+			require(orderExists(order), "Token must be listed");
+			require(now >= order.endTime, "Auction must be ended");
+
+			if (order.highestBid > 0) {
+
+				// transfer fee to market
+				uint marketFee = order.highestBid.mul(marketFeeNum).div(marketFeeDen);
+				MARKET_FEE_COLLECTOR.transfer(marketFee);
+
+				// transfer the rest of the amount to the owner
+				uint ownerDue = order.highestBid.sub(marketFee);
+				order.owner.transfer(ownerDue);
+
+				// transfer token to the highest bidder
+				tokenInstance.transferFrom(address(this), order.buyer, tokenIds[i]);
+
+				emit LogTokenSold(token, tokenIds[i], order.buyer);
+
+			} else {
+
+				// no bids, the token is unsold
+
+				// transfer the token back to the owner
+				tokenInstance.transferFrom(address(this), order.owner, tokenIds[i]);
+
+				emit LogTokenUnsold(token, tokenIds[i]);
+			}
+
+			delete orders[token][tokenIds[i]];
+		}
 	}
 
 
@@ -442,10 +443,39 @@ contract UniqxMarketERC721Auction is UniqxMarketBase
 			// transfer token to buyer which is the same with sender and buyer
 			tokenInstance.transferFrom(address(this), msg.sender, tokenId);
 
-			emit LogTokenSold(token, tokenId, order.buyer, order.highestBid);
+			emit LogTokenSold(token, tokenId, order.buyer);
 
 			delete orders[token][tokenId];
 		}
+	}
+
+	function buyTokenInternal(
+		address token,
+		ERC721Token tokenInstance,
+		uint tokenId,
+		uint ordersAmount
+	)
+		private
+		returns (uint buyPrice)
+	{
+		OrderInfo storage order = orders[token][tokenId];
+
+		require(orderExists(order), "Token must be listed");
+		require(msg.value >= ordersAmount + order.buyPrice, "The amount passed must cover the value of the tokens as listed");
+		buyPrice = order.buyPrice;
+
+		// transfer fee to market
+		uint marketFee = order.buyPrice.mul(marketFeeNum).div(marketFeeDen);
+		MARKET_FEE_COLLECTOR.transfer(marketFee);
+
+		// transfer the rest to owner
+		uint ownerDue = order.buyPrice.sub(marketFee);
+		order.owner.transfer(ownerDue);
+
+		// transfer token to buyer
+		tokenInstance.transferFrom(address(this), msg.sender, tokenId);
+
+		delete orders[token][tokenId];
 	}
 
 	function cancelTokenInternal(

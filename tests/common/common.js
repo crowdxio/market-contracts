@@ -245,8 +245,7 @@ async function parseUniqxAuctionMarketEvent(event, timestamp) {
 			const token         = parameters[0].value;
 			const tokenId       = new BigNumber(parameters[1].value, 10).toString(16);
 			const buyer         = parameters[2].value;
-			const price         = parameters[3].value;
-			console.log(`Token Sold: token=${token}, tokenId=0x${tokenId}, buyer=${buyer}, price=${price}, soldAt=${moment.unix(timestamp).utc().format()}`);
+			console.log(`Token Sold: token=${token}, tokenId=0x${tokenId}, buyer=${buyer}, soldAt=${moment.unix(timestamp).utc().format()}`);
 			break;
 		}
 

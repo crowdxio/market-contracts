@@ -16,8 +16,6 @@ contract UniqxMarketERC721Instant is UniqxMarketBase {
 	}
 
 	/////////////////////////////////////// EVENTS //////////////////////////////////////////
-	event LogTokenSold(address token, uint tokenId, address buyer);
-	event LogTokensSold(address token, uint[] tokenIds, address buyer);
 	event LogTokenListed(
 		address token,
 		uint tokenId,

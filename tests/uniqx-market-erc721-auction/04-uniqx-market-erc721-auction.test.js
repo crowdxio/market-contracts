@@ -175,7 +175,7 @@ contract('Testing buy now functionality', async function (rpc_accounts) {
 
 		console.log(`GAS - Buy 10 adapt tokens: ${ret.receipt.gasUsed}`);
 
-		expectEvent.inLogs(ret.logs, 'LogTokenSold');
+		expectEvent.inLogs(ret.logs, 'LogTokensSold');
 
 		// TODO: get these from contract
 		const marketFee = priceToPay.dividedToIntegerBy(100);

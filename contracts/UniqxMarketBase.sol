@@ -25,6 +25,8 @@ contract UniqxMarketBase is NoOwner, Pausable, ReentrancyGuard {
 	event LogTokenOrdersDisabled(address token);
 	event LogTokenCancelled(address token, uint tokenIds);
 	event LogTokensCancelled(address token, uint[] tokenIds);
+	event LogTokenSold(address token, uint tokenId, address buyer);
+	event LogTokensSold(address token, uint[] tokenIds, address buyer);
 	event LogTokenUnsold(address token, uint tokenId);
 
 	/////////////////////////////////////// VARIABLES ///////////////////////////////////////
