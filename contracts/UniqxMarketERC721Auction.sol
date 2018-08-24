@@ -12,15 +12,24 @@ contract UniqxMarketERC721Auction is UniqxMarketBase
 	uint constant AUCTION_MIN_DURATION = 1 hours;
 	/////////////////////////////////////// TYPES ///////////////////////////////////////////
 	struct OrderInfo {
-		address owner; 				// the user who owns the token sold via this order
-		uint buyPrice;				// holds the 'buy it now' price
-		address buyer;				// holds the address of the buyer or the address of the highest bidder
-		uint startPrice; 			// holds the start price of an auction
-		uint endTime;				// holds the time when the auction ends
-		uint highestBid; 			// holds the highest bid at any given time
+		address owner; 		// the user who owns the token sold via this order
+		uint buyPrice;		// holds the 'buy it now' price
+		address buyer;		// holds the highest bidder
+		uint startPrice; 	// holds the start price of an auction
+		uint endTime;		// holds the time when the auction ends
+		uint highestBid; 	// holds the highest bid at any given time
 	}
 
 	/////////////////////////////////////// EVENTS //////////////////////////////////////////
+	event LogTokenListed(
+		address token,
+		uint tokenId,
+		address owner,
+		address seller,
+		uint buyPrice,
+		uint startPrice,
+		uint endTime
+	);
 	event LogTokensListed(
 		address token,
 		uint[] tokenIds,
@@ -49,9 +58,9 @@ contract UniqxMarketERC721Auction is UniqxMarketBase
 	}
 
 	function tokenIsListed(address token, uint tokenId)
-	public
-	view
-	returns(bool listed)
+		public
+		view
+		returns(bool listed)
 	{
 		TokenContract storage tokenContract = tokenContracts[token];
 		require(tokenContract.registered, "Token must be registered");
@@ -85,67 +94,33 @@ contract UniqxMarketERC721Auction is UniqxMarketBase
 		highestBid 		= order.highestBid;
 	}
 
-	function listTokensAuction(
+	function listToken(
 		address token,
-		uint[] tokenIds,
-		uint[] buyPrices,
-		uint[] startPrices,
-		uint[] endTimes
+		uint tokenId,
+		uint buyPrice,
+		uint startPrice,
+		uint endTime
 	)
 		whenNotPaused
 		whenOrdersEnabled
 		nonReentrant
 		public
 	{
-		require(tokenIds.length > 0, "Array must have at least one entry");
-		require(tokenIds.length == buyPrices.length, "Array lengths must match");
-		require(tokenIds.length == startPrices.length, "Array lengths must match");
-		require(tokenIds.length == endTimes.length, "Array lengths must match");
-
 		TokenContract storage tokenContract = tokenContracts[token];
 		require(tokenContract.registered, "Token must be registered");
 		require(tokenContract.ordersEnabled, "Orders must be enabled for this token");
 
 		ERC721Token tokenInstance = ERC721Token(token);
+		address owner = listTokenInternal(token, tokenInstance, tokenId, buyPrice, startPrice, endTime);
 
-		address[] memory owners = new address[](tokenIds.length);
-		for(uint i = 0; i < tokenIds.length; i++) {
-
-			OrderInfo storage order = orders[token][tokenIds[i]];
-
-			require(!orderExists(order), "Token must not be listed already");
-			require(startPrices[i] <= buyPrices[i], "Start price must be less than or equal to the buy price");
-			require(buyPrices[i] > 0, "Buy price must be greater than zero");
-			require(endTimes[i] > now + AUCTION_MIN_DURATION, "A minimum auction duration is enforced by the market");
-			require(isSpenderApproved(msg.sender, token , tokenIds[i]), "The seller must be allowed to sell the token");
-
-			// market will now escrow the token (owner or seller must approve unix market before listing)
-			address owner = tokenInstance.ownerOf(tokenIds[i]);
-			tokenInstance.transferFrom(owner, address(this), tokenIds[i]);
-			owners[i] = owner;
-
-			OrderInfo memory newOrder = OrderInfo(
-				{
-					owner: owner,
-					buyPrice: buyPrices[i],
-					buyer: address(0),
-					startPrice: startPrices[i],
-					endTime: endTimes[i],
-					highestBid: 0
-				}
-			);
-
-			orders[token][tokenIds[i]] = newOrder;
-		}
-
-		emit LogTokensListed(
+		emit LogTokenListed(
 			token,
-			tokenIds,
-			owners,
+			tokenId,
+			owner,
 			msg.sender,
-			buyPrices,
-			startPrices,
-			endTimes
+			buyPrice,
+			startPrice,
+			endTime
 		);
 	}
 
@@ -358,6 +333,45 @@ contract UniqxMarketERC721Auction is UniqxMarketBase
 		require(ordersAmount == msg.value);
 	}
 
+	/////////////////////////////////////// BATCH ///////////////////////////////////////////
+	function listTokensAuction(
+		address token,
+		uint[] tokenIds,
+		uint[] buyPrices,
+		uint[] startPrices,
+		uint[] endTimes
+	)
+		whenNotPaused
+		whenOrdersEnabled
+		nonReentrant
+		public
+	{
+		require(tokenIds.length > 0, "Array must have at least one entry");
+		require(tokenIds.length == buyPrices.length, "Array lengths must match");
+		require(tokenIds.length == startPrices.length, "Array lengths must match");
+		require(tokenIds.length == endTimes.length, "Array lengths must match");
+
+		TokenContract storage tokenContract = tokenContracts[token];
+		require(tokenContract.registered, "Token must be registered");
+		require(tokenContract.ordersEnabled, "Orders must be enabled for this token");
+
+		ERC721Token tokenInstance = ERC721Token(token);
+		address[] memory owners = new address[](tokenIds.length);
+		for(uint i = 0; i < tokenIds.length; i++) {
+			owners[i] = listTokenInternal(token, tokenInstance, tokenIds[i], buyPrices[i], startPrices[i], endTimes[i]);
+		}
+
+		emit LogTokensListed(
+			token,
+			tokenIds,
+			owners,
+			msg.sender,
+			buyPrices,
+			startPrices,
+			endTimes
+		);
+	}
+
 	/////////////////////////////////////// INTERNAL ////////////////////////////////////////
 	function orderExists(OrderInfo order)
 		private
@@ -365,5 +379,43 @@ contract UniqxMarketERC721Auction is UniqxMarketBase
 		returns(bool listed)
 	{
 		return (order.owner != address(0x0));
+	}
+
+	function listTokenInternal(
+		address token,
+		ERC721Token tokenInstance,
+		uint tokenId,
+		uint buyPrice,
+		uint startPrice,
+		uint endTime
+	)
+		private
+		returns (address _owner)
+	{
+		OrderInfo storage order = orders[token][tokenId];
+		require(!orderExists(order), "Token must not be listed already");
+		require(buyPrice > 0, "Buy price must be greater than zero");
+		require(startPrice <= buyPrice, "Start price must be less than or equal to the buy price");
+		require(endTime > now + AUCTION_MIN_DURATION, "A minimum auction duration is enforced by the market");
+		require(isSpenderApproved(msg.sender, token , tokenId), "The seller must be allowed to sell the token");
+
+		// market will now escrow the token (owner and seller must approve uniqx market before listing)
+		address owner = tokenInstance.ownerOf(tokenId);
+		tokenInstance.transferFrom(owner, address(this), tokenId);
+
+		OrderInfo memory newOrder = OrderInfo(
+			{
+			owner: owner,
+			buyPrice: buyPrice,
+			buyer: address(0),
+			startPrice: startPrice,
+			endTime: endTime,
+			highestBid: 0
+			}
+		);
+
+		orders[token][tokenId] = newOrder;
+
+		return owner;
 	}
 }
