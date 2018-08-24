@@ -189,47 +189,22 @@ contract UniqxMarketERC721Auction is UniqxMarketBase
 		require(bidRunningSum == msg.value, "The amount passed must match the sum of the bids");
 	}
 
-	// MC: isn't this better called cancelOrders ?
-	// Can we do a separate branch for renaming and involve Solo as well?
-	function cancelTokens(
+	function cancelToken(
 		address token,
-		uint[] tokenIds
+		uint tokenId
 	)
 		whenNotPaused
 		nonReentrant
 		public
 	{
-		require(tokenIds.length > 0, "Array must have at least one entry");
-
 		TokenContract storage tokenContract = tokenContracts[token];
 		require(tokenContract.registered, "Token must be registered");
 
 		ERC721Token tokenInstance = ERC721Token(token);
 
-		for(uint i = 0; i < tokenIds.length; i++) {
+		cancelTokenInternal(token, tokenInstance, tokenId);
 
-			OrderInfo storage order = orders[token][tokenIds[i]];
-
-			require(orderExists(order), "Token must be listed");
-
-			require(
-				msg.sender == order.owner
-				|| tokenInstance.getApproved(tokenIds[i]) == msg.sender
-				|| tokenInstance.isApprovedForAll(order.owner, msg.sender),
-				"Only the owner or the seller can cancel a token"
-			);
-
-			// ended auctions cannot be canceled - these are called Unsold
-			require(now < order.endTime, "Auction must be open");
-			require(order.highestBid == 0, "Only zero bids auctions can be cancelled");
-
-			// transfer the token back to the owner
-			tokenInstance.transferFrom(address(this), order.owner, tokenIds[i]);
-
-			delete orders[token][tokenIds[i]];
-		}
-
-		emit LogTokensCancelled(token, tokenIds);
+		emit LogTokenCancelled(token, tokenId);
 	}
 
 	// this will move the auctions into final states (Sold/Unsold)
@@ -372,6 +347,31 @@ contract UniqxMarketERC721Auction is UniqxMarketBase
 		);
 	}
 
+	// MC: isn't this better called cancelOrders ?
+	// Can we do a separate branch for renaming and involve Solo as well?
+	function cancelTokens(
+		address token,
+		uint[] tokenIds
+	)
+		whenNotPaused
+		nonReentrant
+		public
+	{
+		require(tokenIds.length > 0, "Array must have at least one entry");
+
+		TokenContract storage tokenContract = tokenContracts[token];
+		require(tokenContract.registered, "Token must be registered");
+
+		ERC721Token tokenInstance = ERC721Token(token);
+
+		for(uint i = 0; i < tokenIds.length; i++) {
+			cancelTokenInternal(token, tokenInstance, tokenIds[i]);
+		}
+
+		emit LogTokensCancelled(token, tokenIds);
+	}
+
+
 	/////////////////////////////////////// INTERNAL ////////////////////////////////////////
 	function orderExists(OrderInfo order)
 		private
@@ -417,5 +417,32 @@ contract UniqxMarketERC721Auction is UniqxMarketBase
 		orders[token][tokenId] = newOrder;
 
 		return owner;
+	}
+
+	function cancelTokenInternal(
+		address token,
+		ERC721Token tokenInstance,
+		uint tokenId
+	)
+		private
+	{
+		OrderInfo storage order = orders[token][tokenId];
+		require(orderExists(order), "Token must be listed");
+
+		require(
+			msg.sender == order.owner
+			|| tokenInstance.getApproved(tokenId) == msg.sender
+		|| tokenInstance.isApprovedForAll(order.owner, msg.sender),
+			"Only the owner or the seller can cancel a token"
+		);
+
+		// ended auctions cannot be canceled - these are called Unsold
+		require(now < order.endTime, "Auction must be open");
+		require(order.highestBid == 0, "Only zero bids auctions can be cancelled");
+
+		// transfer the token back to the owner
+		tokenInstance.transferFrom(address(this), order.owner, tokenId);
+
+		delete orders[token][tokenId];
 	}
 }
