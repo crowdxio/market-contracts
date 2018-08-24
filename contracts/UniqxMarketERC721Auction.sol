@@ -77,12 +77,12 @@ contract UniqxMarketERC721Auction is UniqxMarketBase
 		require(tokenContract.registered, "Token must be registered");
 
 		OrderInfo storage order = orders[token][tokenId];
-		owner           = order.owner;
-		buyPrice 	    = order.buyPrice;
-		buyer 		    = order.buyer;
-		startPrice 	    = order.startPrice;
+		owner			= order.owner;
+		buyPrice 		= order.buyPrice;
+		buyer 			= order.buyer;
+		startPrice 		= order.startPrice;
 		endTime 		= order.endTime;
-		highestBid 	    = order.highestBid;
+		highestBid 		= order.highestBid;
 	}
 
 	function listTokensAuction(
@@ -115,6 +115,7 @@ contract UniqxMarketERC721Auction is UniqxMarketBase
 
 			require(!orderExists(order), "Token must not be listed already");
 			require(startPrices[i] <= buyPrices[i], "Start price must be less than or equal to the buy price");
+			require(buyPrices[i] > 0, "Buy price must be greater than zero");
 			require(endTimes[i] > now + AUCTION_MIN_DURATION, "A minimum auction duration is enforced by the market");
 			require(isSpenderApproved(msg.sender, token , tokenIds[i]), "The seller must be allowed to sell the token");
 

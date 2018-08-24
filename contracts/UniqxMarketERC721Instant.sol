@@ -241,6 +241,8 @@ contract UniqxMarketERC721Instant is UniqxMarketBase {
 		private
 		returns(address _owner)
 	{
+		require(buyPrice > 0, "Price must be greater than zero");
+
 		OrderInfo storage order = orders[token][tokenId];
 		require(!orderExists(order), "Token must not be listed already");
 		require(isSpenderApproved(msg.sender, token , tokenId), "The seller must be allowed to sell the token");
