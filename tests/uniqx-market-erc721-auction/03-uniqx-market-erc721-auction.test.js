@@ -173,6 +173,20 @@ contract('Testing token listing - auction', async function (rpc_accounts) {
 		).should.be.fulfilled;
 	});
 
+	it('the SELLER should not be able to list a zero value token', async function () {
+		await uniqxMarket.listTokensAuction(
+			adaptCollectibles.address,
+			[tokens[0]],
+			[0],
+			[0],
+			[moment().add(3, 'days').unix()],
+			{
+				from: ac.SELLER,
+				gas: 7000000
+			}
+		).should.be.rejectedWith(EVMRevert);
+	});
+
 	it('the SELLER should be able to list 10 adapt tokens for sale - auction format', async () => {
 
 		const ret = await uniqxMarket.listTokensAuction(
