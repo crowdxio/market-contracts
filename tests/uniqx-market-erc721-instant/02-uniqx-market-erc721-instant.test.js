@@ -192,7 +192,7 @@ contract('Testing token listing', async function (rpc_accounts) {
 
 		console.log(`GAS - List ${tokensCount} adapt tokens fixed price: ${ret.receipt.gasUsed}`);
 
-		expectEvent.inLogs(ret.logs, 'LogTokensListed');
+		expectEvent.inLogs(ret.logs, 'LogCreateMany');
 
 		for (let i = 0; i < tokensCount; i++) {
 			const owner = await adaptCollectibles.ownerOf(tokens[i]);

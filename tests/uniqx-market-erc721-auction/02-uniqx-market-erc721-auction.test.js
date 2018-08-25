@@ -96,7 +96,7 @@ contract('Freeride testing', async function (rpc_accounts) {
 		).should.be.fulfilled;
 
 
-		expectEvent.inLogs(rec.logs, 'LogTokensListed');
+		expectEvent.inLogs(rec.logs, 'LogCreateMany');
 		for (let i = 0; i < 3; i++) {
 			const listed = await market.tokenIsListed(erc721Token.address, tokens[i]);
 			assert.equal(listed, true);
@@ -112,7 +112,7 @@ contract('Freeride testing', async function (rpc_accounts) {
 			{ from: ac.BUYER1 , gas: 7000000, value: ether(2.2) }
 		).should.be.fulfilled;
 
-		expectEvent.inLogs(rec.logs, 'LogBidPlaced');
+		expectEvent.inLogs(rec.logs, 'LogBid');
 	});
 
 	it('should allow buyer2 to outbid buyer1 and buy now the token 0', async function () {
@@ -127,7 +127,7 @@ contract('Freeride testing', async function (rpc_accounts) {
 			{ from: ac.BUYER2 , gas: 7000000, value: ether(2) }
 		).should.be.fulfilled;
 
-		expectEvent.inLogs(rec.logs, 'LogTokenSold');
+		expectEvent.inLogs(rec.logs, 'LogBuy');
 		const listed = await market.tokenIsListed(erc721Token.address, tokens[0]);
 		assert.equal(listed, listed);
 
@@ -144,7 +144,7 @@ contract('Freeride testing', async function (rpc_accounts) {
 			{ from: ac.BUYER3 , gas: 7000000, value: ether(1.2) }
 		).should.be.fulfilled;
 
-		expectEvent.inLogs(rec.logs, 'LogBidPlaced');
+		expectEvent.inLogs(rec.logs, 'LogBid');
 	});
 
 	it('should not allow buyer3 to settle the auction yet while is still open', async function () {
@@ -181,7 +181,7 @@ contract('Freeride testing', async function (rpc_accounts) {
 			{ from: ac.BUYER3 , gas: 7000000}
 		).should.be.fulfilled;
 
-		expectEvent.inLogs(rec.logs, 'LogTokenSold');
+		expectEvent.inLogs(rec.logs, 'LogBuy');
 
 		const owner = await erc721Token.ownerOf(tokens[1]);
 		assert.equal(owner, ac.BUYER3);
@@ -217,7 +217,7 @@ contract('Freeride testing', async function (rpc_accounts) {
 			{ from: ac.ADAPT_ADMIN , gas: 7000000 }
 		).should.be.fulfilled;
 
-		expectEvent.inLogs(rec.logs, 'LogTokensListed');
+		expectEvent.inLogs(rec.logs, 'LogCreateMany');
 		let listed = await market.tokenIsListed(erc721Token.address, tokens[3]);
 		assert.equal(listed, true);
 
@@ -227,7 +227,7 @@ contract('Freeride testing', async function (rpc_accounts) {
 			{ from: ac.ADAPT_ADMIN , gas: 7000000 }
 		).should.be.fulfilled;
 
-		expectEvent.inLogs(rec.logs, 'LogTokensCancelled');
+		expectEvent.inLogs(rec.logs, 'LogCancelMany');
 		listed = await market.tokenIsListed(erc721Token.address, tokens[3]);
 		assert.equal(listed, false);
 	});
@@ -273,7 +273,7 @@ contract('Freeride testing', async function (rpc_accounts) {
 			{ from: ac.ADAPT_ADMIN , gas: 7000000 }
 		).should.be.fulfilled;
 
-		expectEvent.inLogs(rec.logs, 'LogTokensListed');
+		expectEvent.inLogs(rec.logs, 'LogCreateMany');
 		let listed = await market.tokenIsListed(erc721Token.address, tokens[3]);
 		assert.equal(listed, true);
 
@@ -284,7 +284,7 @@ contract('Freeride testing', async function (rpc_accounts) {
 			{ from: ac.BUYER1 , gas: 7000000, value: ether(1.1) }
 		).should.be.fulfilled;
 
-		expectEvent.inLogs(rec.logs, 'LogBidPlaced');
+		expectEvent.inLogs(rec.logs, 'LogBid');
 
 		increaseTimeTo(oneDayLater + duration.minutes(1));
 
@@ -311,7 +311,7 @@ contract('Freeride testing', async function (rpc_accounts) {
 			{ from: ac.ADAPT_ADMIN , gas: 7000000 }
 		).should.be.fulfilled;
 
-		expectEvent.inLogs(rec.logs, 'LogTokensListed');
+		expectEvent.inLogs(rec.logs, 'LogCreateMany');
 		let listed = await market.tokenIsListed(erc721Token.address, tokens[4]);
 		assert.equal(listed, true);
 

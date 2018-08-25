@@ -16,14 +16,14 @@ contract UniqxMarketERC721Instant is UniqxMarketBase {
 	}
 
 	/////////////////////////////////////// EVENTS //////////////////////////////////////////
-	event LogTokenListed(
+	event LogCreate(
 		address token,
 		uint tokenId,
 		address owner,
 		address seller,
 		uint buyPrice
 	);
-	event LogTokensListed(
+	event LogCreateMany(
 		address token,
 		uint[] tokenIds,
 		address[] owners,
@@ -91,7 +91,7 @@ contract UniqxMarketERC721Instant is UniqxMarketBase {
 
 		address owner = listTokenInternal(token, tokenInstance, tokenId, buyPrice);
 
-		emit LogTokenListed(
+		emit LogCreate(
 			token,
 			tokenId,
 			owner,
@@ -116,7 +116,7 @@ contract UniqxMarketERC721Instant is UniqxMarketBase {
 
 		buyTokenInternal(token, tokenInstance, tokenId, 0);
 
-		emit LogTokenSold(token, tokenId, msg.sender);
+		emit LogBuy(token, tokenId, msg.sender);
 	}
 
 	function cancelToken(
@@ -130,7 +130,7 @@ contract UniqxMarketERC721Instant is UniqxMarketBase {
 		TokenContract storage tokenContract = tokenContracts[token];
 		require(tokenContract.registered, "Token must be registered");
 
-		emit LogTokenCancelled(token, tokenId);
+		emit LogCancel(token, tokenId);
 	}
 
 	/////////////////////////////////////// BATCH ///////////////////////////////////////////
@@ -158,7 +158,7 @@ contract UniqxMarketERC721Instant is UniqxMarketBase {
 			owners[i] = listTokenInternal(token, tokenInstance, tokenIds[i], buyPrices[i]);
 		}
 
-		emit LogTokensListed(
+		emit LogCreateMany(
 			token,
 			tokenIds,
 			owners,
@@ -192,7 +192,7 @@ contract UniqxMarketERC721Instant is UniqxMarketBase {
 		// the bundled value should match the price of all orders
 		require(ordersAmount == msg.value);
 
-		emit LogTokensSold(token, tokenIds, msg.sender);
+		emit LogBuyMany(token, tokenIds, msg.sender);
 	}
 
 
@@ -217,7 +217,7 @@ contract UniqxMarketERC721Instant is UniqxMarketBase {
 			cancelTokenInternal(token, tokenInstance, tokenIds[i]);
 		}
 
-		emit LogTokensCancelled(token, tokenIds);
+		emit LogCancelMany(token, tokenIds);
 	}
 
 	/////////////////////////////////////// INTERNAL ////////////////////////////////////////

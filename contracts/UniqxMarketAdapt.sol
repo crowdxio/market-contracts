@@ -41,15 +41,15 @@ contract UniqxMarketAdapt is NoOwner, Pausable, ReentrancyGuard {
 	mapping(uint => address) reservations;
 
 	// events
-	event LogTokensListed(
+	event LogCreateMany(
 		uint[] tokenIds,
 		uint[] buyPrices,
 		address[] reservations,
 		address[] owners,
 		address seller
 	);
-	event LogTokenSold(uint tokenId, address buyer, uint price);
-	event LogTokensCancelled(uint[] tokens);
+	event LogBuy(uint tokenId, address buyer, uint price);
+	event LogCancelMany(uint[] tokens);
 
 	// entry point
 	constructor(
@@ -163,7 +163,7 @@ contract UniqxMarketAdapt is NoOwner, Pausable, ReentrancyGuard {
 			orders[tokenIds[i]] = order;
 		}
 
-		emit LogTokensListed(tokenIds, buyPrices, _reservations, owners, msg.sender);
+		emit LogCreateMany(tokenIds, buyPrices, _reservations, owners, msg.sender);
 	}
 
 	function cancelTokens(uint[] tokenIds)
@@ -194,7 +194,7 @@ contract UniqxMarketAdapt is NoOwner, Pausable, ReentrancyGuard {
 			delete orders[tokenIds[i]];
 		}
 
-		emit LogTokensCancelled(tokenIds);
+		emit LogCancelMany(tokenIds);
 	}
 
 	function buyTokens(uint[] tokenIds)
@@ -260,6 +260,6 @@ contract UniqxMarketAdapt is NoOwner, Pausable, ReentrancyGuard {
 
 		delete orders[tokenId];
 
-		emit LogTokenSold(tokenId, msg.sender, amount);
+		emit LogBuy(tokenId, msg.sender, amount);
 	}
 }

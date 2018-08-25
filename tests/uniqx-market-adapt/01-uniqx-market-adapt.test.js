@@ -92,7 +92,7 @@ contract('Market - a simple walk-through the functionality', function (rpc_accou
 		let ownerToken1 = await adapt.ownerOf(tokens[0]);
 		assert.equal(ownerToken1, market.address, 'MARKET should tmp own the token');
 
-		await expectEvent.inLogs(logs, 'LogTokensListed');
+		await expectEvent.inLogs(logs, 'LogCreateMany');
 	});
 
 	it('should be able to fulfill a valid take request', async () => {
@@ -105,7 +105,7 @@ contract('Market - a simple walk-through the functionality', function (rpc_accou
 			{ from: ac.BUYER1, value: prices[0] }
 		).should.be.fulfilled;
 
-		await expectEvent.inLogs(logs, 'LogTokenSold');
+		await expectEvent.inLogs(logs, 'LogBuy');
 
 		let ownerToken1 = await adapt.ownerOf(tokens[0]);
 		assert.equal(ownerToken1, ac.BUYER1, 'BUYER1 should now be the owner of token1');
@@ -139,7 +139,7 @@ contract('Market - a simple walk-through the functionality', function (rpc_accou
 			{ from: ac.BUYER1, value: ether(2) }
 		).should.be.fulfilled;
 
-		await expectEvent.inLogs(logs, 'LogTokenSold');
+		await expectEvent.inLogs(logs, 'LogBuy');
 
 		let ownerToken1 = await adapt.ownerOf(tokens[1]);
 		assert.equal(ownerToken1, ac.BUYER1, 'BUYER1 should now be the owner of token1');
@@ -213,7 +213,7 @@ contract('Market - a simple walk-through the functionality', function (rpc_accou
 			{ from: ac.ADAPT_ADMIN }
 		).should.be.fulfilled;
 
-		await expectEvent.inLogs(logs, 'LogTokensCancelled');
+		await expectEvent.inLogs(logs, 'LogCancelMany');
 
 		ownerToken3 = await adapt.ownerOf(tokens[3]);
 		assert.equal(ownerToken3, ac.ADAPT_ADMIN, 'ADAPT_ADMIN should now own the item');
@@ -258,7 +258,7 @@ contract('Market - a simple walk-through the functionality', function (rpc_accou
 			{ from: ac.ACCOUNT3 , gas: 7000000 }
 		).should.be.fulfilled;
 
-		await expectEvent.inLogs(logs, 'LogTokensCancelled');
+		await expectEvent.inLogs(logs, 'LogCancelMany');
 
 		ownerToken = await adapt.ownerOf(tokens[6]);
 		assert.equal(ownerToken, ac.ADAPT_ADMIN, 'the original owner(ac.ADAPT_ADMIN) own the token');

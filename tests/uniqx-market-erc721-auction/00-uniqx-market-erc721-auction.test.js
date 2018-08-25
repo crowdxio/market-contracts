@@ -166,7 +166,7 @@ contract('Testing Auction listing - main flow', async function (rpc_accounts) {
 		console.log(`GAS - List for auction ${tokensCount - 1} adapt tokens: ${rec.receipt.gasUsed}`);
 
 		// MC: should check the details of the orders here; both content of logs and content of data
-		expectEvent.inLogs(rec.logs, 'LogTokensListed');
+		expectEvent.inLogs(rec.logs, 'LogCreateMany');
 	});
 
 	it('should mint 1 test token', async function () {
@@ -201,7 +201,7 @@ contract('Testing Auction listing - main flow', async function (rpc_accounts) {
 		console.log(`GAS - List for auction 1 adapt token: ${rec.receipt.gasUsed}`);
 
 		// MC: should check the details of the orders here; both content of logs and content of data
-		expectEvent.inLogs(rec.logs, 'LogTokensListed');
+		expectEvent.inLogs(rec.logs, 'LogCreateMany');
 	});
 
 	it('should be able to cancel 2 tokens', async () => {
@@ -217,7 +217,7 @@ contract('Testing Auction listing - main flow', async function (rpc_accounts) {
 		console.log(`GAS - Cancel 2 adapt tokens: ${rec.receipt.gasUsed}`);
 
 		// MC: should check insistence of orders and content of logs
-		expectEvent.inLogs(rec.logs, 'LogTokensCancelled');
+		expectEvent.inLogs(rec.logs, 'LogCancelMany');
 		// MC: should enforce the change in balance with an assert
 		console.log(`Market balance: ${await getBalanceAsyncStr(ac.MARKET_FEES_MSIG)}`);
 	});
@@ -238,7 +238,7 @@ contract('Testing Auction listing - main flow', async function (rpc_accounts) {
 		console.log(`GAS - Re-list for auction 1 adapt token after it was cancel: ${rec.receipt.gasUsed}`);
 
 		// MC: should check the details of the orders here; both content of logs and content of data
-		expectEvent.inLogs(rec.logs, 'LogTokensListed');
+		expectEvent.inLogs(rec.logs, 'LogCreateMany');
 	});
 
 	it('BUYER1 should be able to place bids on 3 tokens', async function () {
@@ -253,7 +253,7 @@ contract('Testing Auction listing - main flow', async function (rpc_accounts) {
 			}
 		).should.be.fulfilled;
 
-		expectEvent.inLogs(ret.logs, 'LogBidPlaced');
+		expectEvent.inLogs(ret.logs, 'LogBid');
 		// MC: should check content of orders and content of logs
 		console.log(`GAS - Bid 2 adapt tokens: ${ret.receipt.gasUsed}`);
 	});
@@ -270,7 +270,7 @@ contract('Testing Auction listing - main flow', async function (rpc_accounts) {
 			}
 		).should.be.fulfilled;
 
-		expectEvent.inLogs(ret.logs, 'LogBidPlaced');
+		expectEvent.inLogs(ret.logs, 'LogBid');
 		// MC: should check content of orders and content of logs
 		console.log(`GAS - Bid 2 adapt tokens: ${ret.receipt.gasUsed}`);
 	});
@@ -288,8 +288,8 @@ contract('Testing Auction listing - main flow', async function (rpc_accounts) {
 			}
 		).should.be.fulfilled;
 
-		expectEvent.inLogs(ret.logs, 'LogBidPlaced');
-		expectEvent.inLogs(ret.logs, 'LogTokenSold');
+		expectEvent.inLogs(ret.logs, 'LogBid');
+		expectEvent.inLogs(ret.logs, 'LogBuy');
 		// MC: should check content of orders and content of logs
 		console.log(`GAS - Bid 2 adapt tokens: ${ret.receipt.gasUsed}`);
 	});
@@ -309,7 +309,7 @@ contract('Testing Auction listing - main flow', async function (rpc_accounts) {
 		).should.be.fulfilled;
 
 		// MC: should check content of orders and content of logs
-		expectEvent.inLogs(ret.logs, 'LogTokenSold');
+		expectEvent.inLogs(ret.logs, 'LogBuy');
 	});
 
 
@@ -325,7 +325,7 @@ contract('Testing Auction listing - main flow', async function (rpc_accounts) {
 		).should.be.fulfilled;
 
 		// MC: should check content of orders and content of logs
-		expectEvent.inLogs(ret.logs, 'LogTokenSold');
+		expectEvent.inLogs(ret.logs, 'LogBuy');
 	});
 
 	it('should allow the owner to take the unsold tokens back', async function () {
@@ -342,6 +342,6 @@ contract('Testing Auction listing - main flow', async function (rpc_accounts) {
 		).should.be.fulfilled;
 
 		// MC: should check content of orders and content of logs
-		expectEvent.inLogs(ret.logs, 'LogTokenUnsold');
+		expectEvent.inLogs(ret.logs, 'LogRetake');
 	});
 });

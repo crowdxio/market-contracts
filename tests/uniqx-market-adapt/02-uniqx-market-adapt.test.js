@@ -117,7 +117,7 @@ contract('Adapt Market - test logging', function (rpc_accounts) {
 		let ownerToken1 = await adapt.ownerOf(tokens[0]);
 		assert.equal(ownerToken1, market.address, 'MARKET should tmp own the token');
 
-		await expectEvent.inLogs(logs, 'LogTokensListed');
+		await expectEvent.inLogs(logs, 'LogCreateMany');
 	});
 
 	it('should be able to cancel 2 tokens', async () => {

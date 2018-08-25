@@ -21,7 +21,7 @@ contract UniqxMarketERC721Auction is UniqxMarketBase
 	}
 
 	/////////////////////////////////////// EVENTS //////////////////////////////////////////
-	event LogTokenListed(
+	event LogCreate(
 		address token,
 		uint tokenId,
 		address owner,
@@ -30,7 +30,7 @@ contract UniqxMarketERC721Auction is UniqxMarketBase
 		uint startPrice,
 		uint endTime
 	);
-	event LogTokensListed(
+	event LogCreateMany(
 		address token,
 		uint[] tokenIds,
 		address[] owners,
@@ -39,8 +39,10 @@ contract UniqxMarketERC721Auction is UniqxMarketBase
 		uint[] startPrices,
 		uint[] endTimes
 	);
-	event LogBidPlaced(address token, uint tokenId, address bidder, uint bid);
-	event LogBidsPlaced(address token, uint[] tokenIds, address bidder, uint[] bids);
+	event LogBid(address token, uint tokenId, address bidder, uint bid);
+	event LogBidMany(address token, uint[] tokenIds, address bidder, uint[] bids);
+
+	event LogRetake(address token, uint tokenId);
 
 	/////////////////////////////////////// VARIABLES ///////////////////////////////////////
 	// TokenContract -> TokenId -> OrderInfo
@@ -113,7 +115,7 @@ contract UniqxMarketERC721Auction is UniqxMarketBase
 		ERC721Token tokenInstance = ERC721Token(token);
 		address owner = listTokenInternal(token, tokenInstance, tokenId, buyPrice, startPrice, endTime);
 
-		emit LogTokenListed(
+		emit LogCreate(
 			token,
 			tokenId,
 			owner,
@@ -139,7 +141,7 @@ contract UniqxMarketERC721Auction is UniqxMarketBase
 		ERC721Token tokenInstance = ERC721Token(token);
 		placeBidInternal(token, tokenInstance, tokenId, msg.value);
 
-		emit LogBidPlaced(token, tokenId, msg.sender, msg.value);
+		emit LogBid(token, tokenId, msg.sender, msg.value);
 	}
 
 	function cancelToken(
@@ -157,7 +159,7 @@ contract UniqxMarketERC721Auction is UniqxMarketBase
 
 		cancelTokenInternal(token, tokenInstance, tokenId);
 
-		emit LogTokenCancelled(token, tokenId);
+		emit LogCancel(token, tokenId);
 	}
 
 	function buyToken(
@@ -179,7 +181,7 @@ contract UniqxMarketERC721Auction is UniqxMarketBase
 		// the value should match the price of the token
 		require(tokenPrice == msg.value);
 
-		emit LogTokenSold(token, tokenId, msg.sender);
+		emit LogBuy(token, tokenId, msg.sender);
 	}
 
 	/////////////////////////////////////// MANY ////////////////////////////////////////////
@@ -210,7 +212,7 @@ contract UniqxMarketERC721Auction is UniqxMarketBase
 			owners[i] = listTokenInternal(token, tokenInstance, tokenIds[i], buyPrices[i], startPrices[i], endTimes[i]);
 		}
 
-		emit LogTokensListed(
+		emit LogCreateMany(
 			token,
 			tokenIds,
 			owners,
@@ -247,7 +249,7 @@ contract UniqxMarketERC721Auction is UniqxMarketBase
 
 		require(bidRunningSum == msg.value, "The amount passed must match the sum of the bids");
 
-		emit LogBidsPlaced(token, tokenIds, msg.sender, bids);
+		emit LogBidMany(token, tokenIds, msg.sender, bids);
 	}
 
 	function buyTokens(
@@ -273,7 +275,7 @@ contract UniqxMarketERC721Auction is UniqxMarketBase
 		// the value should match the sum price of all tokoen
 		require(priceRunningSum == msg.value);
 
-		emit LogTokensSold(token, tokenIds, msg.sender);
+		emit LogBuyMany(token, tokenIds, msg.sender);
 	}
 
 	// MC: isn't this better called cancelOrders ?
@@ -297,13 +299,11 @@ contract UniqxMarketERC721Auction is UniqxMarketBase
 			cancelTokenInternal(token, tokenInstance, tokenIds[i]);
 		}
 
-		emit LogTokensCancelled(token, tokenIds);
+		emit LogCancelMany(token, tokenIds);
 	}
 
-
-	// this will move the auctions into final states (Sold/Unsold)
 	// if there are winners it will really do the exchange (tokens <-> ETH)
-	// otherwise it will just transfer the tokens back to the owners
+	// otherwise the owners will retake their tokens
 	function finalizeAuctions(
 		address token,
 		uint[] tokenIds
@@ -339,7 +339,7 @@ contract UniqxMarketERC721Auction is UniqxMarketBase
 				// transfer token to the highest bidder
 				tokenInstance.transferFrom(address(this), order.buyer, tokenIds[i]);
 
-				emit LogTokenSold(token, tokenIds[i], order.buyer);
+				emit LogBuy(token, tokenIds[i], order.buyer);
 
 			} else {
 
@@ -348,7 +348,7 @@ contract UniqxMarketERC721Auction is UniqxMarketBase
 				// transfer the token back to the owner
 				tokenInstance.transferFrom(address(this), order.owner, tokenIds[i]);
 
-				emit LogTokenUnsold(token, tokenIds[i]);
+				emit LogRetake(token, tokenIds[i]);
 			}
 
 			delete orders[token][tokenIds[i]];
@@ -427,7 +427,7 @@ contract UniqxMarketERC721Auction is UniqxMarketBase
 		order.highestBid = bid;
 		order.buyer = msg.sender;
 
-		emit LogBidPlaced(token, tokenId, order.buyer, order.highestBid);
+		emit LogBid(token, tokenId, order.buyer, order.highestBid);
 
 		// buy it now?
 		if (bid == order.buyPrice) {
@@ -443,7 +443,7 @@ contract UniqxMarketERC721Auction is UniqxMarketBase
 			// transfer token to buyer which is the same with sender and buyer
 			tokenInstance.transferFrom(address(this), msg.sender, tokenId);
 
-			emit LogTokenSold(token, tokenId, order.buyer);
+			emit LogBuy(token, tokenId, order.buyer);
 
 			delete orders[token][tokenId];
 		}

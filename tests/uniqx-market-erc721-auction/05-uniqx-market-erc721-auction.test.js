@@ -130,7 +130,7 @@ contract('Testing auction functionality', async function (rpc_accounts) {
 			}
 		).should.be.fulfilled;
 
-		expectEvent.inLogs(rec.logs, 'LogTokensCancelled');
+		expectEvent.inLogs(rec.logs, 'LogCancelMany');
 
 		const owner = await adaptCollectibles.ownerOf(tokens[0]);
 		assert.equal(owner, ac.ADAPT_ADMIN, 'unexpected owner');
@@ -226,7 +226,7 @@ contract('Testing auction functionality', async function (rpc_accounts) {
 			}
 		).should.be.fulfilled;
 
-		expectEvent.inLogs(ret.logs, 'LogBidPlaced');
+		expectEvent.inLogs(ret.logs, 'LogBid');
 
 		const info = await uniqxMarket.getOrderInfo(adaptCollectibles.address, tokens[1]);
 		console.log(`order info: ${JSON.stringify(info, null, '\t')}`);
@@ -290,7 +290,7 @@ contract('Testing auction functionality', async function (rpc_accounts) {
 			}
 		).should.be.fulfilled;
 
-		expectEvent.inLogs(ret.logs, 'LogBidPlaced');
+		expectEvent.inLogs(ret.logs, 'LogBid');
 
 		const info = await uniqxMarket.getOrderInfo(adaptCollectibles.address, tokens[1]);
 		console.log(`order info: ${JSON.stringify(info, null, '\t')}`);
@@ -313,7 +313,7 @@ contract('Testing auction functionality', async function (rpc_accounts) {
 			}
 		).should.be.fulfilled;
 
-		expectEvent.inLogs(ret.logs, 'LogBidPlaced');
+		expectEvent.inLogs(ret.logs, 'LogBid');
 
 		const info = await uniqxMarket.getOrderInfo(adaptCollectibles.address, tokens[1]);
 		console.log(`order info: ${JSON.stringify(info, null, '\t')}`);
@@ -337,8 +337,8 @@ contract('Testing auction functionality', async function (rpc_accounts) {
 			}
 		).should.be.fulfilled;
 
-		expectEvent.inLogs(ret.logs, 'LogBidPlaced');
-		expectEvent.inLogs(ret.logs, 'LogTokenSold');
+		expectEvent.inLogs(ret.logs, 'LogBid');
+		expectEvent.inLogs(ret.logs, 'LogBuy');
 
 		const owner = await adaptCollectibles.ownerOf(tokens[1]);
 		assert.equal(owner, ac.BUYER3, 'unexpected owner');
@@ -379,7 +379,7 @@ contract('Testing auction functionality', async function (rpc_accounts) {
 			}
 		).should.be.fulfilled;
 
-		expectEvent.inLogs(ret.logs, 'LogBidPlaced');
+		expectEvent.inLogs(ret.logs, 'LogBid');
 
 		let info = await uniqxMarket.getOrderInfo(adaptCollectibles.address, tokens[2]);
 		let highestBid = new BigNumber(info[5]);
@@ -420,7 +420,7 @@ contract('Testing auction functionality', async function (rpc_accounts) {
 			}
 		).should.be.fulfilled;
 
-		expectEvent.inLogs(ret.logs, 'LogTokenSold');
+		expectEvent.inLogs(ret.logs, 'LogBuy');
 
 		let owner = await adaptCollectibles.ownerOf(tokens[2]);
 		assert.equal(owner, ac.BUYER3, 'unexpected owner');
@@ -441,7 +441,7 @@ contract('Testing auction functionality', async function (rpc_accounts) {
 			}
 		).should.be.fulfilled;
 
-		expectEvent.inLogs(ret.logs, 'LogTokenUnsold');
+		expectEvent.inLogs(ret.logs, 'LogRetake');
 
 		for(let i = 4; i < tokensCount; i++) {
 			let owner = await adaptCollectibles.ownerOf(tokens[i]);

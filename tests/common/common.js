@@ -77,7 +77,7 @@ async function parseAdaptMarketEvent(event, timestamp) {
 	const parameters = event['events']; // it's called events for some reason...
 
 	switch (name) {
-		case 'LogTokensListed': {
+		case 'LogCreateMany': {
 
 			const tokenIds      = parameters[0].value;
 			const buyPrices     = parameters[1].value;
@@ -93,7 +93,7 @@ async function parseAdaptMarketEvent(event, timestamp) {
 			break;
 		}
 
-		case 'LogTokensCancelled': {
+		case 'LogCancelMany': {
 			const tokenIds      = parameters[0].value;
 
 			const tokensCount = tokenIds.length;
@@ -104,7 +104,7 @@ async function parseAdaptMarketEvent(event, timestamp) {
 			break;
 		}
 
-		case 'LogTokenSold': {
+		case 'LogBuy': {
 			const tokenId       = new BigNumber(parameters[0].value, 10).toString(16);
 			const buyer         = parameters[1].value;
 			const price         = parameters[2].value;
@@ -126,7 +126,7 @@ async function parseUniqxInstantMarketEvent(event, timestamp) {
 
 	switch (name) {
 
-		case 'LogTokenListed': {
+		case 'LogCreate': {
 
 			const token        = parameters[0].value;
 			const tokenId      = parameters[1].value;
@@ -145,7 +145,7 @@ async function parseUniqxInstantMarketEvent(event, timestamp) {
 			break;
 		}
 
-		case 'LogTokensListed': {
+		case 'LogCreateMany': {
 
 			const token         = parameters[0].value;
 			const tokenIds      = parameters[1].value;
@@ -161,7 +161,7 @@ async function parseUniqxInstantMarketEvent(event, timestamp) {
 			break;
 		}
 
-		case 'LogTokenSold': {
+		case 'LogBuy': {
 			const token         = parameters[0].value;
 			const tokenId       = new BigNumber(parameters[1].value, 10).toString(16);
 			const buyer         = parameters[2].value;
@@ -169,7 +169,7 @@ async function parseUniqxInstantMarketEvent(event, timestamp) {
 			break;
 		}
 
-		case 'LogTokensSold': {
+		case 'LogBuyMany': {
 			const token         = parameters[0].value;
 			const tokenIds      = parameters[1].value;
 			const buyer         = parameters[2].value;
@@ -181,14 +181,14 @@ async function parseUniqxInstantMarketEvent(event, timestamp) {
 			break;
 		}
 
-		case 'LogTokenCancelled': {
+		case 'LogCancel': {
 			const token   = parameters[0].value;
 			const tokenId = new BigNumber(parameters[1].value, 10).toString(16);
 			console.log(`Token Canceled: token=${token}, tokenId=0x${tokenId}, cancelledAt=${moment.unix(timestamp).utc().format()}`);
 			break;
 		}
 
-		case 'LogTokensCancelled': {
+		case 'LogCancelMany': {
 			const token         = parameters[0].value;
 			const tokenIds      = parameters[1].value;
 
@@ -215,7 +215,7 @@ async function parseUniqxAuctionMarketEvent(event, timestamp) {
 
 	switch (name) {
 
-		case 'LogTokensListed': {
+		case 'LogCreateMany': {
 			const token         = parameters[0].value;
 			const tokenIds      = parameters[1].value;
 			const owners        = parameters[2].value;
@@ -232,7 +232,7 @@ async function parseUniqxAuctionMarketEvent(event, timestamp) {
 			break;
 		}
 
-		case 'LogBidPlaced': {
+		case 'LogBid': {
 			const token         = parameters[0].value;
 			const tokenId       = new BigNumber(parameters[1].value, 10).toString(16);
 			const bidder        = parameters[2].value;
@@ -241,7 +241,7 @@ async function parseUniqxAuctionMarketEvent(event, timestamp) {
 			break;
 		}
 
-		case 'LogTokenSold': {
+		case 'LogBuy': {
 			const token         = parameters[0].value;
 			const tokenId       = new BigNumber(parameters[1].value, 10).toString(16);
 			const buyer         = parameters[2].value;
@@ -249,14 +249,14 @@ async function parseUniqxAuctionMarketEvent(event, timestamp) {
 			break;
 		}
 
-		case 'LogTokenUnsold': {
+		case 'LogRetake': {
 			const token         = parameters[0].value;
 			const tokenId       = new BigNumber(parameters[1].value, 10).toString(16);
 			console.log(`Token Unsold: token=${token}, tokenId=0x${tokenId}, unsoldAt=${moment.unix(timestamp).utc().format()}`);
 			break;
 		}
 
-		case 'LogTokensCancelled': {
+		case 'LogCancelMany': {
 			const token         = parameters[0].value;
 			const tokenIds      = parameters[1].value;
 
