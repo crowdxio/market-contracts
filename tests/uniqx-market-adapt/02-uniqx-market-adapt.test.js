@@ -107,7 +107,7 @@ contract('Adapt Market - test logging', function (rpc_accounts) {
 		reservations[3] = ac.BUYER2;
 		reservations[4] = ac.BUYER2;
 
-		const { logs }  = await market.listTokens(
+		const { logs }  = await market.createMany(
 			tokens,
 			prices,
 			reservations,
@@ -121,14 +121,14 @@ contract('Adapt Market - test logging', function (rpc_accounts) {
 	});
 
 	it('should be able to cancel 2 tokens', async () => {
-		await market.cancelTokens(
+		await market.cancelMany(
 			[tokens[0], tokens[1]],
 			{ from: ac.ADAPT_ADMIN, gas: 7000000 }
 		).should.be.fulfilled;
 	});
 
 	it('BUYER1 should be able to donate for a token', async () => {
-		await market.buyToken(
+		await market.buy(
 			tokens[2],
 			{ from: ac.BUYER1, gas: 7000000, value: ether(3)}
 		).should.be.fulfilled;
@@ -138,14 +138,14 @@ contract('Adapt Market - test logging', function (rpc_accounts) {
 	});
 
 	it('BUYER1 should not be able to donate for a token reserved for BUYER2', async () => {
-		await market.buyToken(
+		await market.buy(
 			tokens[3],
 			{ from: ac.BUYER1, gas: 7000000, value: ether(3)}
 		).should.be.rejectedWith(EVMRevert);
 	});
 
 	it('BUYER2 should be able to donate for a token reserved for him', async () => {
-		await market.buyToken(
+		await market.buy(
 			tokens[3],
 			{ from: ac.BUYER2, gas: 7000000, value: ether(3)}
 		).should.be.fulfilled;
@@ -155,14 +155,14 @@ contract('Adapt Market - test logging', function (rpc_accounts) {
 		const threeDaysLater = latestTime() + duration.days(3);
 		increaseTimeTo(threeDaysLater + duration.minutes(1));
 
-		await market.buyToken(
+		await market.buy(
 			tokens[4],
 			{ from: ac.BUYER3, gas: 7000000, value: ether(3)}
 		).should.be.fulfilled;
 	});
 
 	it('BUYER1 should be able buy 5 tokens by paying the exact amount', async () => {
-		await market.buyTokens(
+		await market.buyMany(
 			tokens.slice(5),
 			{ from: ac.BUYER1, gas: 7000000, value: ether(5)}
 		).should.be.fulfilled;
@@ -183,7 +183,7 @@ contract('Adapt Market - test logging', function (rpc_accounts) {
 		const status = await market.getOrderStatus(tokens[2]);
 		assert.equal(status, OrderStatus.Unknown, "Order should not be listed");
 
-		await market.listTokens(
+		await market.createMany(
 			[tokens[2]],
 			[prices[2]],
 			[reservations[2]],

@@ -154,7 +154,7 @@ contract('Testing FixedPrice listing - main flow', async function (rpc_accounts)
 			prices[i] = ether(1);
 		}
 
-		const rec = await uniqxMarket.listTokens(
+		const rec = await uniqxMarket.createMany(
 			adaptCollectibles.address,
 			tokens,
 			prices,
@@ -188,7 +188,7 @@ contract('Testing FixedPrice listing - main flow', async function (rpc_accounts)
 		tokens[10] = await adaptCollectibles.tokenByIndex(10);
 		prices[10] = ether(1);
 
-		let rec = await uniqxMarket.listToken(
+		let rec = await uniqxMarket.create(
 			adaptCollectibles.address,
 			tokens[10],
 			prices[10],
@@ -202,7 +202,7 @@ contract('Testing FixedPrice listing - main flow', async function (rpc_accounts)
 	});
 
 	it('should be able to cancel 2 tokens', async () => {
-		const rec = await uniqxMarket.cancelTokens(
+		const rec = await uniqxMarket.cancelMany(
 			adaptCollectibles.address,
 			[tokens[0], tokens[1]],
 			{
@@ -223,7 +223,7 @@ contract('Testing FixedPrice listing - main flow', async function (rpc_accounts)
 
 		const fourDaysLater = moment().add(4, 'days').unix();
 
-		let rec = await uniqxMarket.listTokens(
+		let rec = await uniqxMarket.createMany(
 			adaptCollectibles.address,
 			[ tokens[0] ],
 			[ prices[0] ],
@@ -253,7 +253,7 @@ contract('Testing FixedPrice listing - main flow', async function (rpc_accounts)
 		console.log(`ownerBalanceBefore: ${ownerBalanceBefore.toString(10)}`);
 		console.log(`marketBalanceBefore: ${marketBalanceBefore.toString(10)}`);
 
-		const ret = await uniqxMarket.buyTokens(
+		const ret = await uniqxMarket.buyMany(
 			adaptCollectibles.address,
 			tokensToBuy,
 			{

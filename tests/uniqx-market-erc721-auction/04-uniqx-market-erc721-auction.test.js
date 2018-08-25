@@ -101,7 +101,7 @@ contract('Testing buy now functionality', async function (rpc_accounts) {
 			endTimes[i] = threeDaysLater;
 		}
 
-		const rec = await uniqxMarket.listTokensAuction(
+		const rec = await uniqxMarket.createMany(
 			adaptCollectibles.address,
 			tokens,
 			buyPrices,
@@ -117,7 +117,7 @@ contract('Testing buy now functionality', async function (rpc_accounts) {
 	it('BUYER1 should not be able to buy zero tokens', async function () {
 		const priceToPay = new BigNumber(ether(10));
 
-		const ret = await uniqxMarket.buyTokens(
+		const ret = await uniqxMarket.buyMany(
 			adaptCollectibles.address,
 			[],
 			{
@@ -131,7 +131,7 @@ contract('Testing buy now functionality', async function (rpc_accounts) {
 	it('BUYER1 should not be able to buy the tokens - not enough ether', async function () {
 		const priceToPay = new BigNumber(ether(1));
 
-		const ret = await uniqxMarket.buyTokens(
+		const ret = await uniqxMarket.buyMany(
 			adaptCollectibles.address,
 			tokens,
 			{
@@ -145,7 +145,7 @@ contract('Testing buy now functionality', async function (rpc_accounts) {
 	it('BUYER1 should not be able to buy the tokens - too much ether', async function () {
 		const priceToPay = new BigNumber(ether(11));
 
-		const ret = await uniqxMarket.buyTokens(
+		const ret = await uniqxMarket.buyMany(
 			adaptCollectibles.address,
 			tokens,
 			{
@@ -163,7 +163,7 @@ contract('Testing buy now functionality', async function (rpc_accounts) {
 
 		const priceToPay = new BigNumber(ether(10));
 
-		const ret = await uniqxMarket.buyTokens(
+		const ret = await uniqxMarket.buyMany(
 			adaptCollectibles.address,
 			tokens,
 			{
@@ -195,7 +195,7 @@ contract('Testing buy now functionality', async function (rpc_accounts) {
 	it('BUYER2 should not be able to buy the tokens - tokens already sold to buyer1', async function () {
 		const priceToPay = new BigNumber(ether(10));
 
-		const ret = await uniqxMarket.buyTokens(
+		const ret = await uniqxMarket.buyMany(
 			adaptCollectibles.address,
 			tokens,
 			{

@@ -110,7 +110,7 @@ contract('testing allow/disallow orders - ', function (rpc_accounts) {
 	it('should be able to make orders by default', async () => {
 		const threeDaysLater = moment().add(3, 'days').unix();
 
-		await market.listTokensAuction(
+		await market.createMany(
 			erc721Token1.address,
 			[ tokens1[0], tokens1[1], tokens1[2] ],
 			[ ether(1), ether(1), ether(1) ],
@@ -119,7 +119,7 @@ contract('testing allow/disallow orders - ', function (rpc_accounts) {
 			{ from: ac.ADAPT_ADMIN , gas: 7000000 }
 		).should.be.fulfilled;
 
-		await market.listTokensAuction(
+		await market.createMany(
 			erc721Token2.address,
 			[ tokens1[0], tokens1[1], tokens1[2] ],
 			[ ether(1), ether(1), ether(1) ],
@@ -142,7 +142,7 @@ contract('testing allow/disallow orders - ', function (rpc_accounts) {
 	it('should not be able make orders for contract with orders disallowed', async () => {
 		const oneDayLater = latestTime() + duration.days(1);
 
-		await market.listTokensAuction(
+		await market.createMany(
 			erc721Token1.address,
 			[ tokens1[3] ],
 			[ ether(1) ],
@@ -156,7 +156,7 @@ contract('testing allow/disallow orders - ', function (rpc_accounts) {
 		let listed = await market.tokenIsListed(erc721Token1.address, tokens1[0]);
 		assert.equal(listed, true, 'Token should be listed');
 
-		await market.buyTokens(
+		await market.buyMany(
 			erc721Token1.address,
 			[ tokens1[0] ],
 			{ from: ac.BUYER2 , gas: 7000000, value: ether(1) }
@@ -165,7 +165,7 @@ contract('testing allow/disallow orders - ', function (rpc_accounts) {
 		listed = await market.tokenIsListed(erc721Token1.address, tokens1[0]);
 		assert.equal(listed, false, 'Token should not be listed');
 
-		await market.cancelTokens(
+		await market.cancelMany(
 			erc721Token1.address,
 			[ tokens1[1] ],
 			{ from: ac.ADAPT_ADMIN , gas: 7000000 }
@@ -179,7 +179,7 @@ contract('testing allow/disallow orders - ', function (rpc_accounts) {
 	it('should be able make orders for other contracts with orders allowed', async () => {
 		const oneDayLater = latestTime() + duration.days(1);
 
-		await market.listTokensAuction(
+		await market.createMany(
 			erc721Token2.address,
 			[ tokens1[3] ],
 			[ ether(1) ],
@@ -212,7 +212,7 @@ contract('testing allow/disallow orders - ', function (rpc_accounts) {
 	it('should be able make orders for contract with allowed orders', async () => {
 		const oneDayLater = latestTime() + duration.days(1);
 
-		await market.listTokensAuction(
+		await market.createMany(
 			erc721Token1.address,
 			[ tokens1[3] ],
 			[ ether(1) ],
@@ -232,7 +232,7 @@ contract('testing allow/disallow orders - ', function (rpc_accounts) {
 	it('should not be able make orders for any contracts when orders are disallowed globally', async () => {
 		const oneDayLater = latestTime() + duration.days(1);
 
-		await market.listTokensAuction(
+		await market.createMany(
 			erc721Token1.address,
 			[ tokens1[4] ],
 			[ ether(1) ],
@@ -241,7 +241,7 @@ contract('testing allow/disallow orders - ', function (rpc_accounts) {
 			{ from: ac.ADAPT_ADMIN, gas: 7000000 }
 		).should.be.rejectedWith(EVMRevert);
 
-		await market.listTokensAuction(
+		await market.createMany(
 			erc721Token2.address,
 			[ tokens1[4] ],
 			[ ether(1) ],
@@ -252,25 +252,25 @@ contract('testing allow/disallow orders - ', function (rpc_accounts) {
 	});
 
 	it('should be able take/cancel orders for contract when orders are disallowed globally', async () => {
-		await market.buyTokens(
+		await market.buyMany(
 			erc721Token1.address,
 			[ tokens1[2] ],
 			{ from: ac.BUYER2 , gas: 7000000, value: ether(1) }
 		).should.be.fulfilled;
 
-		await market.cancelTokens(
+		await market.cancelMany(
 			erc721Token1.address,
 			[ tokens1[3] ],
 			{ from: ac.ADAPT_ADMIN , gas: 7000000 }
 		).should.be.fulfilled;
 
-		await market.buyTokens(
+		await market.buyMany(
 			erc721Token2.address,
 			[ tokens2[2] ],
 			{ from: ac.BUYER2 , gas: 7000000, value: ether(1) }
 		).should.be.fulfilled;
 
-		await market.cancelTokens(
+		await market.cancelMany(
 			erc721Token2.address,
 			[ tokens2[3] ],
 			{ from: ac.ADAPT_ADMIN , gas: 7000000 }

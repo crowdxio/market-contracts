@@ -108,7 +108,7 @@ contract UniqxMarketAdapt is NoOwner, Pausable, ReentrancyGuard {
 		);
 	}
 
-	function listTokens(
+	function createMany(
 		uint [] tokenIds,
 		uint [] buyPrices,
 		address[] _reservations
@@ -166,7 +166,7 @@ contract UniqxMarketAdapt is NoOwner, Pausable, ReentrancyGuard {
 		emit LogCreateMany(tokenIds, buyPrices, _reservations, owners, msg.sender);
 	}
 
-	function cancelTokens(uint[] tokenIds)
+	function cancelMany(uint[] tokenIds)
 		public
 		whenNotPaused
 		nonReentrant
@@ -197,7 +197,7 @@ contract UniqxMarketAdapt is NoOwner, Pausable, ReentrancyGuard {
 		emit LogCancelMany(tokenIds);
 	}
 
-	function buyTokens(uint[] tokenIds)
+	function buyMany(uint[] tokenIds)
 		public
 		payable
 		whenNotPaused
@@ -209,23 +209,23 @@ contract UniqxMarketAdapt is NoOwner, Pausable, ReentrancyGuard {
 
 		for(uint i = 0; i < tokenIds.length; i++) {
 			uint amount = orders[tokenIds[i]].buyPrice;
-			buyTokenInternal(tokenIds[i], amount);
+			_buy(tokenIds[i], amount);
 			amountLeft = amountLeft.sub(amount);
 		}
 
 		require(amountLeft == 0, "The amount passed must match the prices sum of all tokes");
 	}
 
-	function buyToken(uint tokenId)
+	function buy(uint tokenId)
 		public
 		payable
 		whenNotPaused
 		nonReentrant
 	{
-		buyTokenInternal(tokenId, msg.value);
+		_buy(tokenId, msg.value);
 	}
 
-	function buyTokenInternal(uint tokenId, uint amount) private {
+	function _buy(uint tokenId, uint amount) private {
 
 		OrderInfo storage order = orders[tokenId];
 

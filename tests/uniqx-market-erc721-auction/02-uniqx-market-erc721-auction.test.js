@@ -86,7 +86,7 @@ contract('Freeride testing', async function (rpc_accounts) {
 
 		const threeDaysLater = moment().add(3, 'days').unix();
 
-		const rec = await market.listTokensAuction(
+		const rec = await market.createMany(
 			erc721Token.address,
 			[ tokens[0], tokens[1], tokens[2]],
 			[ ether(2), ether(2), ether(2) ],
@@ -105,7 +105,7 @@ contract('Freeride testing', async function (rpc_accounts) {
 
 	it('should allow buyer1 to place a bid for tokens 0, 1', async function () {
 
-		const rec = await market.placeBids(
+		const rec = await market.bidMany(
 			erc721Token.address,
 			[ tokens[0], tokens[1]],
 			[ ether(1.1), ether(1.1)],
@@ -120,7 +120,7 @@ contract('Freeride testing', async function (rpc_accounts) {
 		const buyer1Balance = await pGetBalance(ac.BUYER1);
 		const buyer1BalanceShouldBeAfterOutbided = buyer1Balance .add(ether(1.1));
 
-		const rec = await market.placeBids(
+		const rec = await market.bidMany(
 			erc721Token.address,
 			[ tokens[0] ],
 			[ ether(2) ],
@@ -137,7 +137,7 @@ contract('Freeride testing', async function (rpc_accounts) {
 
 	it('should allow buyer3 to outbid buyer1 on token 1', async function () {
 
-		const rec = await market.placeBids(
+		const rec = await market.bidMany(
 			erc721Token.address,
 			[ tokens[1] ],
 			[ ether(1.2) ],
@@ -149,7 +149,7 @@ contract('Freeride testing', async function (rpc_accounts) {
 
 	it('should not allow buyer3 to settle the auction yet while is still open', async function () {
 
-		const rec = await market.finalizeAuctions(
+		const rec = await market.completeMany(
 			erc721Token.address,
 			[tokens[1]],
 			{ from: ac.BUYER3 , gas: 7000000}
@@ -161,7 +161,7 @@ contract('Freeride testing', async function (rpc_accounts) {
 
 	it('should not allow to cancel an auction if it was bidden and is still active', async () => {
 
-		await market.cancelTokens(
+		await market.cancelMany(
 			erc721Token.address,
 			[ tokens[1] ],
 			{ from: ac.ADAPT_ADMIN , gas: 7000000 }
@@ -175,7 +175,7 @@ contract('Freeride testing', async function (rpc_accounts) {
 
 		increaseTimeTo(moment().add(7, 'days').unix());
 
-		const rec = await market.finalizeAuctions(
+		const rec = await market.completeMany(
 			erc721Token.address,
 			[tokens[1]],
 			{ from: ac.BUYER3 , gas: 7000000}
@@ -208,7 +208,7 @@ contract('Freeride testing', async function (rpc_accounts) {
 
 		const oneDayLater = latestTime() + duration.days(1);
 
-		let rec = await market.listTokensAuction(
+		let rec = await market.createMany(
 			erc721Token.address,
 			[ tokens[3] ],
 			[ ether(2) ],
@@ -221,7 +221,7 @@ contract('Freeride testing', async function (rpc_accounts) {
 		let listed = await market.tokenIsListed(erc721Token.address, tokens[3]);
 		assert.equal(listed, true);
 
-		rec = await market.cancelTokens(
+		rec = await market.cancelMany(
 			erc721Token.address,
 			[ tokens[3] ],
 			{ from: ac.ADAPT_ADMIN , gas: 7000000 }
@@ -236,7 +236,7 @@ contract('Freeride testing', async function (rpc_accounts) {
 
 		const oneDayInThePast = latestTime() - duration.days(1);
 
-		let rec = await market.listTokensAuction(
+		let rec = await market.createMany(
 			erc721Token.address,
 			[ tokens[3] ],
 			[ ether(2) ],
@@ -250,7 +250,7 @@ contract('Freeride testing', async function (rpc_accounts) {
 
 		const lessThanAnHourInTheFuture = latestTime() - duration.minutes(59);
 
-		let rec = await market.listTokensAuction(
+		let rec = await market.createMany(
 			erc721Token.address,
 			[ tokens[3] ],
 			[ ether(2) ],
@@ -264,7 +264,7 @@ contract('Freeride testing', async function (rpc_accounts) {
 
 		const oneDayLater = latestTime() + duration.days(1);
 
-		let rec = await market.listTokensAuction(
+		let rec = await market.createMany(
 			erc721Token.address,
 			[ tokens[3] ],
 			[ ether(2) ],
@@ -277,7 +277,7 @@ contract('Freeride testing', async function (rpc_accounts) {
 		let listed = await market.tokenIsListed(erc721Token.address, tokens[3]);
 		assert.equal(listed, true);
 
-		rec = await market.placeBids(
+		rec = await market.bidMany(
 			erc721Token.address,
 			[ tokens[3] ],
 			[ ether(1.1) ],
@@ -288,7 +288,7 @@ contract('Freeride testing', async function (rpc_accounts) {
 
 		increaseTimeTo(oneDayLater + duration.minutes(1));
 
-		rec = await market.finalizeAuctions( // anyone can settle
+		rec = await market.completeMany( // anyone can settle
 			erc721Token.address,
 			[tokens[3]],
 			{ from: ac.BUYER3 , gas: 7000000}
@@ -302,7 +302,7 @@ contract('Freeride testing', async function (rpc_accounts) {
 
 		const oneDayLater = latestTime() + duration.days(1);
 
-		let rec = await market.listTokensAuction(
+		let rec = await market.createMany(
 			erc721Token.address,
 			[ tokens[4] ],
 			[ ether(2) ],
@@ -317,7 +317,7 @@ contract('Freeride testing', async function (rpc_accounts) {
 
 		increaseTimeTo(oneDayLater + duration.minutes(1));
 
-		rec = await market.finalizeAuctions(
+		rec = await market.completeMany(
 			erc721Token.address,
 			[tokens[4]],
 			{ from: ac.BUYER3 , gas: 7000000}

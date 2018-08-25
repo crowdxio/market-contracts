@@ -63,7 +63,7 @@ contract('estimate gas - ', function (rpc_accounts) {
 			{ from: ac.ADAPT_ADMIN }
 		).should.be.fulfilled;
 
-		let rec = await market.listTokens(
+		let rec = await market.createMany(
 			tokens,
 			prices,
 			reservations,
@@ -81,7 +81,7 @@ contract('estimate gas - ', function (rpc_accounts) {
 
 		const tokenId = await adapt.tokenByIndex(0);
 
-		let result = await market.buyToken(tokenId, { from: ac.BUYER1 , value: ether(1.1), gas: 7000000 }).should.be.fulfilled;
+		let result = await market.buy(tokenId, { from: ac.BUYER1 , value: ether(1.1), gas: 7000000 }).should.be.fulfilled;
 
 		console.log('Take order completed! Gas used: ' + result.receipt.gasUsed);
 

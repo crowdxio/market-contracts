@@ -151,7 +151,7 @@ contract('Testing Auction listing - main flow', async function (rpc_accounts) {
 			endTimes[i] = threeDaysLater;
 		}
 
-		const rec = await uniqxMarket.listTokensAuction(
+		const rec = await uniqxMarket.createMany(
 			adaptCollectibles.address,
 			tokens,
 			buyPrices,
@@ -189,7 +189,7 @@ contract('Testing Auction listing - main flow', async function (rpc_accounts) {
 		buyPrices[10] = ether(9);
 		startPrices[10] = ether(1);
 
-		let rec = await uniqxMarket.listTokensAuction(
+		let rec = await uniqxMarket.createMany(
 			adaptCollectibles.address,
 			[ tokens[10] ],
 			[ buyPrices[10] ],
@@ -205,7 +205,7 @@ contract('Testing Auction listing - main flow', async function (rpc_accounts) {
 	});
 
 	it('should be able to cancel 2 tokens', async () => {
-		const rec = await uniqxMarket.cancelTokens(
+		const rec = await uniqxMarket.cancelMany(
 			adaptCollectibles.address,
 			[tokens[0], tokens[1]],
 			{
@@ -226,7 +226,7 @@ contract('Testing Auction listing - main flow', async function (rpc_accounts) {
 
 		const fourDaysLater = moment().add(4, 'days').unix();
 
-		let rec = await uniqxMarket.listTokensAuction(
+		let rec = await uniqxMarket.createMany(
 			adaptCollectibles.address,
 			[ tokens[0] ],
 			[ ether(2) ],
@@ -242,7 +242,7 @@ contract('Testing Auction listing - main flow', async function (rpc_accounts) {
 	});
 
 	it('BUYER1 should be able to place bids on 3 tokens', async function () {
-		const ret = await uniqxMarket.placeBids(
+		const ret = await uniqxMarket.bidMany(
 			adaptCollectibles.address,
 			[tokens[2], tokens[3], tokens[4]],
 			[ether(2), ether(2), ether(2)],
@@ -259,7 +259,7 @@ contract('Testing Auction listing - main flow', async function (rpc_accounts) {
 	});
 
 	it('BUYER2 should be able to overbid BUYER1', async function () {
-		const ret = await uniqxMarket.placeBids(
+		const ret = await uniqxMarket.bidMany(
 			adaptCollectibles.address,
 			[tokens[4]],
 			[ether(4)],
@@ -277,7 +277,7 @@ contract('Testing Auction listing - main flow', async function (rpc_accounts) {
 
 
 	it('BUYER2 should be able to place a bid big enough to buy the token', async function () {
-		const ret = await uniqxMarket.placeBids(
+		const ret = await uniqxMarket.bidMany(
 			adaptCollectibles.address,
 			[tokens[5]],
 			[ether(9)],
@@ -299,7 +299,7 @@ contract('Testing Auction listing - main flow', async function (rpc_accounts) {
 		const threeDaysLater = latestTime() + duration.days(3);
 		increaseTimeTo(threeDaysLater + duration.minutes(1));
 
-		const ret = await uniqxMarket.finalizeAuctions(
+		const ret = await uniqxMarket.completeMany(
 			adaptCollectibles.address,
 			[tokens[2], tokens[3]],
 			{
@@ -315,7 +315,7 @@ contract('Testing Auction listing - main flow', async function (rpc_accounts) {
 
 	it('should allow BUYER2 to finalize the auctions he won', async function () {
 
-		const ret = await uniqxMarket.finalizeAuctions(
+		const ret = await uniqxMarket.completeMany(
 			adaptCollectibles.address,
 			[tokens[4]],
 			{
@@ -332,7 +332,7 @@ contract('Testing Auction listing - main flow', async function (rpc_accounts) {
 		const threeDaysLater = latestTime() + duration.days(3);
 		increaseTimeTo(threeDaysLater + duration.minutes(1));
 
-		const ret = await uniqxMarket.finalizeAuctions(
+		const ret = await uniqxMarket.completeMany(
 			adaptCollectibles.address,
 			tokens.slice(6),
 			{

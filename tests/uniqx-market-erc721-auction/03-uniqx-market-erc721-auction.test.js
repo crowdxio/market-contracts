@@ -82,7 +82,7 @@ contract('Testing token listing - auction', async function (rpc_accounts) {
 	});
 
 	it('should not be able to list zero tokens', async function () {
-		await uniqxMarket.listTokensAuction(
+		await uniqxMarket.createMany(
 			adaptCollectibles.address,
 			[],
 			[],
@@ -114,7 +114,7 @@ contract('Testing token listing - auction', async function (rpc_accounts) {
 	});
 
 	it('the SELLER should NOT be able to list 10 adapt tokens for sale unless he gets approval- auction format', async () => {
-		await uniqxMarket.listTokensAuction(
+		await uniqxMarket.createMany(
 			adaptCollectibles.address,
 			tokens,
 			buyPrices,
@@ -174,7 +174,7 @@ contract('Testing token listing - auction', async function (rpc_accounts) {
 	});
 
 	it('the SELLER should not be able to list a zero value token', async function () {
-		await uniqxMarket.listTokensAuction(
+		await uniqxMarket.createMany(
 			adaptCollectibles.address,
 			[tokens[0]],
 			[0],
@@ -189,7 +189,7 @@ contract('Testing token listing - auction', async function (rpc_accounts) {
 
 	it('the SELLER should be able to list 10 adapt tokens for sale - auction format', async () => {
 
-		const ret = await uniqxMarket.listTokensAuction(
+		const ret = await uniqxMarket.createMany(
 			adaptCollectibles.address,
 			tokens,
 			buyPrices,
@@ -229,7 +229,7 @@ contract('Testing token listing - auction', async function (rpc_accounts) {
 	});
 
 	it('the SELLER should NOT be able to list a token which is already listed - auction format ', async function () {
-		await uniqxMarket.listTokensAuction(
+		await uniqxMarket.createMany(
 			adaptCollectibles.address,
 			[tokens[0]],
 			[buyPrices[0]],

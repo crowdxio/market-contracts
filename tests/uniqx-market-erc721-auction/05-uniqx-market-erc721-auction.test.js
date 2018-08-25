@@ -107,7 +107,7 @@ contract('Testing auction functionality', async function (rpc_accounts) {
 			endTimes[i] = threeDaysLater;
 		}
 
-		await uniqxMarket.listTokensAuction(
+		await uniqxMarket.createMany(
 			adaptCollectibles.address,
 			tokens,
 			buyPrices,
@@ -121,7 +121,7 @@ contract('Testing auction functionality', async function (rpc_accounts) {
 	});
 
 	it('ADAPT_ADMIN should be able to cancel an auction with zero bids', async function () {
-		const rec = await uniqxMarket.cancelTokens(
+		const rec = await uniqxMarket.cancelMany(
 			adaptCollectibles.address,
 			[tokens[0]],
 			{
@@ -139,7 +139,7 @@ contract('Testing auction functionality', async function (rpc_accounts) {
 	it('BUYER1 should not be able to place zero bids', async function () {
 		const bid = new BigNumber(ether(10));
 
-		const ret = await uniqxMarket.placeBids(
+		const ret = await uniqxMarket.bidMany(
 			adaptCollectibles.address,
 			[],
 			[],
@@ -154,7 +154,7 @@ contract('Testing auction functionality', async function (rpc_accounts) {
 	it('BUYER1 should not be able to place a bid - not enough ether', async function () {
 		const bid = new BigNumber(ether(0.1));
 
-		const ret = await uniqxMarket.placeBids(
+		const ret = await uniqxMarket.bidMany(
 			adaptCollectibles.address,
 			[tokens[1]],
 			[bid],
@@ -169,7 +169,7 @@ contract('Testing auction functionality', async function (rpc_accounts) {
 	it('BUYER1 should not be able to place a bid - too much ether', async function () {
 		const bid = new BigNumber(ether(3));
 
-		const ret = await uniqxMarket.placeBids(
+		const ret = await uniqxMarket.bidMany(
 			adaptCollectibles.address,
 			[tokens[1]],
 			[bid],
@@ -185,7 +185,7 @@ contract('Testing auction functionality', async function (rpc_accounts) {
 
 		const bid = new BigNumber(ether(8));
 
-		const ret = await uniqxMarket.placeBids(
+		const ret = await uniqxMarket.bidMany(
 			adaptCollectibles.address,
 			tokens.slice(1),
 			startPrices.slice(1),
@@ -200,7 +200,7 @@ contract('Testing auction functionality', async function (rpc_accounts) {
 	it('BUYER1 should not be able to place bids - too much ether', async function () {
 		const bid = new BigNumber(ether(100));
 
-		const ret = await uniqxMarket.placeBids(
+		const ret = await uniqxMarket.bidMany(
 			adaptCollectibles.address,
 			tokens.slice(1),
 			startPrices.slice(1),
@@ -215,7 +215,7 @@ contract('Testing auction functionality', async function (rpc_accounts) {
 	it('BUYER1 should be able to place a bid', async function () {
 		const bid = new BigNumber(ether(1.2));
 
-		const ret = await uniqxMarket.placeBids(
+		const ret = await uniqxMarket.bidMany(
 			adaptCollectibles.address,
 			[tokens[1]],
 			[bid],
@@ -236,7 +236,7 @@ contract('Testing auction functionality', async function (rpc_accounts) {
 	});
 
 	it('ADAPT_ADMIN should not be able to cancel a bidden auction', async function () {
-		const rec = await uniqxMarket.cancelTokens(
+		const rec = await uniqxMarket.cancelMany(
 			adaptCollectibles.address,
 			[tokens[1]],
 			{
@@ -249,7 +249,7 @@ contract('Testing auction functionality', async function (rpc_accounts) {
 	it('BUYER2 should not be able to place a bid which is less than the highest bid', async function () {
 		const bid = new BigNumber(ether(1.1));
 
-		await uniqxMarket.placeBids(
+		await uniqxMarket.bidMany(
 			adaptCollectibles.address,
 			[tokens[1]],
 			[bid],
@@ -264,7 +264,7 @@ contract('Testing auction functionality', async function (rpc_accounts) {
 	it('BUYER2 should not be able to place a bid which is equal to the highest bid', async function () {
 		const bid = new BigNumber(ether(1.2));
 
-		await uniqxMarket.placeBids(
+		await uniqxMarket.bidMany(
 			adaptCollectibles.address,
 			[tokens[1]],
 			[bid],
@@ -279,7 +279,7 @@ contract('Testing auction functionality', async function (rpc_accounts) {
 	it('BUYER2 should be able to outbid BUYER1', async function () {
 		const bid = new BigNumber(ether(1.3));
 
-		const ret = await uniqxMarket.placeBids(
+		const ret = await uniqxMarket.bidMany(
 			adaptCollectibles.address,
 			[tokens[1]],
 			[bid],
@@ -302,7 +302,7 @@ contract('Testing auction functionality', async function (rpc_accounts) {
 	it('BUYER2 should be able to outbid himself', async function () {
 		const bid = new BigNumber(ether(1.4));
 
-		const ret = await uniqxMarket.placeBids(
+		const ret = await uniqxMarket.bidMany(
 			adaptCollectibles.address,
 			[tokens[1]],
 			[bid],
@@ -326,7 +326,7 @@ contract('Testing auction functionality', async function (rpc_accounts) {
 
 		const bid = new BigNumber(ether(2));
 
-		const ret = await uniqxMarket.placeBids(
+		const ret = await uniqxMarket.bidMany(
 			adaptCollectibles.address,
 			[tokens[1]],
 			[bid],
@@ -351,7 +351,7 @@ contract('Testing auction functionality', async function (rpc_accounts) {
 	it('BUYER2 should not be able to place a bid on a sold token', async function () {
 		const bid = new BigNumber(ether(2));
 
-		await uniqxMarket.placeBids(
+		await uniqxMarket.bidMany(
 			adaptCollectibles.address,
 			[tokens[1]],
 			[bid],
@@ -368,7 +368,7 @@ contract('Testing auction functionality', async function (rpc_accounts) {
 		const bid = new BigNumber(ether(1.5));
 		const overall = new BigNumber(ether(3));
 
-		const ret = await uniqxMarket.placeBids(
+		const ret = await uniqxMarket.bidMany(
 			adaptCollectibles.address,
 			[tokens[2], tokens[3]],
 			[bid, bid],
@@ -397,7 +397,7 @@ contract('Testing auction functionality', async function (rpc_accounts) {
 
 		const bid = new BigNumber(ether(1.6));
 
-		await uniqxMarket.placeBids(
+		await uniqxMarket.bidMany(
 			adaptCollectibles.address,
 			[tokens[2]],
 			[bid],
@@ -411,7 +411,7 @@ contract('Testing auction functionality', async function (rpc_accounts) {
 
 	it('BUYER3 can take the tokens he won', async function () {
 
-		const ret = await uniqxMarket.finalizeAuctions(
+		const ret = await uniqxMarket.completeMany(
 			adaptCollectibles.address,
 			[tokens[2], tokens[3]],
 			{
@@ -432,7 +432,7 @@ contract('Testing auction functionality', async function (rpc_accounts) {
 
 	it('ADAPT_ADMIN can take his unsold tokens back', async function () {
 
-		const ret = await uniqxMarket.finalizeAuctions(
+		const ret = await uniqxMarket.completeMany(
 			adaptCollectibles.address,
 			tokens.slice(4),
 			{

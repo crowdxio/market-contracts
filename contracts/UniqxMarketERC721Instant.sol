@@ -73,7 +73,7 @@ contract UniqxMarketERC721Instant is UniqxMarketBase {
 		return (order.owner != address(0x0));
 	}
 
-	function listToken(
+	function create(
 		address token,
 		uint tokenId,
 		uint buyPrice
@@ -89,7 +89,7 @@ contract UniqxMarketERC721Instant is UniqxMarketBase {
 
 		ERC721Token tokenInstance = ERC721Token(token);
 
-		address owner = listTokenInternal(token, tokenInstance, tokenId, buyPrice);
+		address owner = _create(token, tokenInstance, tokenId, buyPrice);
 
 		emit LogCreate(
 			token,
@@ -100,7 +100,7 @@ contract UniqxMarketERC721Instant is UniqxMarketBase {
 		);
 	}
 
-	function buyToken(
+	function buy(
 		address token,
 		uint tokenId
 	)
@@ -114,12 +114,12 @@ contract UniqxMarketERC721Instant is UniqxMarketBase {
 
 		ERC721Token tokenInstance = ERC721Token(token);
 
-		buyTokenInternal(token, tokenInstance, tokenId, 0);
+		_buy(token, tokenInstance, tokenId, 0);
 
 		emit LogBuy(token, tokenId, msg.sender);
 	}
 
-	function cancelToken(
+	function cancel(
 		address token,
 		uint tokenId
 	)
@@ -134,7 +134,7 @@ contract UniqxMarketERC721Instant is UniqxMarketBase {
 	}
 
 	/////////////////////////////////////// BATCH ///////////////////////////////////////////
-	function listTokens(
+	function createMany(
 		address token, // MC: rename to tokenContract
 		uint[] tokenIds,
 		uint[] buyPrices
@@ -155,7 +155,7 @@ contract UniqxMarketERC721Instant is UniqxMarketBase {
 
 		address[] memory owners = new address[](tokenIds.length);
 		for(uint i = 0; i < tokenIds.length; i++) {
-			owners[i] = listTokenInternal(token, tokenInstance, tokenIds[i], buyPrices[i]);
+			owners[i] = _create(token, tokenInstance, tokenIds[i], buyPrices[i]);
 		}
 
 		emit LogCreateMany(
@@ -167,7 +167,7 @@ contract UniqxMarketERC721Instant is UniqxMarketBase {
 		);
 	}
 
-	function buyTokens(
+	function buyMany(
 		address token,
 		uint[] tokenIds
 	)
@@ -185,7 +185,7 @@ contract UniqxMarketERC721Instant is UniqxMarketBase {
 
 		uint ordersAmount = 0;
 		for(uint i = 0; i < tokenIds.length; i++) {
-			uint amount = buyTokenInternal(token, tokenInstance, tokenIds[i], ordersAmount);
+			uint amount = _buy(token, tokenInstance, tokenIds[i], ordersAmount);
 			ordersAmount = ordersAmount.add(amount);
 		}
 
@@ -198,7 +198,7 @@ contract UniqxMarketERC721Instant is UniqxMarketBase {
 
 	// MC: isn't this better called cancelOrders ?
 	// Can we do a separate branch for renaming and involve Solo as well?
-	function cancelTokens(
+	function cancelMany(
 		address token,
 		uint[] tokenIds
 	)
@@ -214,7 +214,7 @@ contract UniqxMarketERC721Instant is UniqxMarketBase {
 		ERC721Token tokenInstance = ERC721Token(token);
 
 		for(uint i = 0; i < tokenIds.length; i++) {
-			cancelTokenInternal(token, tokenInstance, tokenIds[i]);
+			_cancel(token, tokenInstance, tokenIds[i]);
 		}
 
 		emit LogCancelMany(token, tokenIds);
@@ -230,7 +230,7 @@ contract UniqxMarketERC721Instant is UniqxMarketBase {
 	}
 
 	// list token and return previous owner
-	function listTokenInternal(
+	function _create(
 		address token,
 		ERC721Token tokenInstance,
 		uint tokenId,
@@ -261,7 +261,7 @@ contract UniqxMarketERC721Instant is UniqxMarketBase {
 		return owner;
 	}
 
-	function buyTokenInternal(
+	function _buy(
 		address token,
 		ERC721Token tokenInstance,
 		uint tokenId,
@@ -291,7 +291,7 @@ contract UniqxMarketERC721Instant is UniqxMarketBase {
 		delete orders[token][tokenId];
 	}
 
-	function cancelTokenInternal(
+	function _cancel(
 		address token,
 		ERC721Token tokenInstance,
 		uint tokenId
