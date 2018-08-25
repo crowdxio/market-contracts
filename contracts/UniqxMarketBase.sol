@@ -10,7 +10,6 @@ contract UniqxMarketBase is NoOwner, Pausable, ReentrancyGuard {
 
 	using SafeMath for uint;
 
-	/////////////////////////////////////// CONSTANTS ///////////////////////////////////////
 	/////////////////////////////////////// TYPES ///////////////////////////////////////////
 	struct TokenContract {
 		bool registered;
@@ -18,11 +17,13 @@ contract UniqxMarketBase is NoOwner, Pausable, ReentrancyGuard {
 	}
 
 	/////////////////////////////////////// EVENTS //////////////////////////////////////////
-	event LogOrdersEnabled();
-	event LogOrdersDisabled();
-	event LogTokenRegistered(address token);
-	event LogTokenOrdersEnabled(address token);
-	event LogTokenOrdersDisabled(address token);
+	event LogEnableOrders();
+	event LogDisableOrders();
+
+	event LogRegisterToken(address token);
+
+	event LogEnableTokenOrders(address token);
+	event LogDisableTokenOrders(address token);
 
 	event LogCancel(address token, uint tokenIds);
 	event LogCancelMany(address token, uint[] tokenIds);
@@ -37,7 +38,6 @@ contract UniqxMarketBase is NoOwner, Pausable, ReentrancyGuard {
 	uint public marketFeeDen = 100;
 	mapping(address => TokenContract) tokenContracts;
 
-
 	/////////////////////////////////////// MODIFIERS ///////////////////////////////////////
 	modifier whenOrdersEnabled() {
 		require(ORDERS_ENABLED, "Orders must be enabled");
@@ -50,7 +50,6 @@ contract UniqxMarketBase is NoOwner, Pausable, ReentrancyGuard {
 	}
 
 	/////////////////////////////////////// PUBLIC //////////////////////////////////////////
-
 	function setMarketFee(uint _marketFeeNum, uint _marketFeeDen)
 		onlyOwner
 		public
@@ -72,7 +71,7 @@ contract UniqxMarketBase is NoOwner, Pausable, ReentrancyGuard {
 		public
 	{
 		ORDERS_ENABLED = true;
-		emit LogOrdersEnabled();
+		emit LogEnableOrders();
 	}
 
 	function disableOrders()
@@ -81,7 +80,7 @@ contract UniqxMarketBase is NoOwner, Pausable, ReentrancyGuard {
 		public
 	{
 		ORDERS_ENABLED = false;
-		emit LogOrdersDisabled();
+		emit LogDisableOrders();
 	}
 
 	function registerToken(address token)
@@ -98,7 +97,7 @@ contract UniqxMarketBase is NoOwner, Pausable, ReentrancyGuard {
 		);
 
 		tokenContracts[token] = tokenContract;
-		emit LogTokenRegistered(token);
+		emit LogRegisterToken(token);
 	}
 
 	function getTokenContractStatus(address token)
@@ -121,7 +120,7 @@ contract UniqxMarketBase is NoOwner, Pausable, ReentrancyGuard {
 		require(!tokenContract.ordersEnabled, "Orders must be disabled for this token");
 		tokenContract.ordersEnabled = true;
 
-		emit LogTokenOrdersEnabled(token);
+		emit LogEnableTokenOrders(token);
 	}
 
 	function disableTokenOrders(address token)
@@ -134,7 +133,7 @@ contract UniqxMarketBase is NoOwner, Pausable, ReentrancyGuard {
 		require(tokenContract.ordersEnabled, "Orders must be enabled for this token");
 		tokenContract.ordersEnabled = false;
 
-		emit LogTokenOrdersDisabled(token);
+		emit LogDisableTokenOrders(token);
 	}
 
 	/////////////////////////////////////// INTERNAL ////////////////////////////////////////

@@ -69,7 +69,7 @@ contract('Testing buy now functionality', async function (rpc_accounts) {
 
 		console.log(`GAS - Register Token: ${ret.receipt.gasUsed}`);
 
-		expectEvent.inLogs(ret.logs, 'LogTokenRegistered');
+		expectEvent.inLogs(ret.logs, 'LogRegisterToken');
 
 		const status = await uniqxMarket.getTokenContractStatus(adaptCollectibles.address);
 		assert.equal(status[0], true, 'unexpected registration status - should be registered');

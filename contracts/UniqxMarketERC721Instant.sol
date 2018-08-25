@@ -8,7 +8,6 @@ contract UniqxMarketERC721Instant is UniqxMarketBase {
 
 	using SafeMath for uint;
 
-	/////////////////////////////////////// CONSTANTS ///////////////////////////////////////
 	/////////////////////////////////////// TYPES ///////////////////////////////////////////
 	struct OrderInfo {
 		address owner;	// the user who owns the token sold via this order
@@ -35,7 +34,6 @@ contract UniqxMarketERC721Instant is UniqxMarketBase {
 	// TokenContract -> TokenId -> OrderInfo
 	mapping(address => mapping(uint => OrderInfo)) orders;
 
-	/////////////////////////////////////// MODIFIERS ///////////////////////////////////////
 	/////////////////////////////////////// PUBLIC //////////////////////////////////////////
 	constructor(
 		address admin,
@@ -195,9 +193,6 @@ contract UniqxMarketERC721Instant is UniqxMarketBase {
 		emit LogBuyMany(token, tokenIds, msg.sender);
 	}
 
-
-	// MC: isn't this better called cancelOrders ?
-	// Can we do a separate branch for renaming and involve Solo as well?
 	function cancelMany(
 		address token,
 		uint[] tokenIds

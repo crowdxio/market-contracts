@@ -76,7 +76,7 @@ contract('Testing token listing - auction', async function (rpc_accounts) {
 			}
 		).should.be.fulfilled;
 
-		expectEvent.inLogs(ret.logs, 'LogTokenRegistered');
+		expectEvent.inLogs(ret.logs, 'LogRegisterToken');
 
 		console.log(`GAS - Register Token: ${ret.receipt.gasUsed}`);
 	});

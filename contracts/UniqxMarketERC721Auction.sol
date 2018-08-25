@@ -10,6 +10,7 @@ contract UniqxMarketERC721Auction is UniqxMarketBase
 
 	/////////////////////////////////////// CONSTANTS ///////////////////////////////////////
 	uint constant AUCTION_MIN_DURATION = 1 hours;
+
 	/////////////////////////////////////// TYPES ///////////////////////////////////////////
 	struct OrderInfo {
 		address owner; 		// the user who owns the token sold via this order
@@ -41,14 +42,12 @@ contract UniqxMarketERC721Auction is UniqxMarketBase
 	);
 	event LogBid(address token, uint tokenId, address bidder, uint bid);
 	event LogBidMany(address token, uint[] tokenIds, address bidder, uint[] bids);
-
 	event LogRetake(address token, uint tokenId);
 
 	/////////////////////////////////////// VARIABLES ///////////////////////////////////////
 	// TokenContract -> TokenId -> OrderInfo
 	mapping(address => mapping(uint => OrderInfo)) orders;
 
-	/////////////////////////////////////// MODIFIERS ///////////////////////////////////////
 	/////////////////////////////////////// PUBLIC //////////////////////////////////////////
 	constructor(
 		address admin,

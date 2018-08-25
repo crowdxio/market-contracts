@@ -125,7 +125,7 @@ contract('Testing FixedPrice listing - main flow', async function (rpc_accounts)
 			}
 		).should.be.fulfilled;
 
-		expectEvent.inLogs(ret.logs, 'LogTokenRegistered');
+		expectEvent.inLogs(ret.logs, 'LogRegisterToken');
 
 		// MC: we should also have a check if the token is actually stored as registered
 		// MC: the presence of the event does not guarantee registration

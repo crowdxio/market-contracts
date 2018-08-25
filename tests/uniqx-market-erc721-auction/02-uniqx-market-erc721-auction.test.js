@@ -52,7 +52,7 @@ contract('Freeride testing', async function (rpc_accounts) {
 			{ from: ac.MARKET_ADMIN_MSIG , gas: 7000000 }
 		).should.be.fulfilled;
 
-		await expectEvent.inLogs(rec.logs, 'LogTokenRegistered');
+		await expectEvent.inLogs(rec.logs, 'LogRegisterToken');
 	});
 
 	it('should be able to mass mint new tokens', async function () {
