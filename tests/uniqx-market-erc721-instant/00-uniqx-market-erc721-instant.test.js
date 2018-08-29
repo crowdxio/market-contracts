@@ -198,7 +198,7 @@ contract('Testing FixedPrice listing - main flow', async function (rpc_accounts)
 		console.log(`GAS - List 1 adapt token - fixed price: ${rec.receipt.gasUsed}`);
 
 		// MC: should check the details of the orders here; both content of logs and content of data
-		expectEvent.inLogs(rec.logs, 'LogCreateMany');
+		expectEvent.inLogs(rec.logs, 'LogCreate');
 	});
 
 	it('should be able to cancel 2 tokens', async () => {

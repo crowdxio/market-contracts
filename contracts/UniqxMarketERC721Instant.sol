@@ -22,12 +22,25 @@ contract UniqxMarketERC721Instant is UniqxMarketBase {
 		address seller,
 		uint buyPrice
 	);
+
 	event LogCreateMany(
 		address token,
 		uint[] tokenIds,
 		address[] owners,
 		address seller,
 		uint[] buyPrices
+	);
+
+	event LogUpdate(
+		address token,
+		uint tokenId,
+		uint newPrice
+	);
+
+	event LogUpdateMany(
+		address token,
+		uint[] tokenIds,
+		uint[] newPrices
 	);
 
 	/////////////////////////////////////// VARIABLES ///////////////////////////////////////
@@ -98,6 +111,31 @@ contract UniqxMarketERC721Instant is UniqxMarketBase {
 		);
 	}
 
+	function update(
+		address token,
+		uint tokenId,
+		uint newPrice
+	)
+		whenNotPaused
+		whenOrdersEnabled
+		nonReentrant
+		public
+	{
+		TokenContract storage tokenContract = tokenContracts[token];
+		require(tokenContract.registered, "Token must be registered");
+		require(tokenContract.ordersEnabled, "Orders must be enabled for this token");
+
+		ERC721Token tokenInstance = ERC721Token(token);
+
+		_update(token, tokenInstance, tokenId, newPrice);
+
+		emit LogUpdate(
+			token,
+			tokenId,
+			newPrice
+		);
+	}
+
 	function buy(
 		address token,
 		uint tokenId
@@ -162,6 +200,36 @@ contract UniqxMarketERC721Instant is UniqxMarketBase {
 			owners,
 			msg.sender,
 			buyPrices
+		);
+	}
+
+	function updateMany(
+		address token,
+		uint[] tokenIds,
+		uint[] newPrices
+	)
+		whenNotPaused
+		whenOrdersEnabled
+		nonReentrant
+		public
+	{
+		require(tokenIds.length > 0, "Array must have at least one entry");
+		require(tokenIds.length == newPrices.length, "Array lengths must match");
+
+		TokenContract storage tokenContract = tokenContracts[token];
+		require(tokenContract.registered, "Token must be registered");
+		require(tokenContract.ordersEnabled, "Orders must be enabled for this token");
+
+		ERC721Token tokenInstance = ERC721Token(token);
+
+		for(uint i = 0; i < tokenIds.length; i++) {
+			_update(token, tokenInstance, tokenIds[i], newPrices[i]);
+		}
+
+		emit LogUpdateMany(
+			token,
+			tokenIds,
+			newPrices
 		);
 	}
 
@@ -246,14 +314,35 @@ contract UniqxMarketERC721Instant is UniqxMarketBase {
 
 		OrderInfo memory newOrder = OrderInfo(
 			{
-			owner: owner,
-			buyPrice: buyPrice
+				owner: owner,
+				buyPrice: buyPrice
 			}
 		);
 
 		orders[token][tokenId] = newOrder;
 
 		return owner;
+	}
+
+	function _update(
+		address token,
+		ERC721Token tokenInstance,
+		uint tokenId,
+		uint newPrice
+	)
+		private
+	{
+		OrderInfo storage order = orders[token][tokenId];
+		require(orderExists(order), "Token must be listed");
+
+		require(
+			order.owner == msg.sender
+			|| tokenInstance.getApproved(tokenId) == msg.sender
+			|| tokenInstance.isApprovedForAll(order.owner, msg.sender),
+			"Only the owner or the seller can update a token"
+		);
+
+		order.buyPrice = newPrice;
 	}
 
 	function _buy(
