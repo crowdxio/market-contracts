@@ -150,7 +150,9 @@ contract UniqxMarketERC721Instant is UniqxMarketBase {
 
 		ERC721Token tokenInstance = ERC721Token(token);
 
-		_buy(token, tokenInstance, tokenId, 0);
+		uint price = _buy(token, tokenInstance, tokenId, 0);
+
+		require(price == msg.value, 'Must match the list price');
 
 		emit LogBuy(token, tokenId, msg.sender);
 	}

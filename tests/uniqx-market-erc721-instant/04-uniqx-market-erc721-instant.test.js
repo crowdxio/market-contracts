@@ -42,7 +42,7 @@ contract('Testing token listing and updating - single', async function (rpc_acco
 		console.log(`The adapt token has been successfully deployed at ${adaptCollectibles.address}`);
 	});
 
-	it('should mint some test tokens', async function () {
+	it('should mint a test token', async function () {
 
 		const ret = await adaptCollectibles.massMint(
 			ac.ADAPT_ADMIN,
