@@ -118,6 +118,11 @@ contract('Testing cancel functionality - single', async function (rpc_accounts) 
 				gas: 7000000
 			}
 		).should.be.fulfilled;
+
+		expectEvent.inLogs(ret.logs, 'LogCancel');
+
+		const owner = await adaptCollectibles.ownerOf(token);
+		assert.equal(owner, ac.ADAPT_ADMIN, 'unexpected owner - should be ADAPT_ADMIN');
 	});
 
 	it('ADAPT_ADMIN should be able to re-list a canceled token', async () => {
