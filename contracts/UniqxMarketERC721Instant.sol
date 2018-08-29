@@ -168,6 +168,9 @@ contract UniqxMarketERC721Instant is UniqxMarketBase {
 		TokenContract storage tokenContract = tokenContracts[token];
 		require(tokenContract.registered, "Token must be registered");
 
+		ERC721Token tokenInstance = ERC721Token(token);
+		_cancel(token, tokenInstance, tokenId);
+
 		emit LogCancel(token, tokenId);
 	}
 
