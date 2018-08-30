@@ -9,17 +9,16 @@ const moment = require('moment');
 const AdaptCollectibles = artifacts.require("../../../adapt/contracts/AdaptCollectibles.sol");
 const UniqxMarketERC721 = artifacts.require('../../contracts/UniqxMarketERC721Auction.sol');
 
-contract('Testing token listing - many', async function (rpc_accounts) {
+contract('Testing token listing - single', async function (rpc_accounts) {
 
 	const ac = accounts(rpc_accounts);
 	let uniqxMarket;
 	let adaptCollectibles;
 
-	const tokensCount = 10;
-	let tokens = [];
-	let buyPrices = [];
-	let startPrices = [];
-	let endTimes = [];
+	let token;
+	let buyPrice;
+	let startPrice;
+	let endTime;
 
 	it('should successfully deploy the market contract and the adapt token', async function () {
 
@@ -45,25 +44,19 @@ contract('Testing token listing - many', async function (rpc_accounts) {
 		console.log(`The adapt token has been successfully deployed at ${adaptCollectibles.address}`);
 	});
 
-	it('should mint some test tokens', async function () {
+	it('should mint a test token', async function () {
 
-		const ret = await adaptCollectibles.massMint(
+		const ret = await adaptCollectibles.mint(
 			ac.ADAPT_ADMIN,
 			'json hash',			// json hash
-			1,				        // start
-			tokensCount,		    // count
+			1,				        // copy
 			{from: ac.ADAPT_ADMIN}
 		).should.be.fulfilled;
 
-		console.log(`GAS - Mass mint ${tokensCount} adapt tokens: ${ret.receipt.gasUsed}`);
-
-		const threeDaysLater = moment().add(3, 'days').unix();
-		for (let i = 0; i < tokensCount; i++) {
-			tokens[i] = await adaptCollectibles.tokenByIndex(i);
-			buyPrices[i] = ether(9);
-			startPrices[i] = ether(1);
-			endTimes[i] = threeDaysLater;
-		}
+		token = await adaptCollectibles.tokenByIndex(0);
+		buyPrice = ether(9);
+		startPrice = ether(1);
+		endTime = moment().add(3, 'days').unix();
 	});
 
 	it('should register the adapt token', async function () {
@@ -100,7 +93,7 @@ contract('Testing token listing - many', async function (rpc_accounts) {
 		const ret = await adaptCollectibles.transferFrom(
 			ac.ADAPT_ADMIN,
 			ac.ACCOUNT1,
-			tokens[0],
+			token,
 			{
 				from: ac.ADAPT_ADMIN,
 				gas: 7000000
@@ -109,17 +102,17 @@ contract('Testing token listing - many', async function (rpc_accounts) {
 
 		// console.log(`ret: ${JSON.stringify(ret, null, '\t')}`);
 		expectEvent.inLogs(ret.logs, 'Transfer');
-		const owner = await adaptCollectibles.ownerOf(tokens[0]);
+		const owner = await adaptCollectibles.ownerOf(token);
 		assert.equal(owner, ac.ACCOUNT1, 'unexpected owner - ACCOUNT1 should own the token');
 	});
 
-	it('the SELLER should NOT be able to list 10 adapt tokens for sale unless he gets approval- auction format', async () => {
-		await uniqxMarket.createMany(
+	it('the SELLER should NOT be able to list a token unless he gets approval', async () => {
+		await uniqxMarket.create(
 			adaptCollectibles.address,
-			tokens,
-			buyPrices,
-			startPrices,
-			endTimes,
+			token,
+			buyPrice,
+			startPrice,
+			endTime,
 			{
 				from: ac.SELLER,
 				gas: 7000000
@@ -174,12 +167,12 @@ contract('Testing token listing - many', async function (rpc_accounts) {
 	});
 
 	it('the SELLER should not be able to list a zero value token', async function () {
-		await uniqxMarket.createMany(
+		await uniqxMarket.create(
 			adaptCollectibles.address,
-			[tokens[0]],
-			[0],
-			[0],
-			[moment().add(3, 'days').unix()],
+			token,
+			0,
+			0,
+			endTime,
 			{
 				from: ac.SELLER,
 				gas: 7000000
@@ -187,14 +180,14 @@ contract('Testing token listing - many', async function (rpc_accounts) {
 		).should.be.rejectedWith(EVMRevert);
 	});
 
-	it('the SELLER should be able to list 10 adapt tokens for sale - auction format', async () => {
+	it('the SELLER should be able to list a token ', async () => {
 
-		const ret = await uniqxMarket.createMany(
+		const ret = await uniqxMarket.create(
 			adaptCollectibles.address,
-			tokens,
-			buyPrices,
-			startPrices,
-			endTimes,
+			token,
+			buyPrice,
+			startPrice,
+			endTime,
 			{
 				from: ac.SELLER,
 				gas: 7000000
@@ -203,38 +196,34 @@ contract('Testing token listing - many', async function (rpc_accounts) {
 
 		//console.log(`@@@@ rec: ${JSON.stringify(ret, null, '\t')}`);
 
-		console.log(`GAS - List for auction ${tokensCount} adapt tokens: ${ret.receipt.gasUsed}`);
+		expectEvent.inLogs(ret.logs, 'LogCreate');
+		const owner = await adaptCollectibles.ownerOf(token);
+		assert.equal(owner, uniqxMarket.address, 'unexpected owner - market should own the token');
 
-		expectEvent.inLogs(ret.logs, 'LogCreateMany');
-		for (let i = 0; i < tokensCount; i++) {
-			const owner = await adaptCollectibles.ownerOf(tokens[i]);
-			assert.equal(owner, uniqxMarket.address, 'unexpected owner - market should own the token');
+		const info = await uniqxMarket.getOrderInfo(adaptCollectibles.address, token);
+		//console.log(`order info: ${JSON.stringify(info, null, '\t')}`);
 
-			const info = await uniqxMarket.getOrderInfo(adaptCollectibles.address, tokens[i]);
-			//console.log(`order info: ${JSON.stringify(info, null, '\t')}`);
+		assert.equal(info[0], ac.ACCOUNT1, 'unexpected owner');
 
-			assert.equal(info[0], i === 0 ? ac.ACCOUNT1 : ac.ADAPT_ADMIN, 'unexpected owner');
+		const actualBuyPrice = new BigNumber(info[1]);
+		actualBuyPrice.should.be.bignumber.equal(buyPrice);
 
-			const buyPrice = new BigNumber(info[1]);
-			buyPrice.should.be.bignumber.equal(buyPrices[i]);
+		assert.equal(info[2], '0x0000000000000000000000000000000000000000', 'unexpected buyer');
 
-			assert.equal(info[2], '0x0000000000000000000000000000000000000000', 'unexpected buyer');
+		const actualStartPrice = new BigNumber(info[3]);
+		actualStartPrice.should.be.bignumber.equal(startPrice);
 
-			const startPrice = new BigNumber(info[3]);
-			startPrice.should.be.bignumber.equal(startPrices[i]);
-
-			assert.equal(info[4], endTimes[i], 'unexpected end time');
-			assert.equal(info[5], 0, 'unexpected highest bid');
-		}
+		assert.equal(info[4], endTime, 'unexpected end time');
+		assert.equal(info[5], 0, 'unexpected highest bid');
 	});
 
-	it('the SELLER should NOT be able to list a token which is already listed - auction format ', async function () {
-		await uniqxMarket.createMany(
+	it('the SELLER should NOT be able to list a token which is already listed', async function () {
+		await uniqxMarket.create(
 			adaptCollectibles.address,
-			[tokens[0]],
-			[buyPrices[0]],
-			[startPrices[0]],
-			[endTimes[0]],
+			token,
+			buyPrice,
+			startPrice,
+			endTime,
 			{
 				from: ac.SELLER,
 				gas: 7000000
