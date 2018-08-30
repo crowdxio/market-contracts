@@ -23,7 +23,7 @@ contract('Testing auction - bid - buy - single', async function (rpc_accounts) {
 	let uniqxMarket;
 	let adaptCollectibles;
 
-	const tokensCount = 4;
+	const tokensCount = 3;
 	let tokens = [];
 	let buyPrices = [];
 	let startPrices = [];
@@ -267,43 +267,6 @@ contract('Testing auction - bid - buy - single', async function (rpc_accounts) {
 		).should.be.rejectedWith(EVMRevert);
 	});
 
-	it('BUYER3 should be able to buy a token', async function () {
-
-		const bid = new BigNumber(ether(2));
-
-		const ret = await uniqxMarket.buy(
-			adaptCollectibles.address,
-			tokens[2],
-			{
-				from: ac.BUYER3,
-				value: bid,
-				gas: 7000000
-			}
-		).should.be.fulfilled;
-
-		expectEvent.inLogs(ret.logs, 'LogBuy');
-
-		const owner = await adaptCollectibles.ownerOf(tokens[2]);
-		assert.equal(owner, ac.BUYER3, 'unexpected owner');
-
-		const info = await uniqxMarket.getOrderInfo(adaptCollectibles.address, tokens[2]);
-		//console.log(`order info: ${JSON.stringify(info, null, '\t')}`);
-		assert.equal(info[0], OrderStatus.Unknown, 'unexpected status - should be unknwon');
-	});
-
-	it('BUYER2 should not be able to place a bid on a sold token', async function () {
-		const bid = new BigNumber(ether(2));
-
-		await uniqxMarket.bid(
-			adaptCollectibles.address,
-			tokens[2],
-			{
-				from: ac.BUYER2,
-				value: bid,
-				gas: 7000000
-			}
-		).should.be.rejectedWith(EVMRevert);
-	});
 
 	it('BUYER1 should not be able to place a bid on an ended auction', async function () {
 
@@ -344,7 +307,7 @@ contract('Testing auction - bid - buy - single', async function (rpc_accounts) {
 
 		const ret = await uniqxMarket.completeMany(
 			adaptCollectibles.address,
-			[tokens[3]],
+			[tokens[2]],
 			{
 				from: ac.ADAPT_ADMIN,
 				gas: 7000000

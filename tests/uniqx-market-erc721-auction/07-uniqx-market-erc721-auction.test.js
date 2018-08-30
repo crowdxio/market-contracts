@@ -101,24 +101,10 @@ contract('Testing buy now - single', async function (rpc_accounts) {
 		).should.be.fulfilled;
 	});
 
-	it('BUYER1 should not be able to buy a token - not enough ether', async function () {
-		const priceToPay = new BigNumber(ether(1));
-
-		const ret = await uniqxMarket.buy(
-			adaptCollectibles.address,
-			token,
-			{
-				from: ac.BUYER1,
-				value: priceToPay,
-				gas: 7000000
-			}
-		).should.be.rejectedWith(EVMRevert);
-	});
-
 	it('BUYER1 should not be able to buy the tokens - too much ether', async function () {
 		const priceToPay = new BigNumber(ether(11));
 
-		const ret = await uniqxMarket.buy(
+		const ret = await uniqxMarket.bid(
 			adaptCollectibles.address,
 			token,
 			{
@@ -135,7 +121,7 @@ contract('Testing buy now - single', async function (rpc_accounts) {
 		const marketBalanceBefore = await getBalanceAsync(ac.MARKET_FEES_MSIG);
 		const priceToPay = new BigNumber(ether(10));
 
-		const ret = await uniqxMarket.buy(
+		const ret = await uniqxMarket.bid(
 			adaptCollectibles.address,
 			token,
 			{
@@ -163,7 +149,7 @@ contract('Testing buy now - single', async function (rpc_accounts) {
 	it('BUYER2 should not be able to buy a token - token already sold to buyer1', async function () {
 		const priceToPay = new BigNumber(ether(10));
 
-		const ret = await uniqxMarket.buy(
+		const ret = await uniqxMarket.bid(
 			adaptCollectibles.address,
 			token,
 			{

@@ -210,28 +210,6 @@ contract UniqxMarketERC721Auction is UniqxMarketBase
 		emit LogCancel(token, tokenId);
 	}
 
-	function buy(
-		address token,
-		uint tokenId
-	)
-		whenNotPaused
-		nonReentrant
-		public
-		payable
-	{
-		TokenContract storage tokenContract = tokenContracts[token];
-		require(tokenContract.registered, "Token must be registered");
-
-		ERC721Token tokenInstance = ERC721Token(token);
-
-		uint tokenPrice = _buy(token, tokenInstance, tokenId, 0);
-
-		// the value should match the price of the token
-		require(tokenPrice == msg.value);
-
-		emit LogBuy(token, tokenId, msg.sender);
-	}
-
 	/////////////////////////////////////// MANY ////////////////////////////////////////////
 	function createMany(
 		address token,
@@ -334,32 +312,6 @@ contract UniqxMarketERC721Auction is UniqxMarketBase
 		require(bidRunningSum == msg.value, "The amount passed must match the sum of the bids");
 
 		emit LogBidMany(token, tokenIds, msg.sender, bids);
-	}
-
-	function buyMany(
-		address token,
-		uint[] tokenIds
-	)
-		whenNotPaused
-		nonReentrant
-		public
-		payable
-	{
-		TokenContract storage tokenContract = tokenContracts[token];
-		require(tokenContract.registered, "Token must be registered");
-
-		ERC721Token tokenInstance = ERC721Token(token);
-
-		uint priceRunningSum = 0;
-		for(uint i = 0; i < tokenIds.length; i++) {
-			uint tokenPrice = _buy(token, tokenInstance, tokenIds[i], priceRunningSum);
-			priceRunningSum = priceRunningSum.add(tokenPrice);
-		}
-
-		// the value should match the sum price of all tokoen
-		require(priceRunningSum == msg.value);
-
-		emit LogBuyMany(token, tokenIds, msg.sender);
 	}
 
 	function cancelMany(
@@ -557,35 +509,6 @@ contract UniqxMarketERC721Auction is UniqxMarketBase
 
 			delete orders[token][tokenId];
 		}
-	}
-
-	function _buy(
-		address token,
-		ERC721Token tokenInstance,
-		uint tokenId,
-		uint ordersAmount
-	)
-		private
-		returns (uint buyPrice)
-	{
-		OrderInfo storage order = orders[token][tokenId];
-
-		require(orderExists(order), "Token must be listed");
-		require(msg.value >= ordersAmount + order.buyPrice, "The amount passed must cover the value of the tokens as listed");
-		buyPrice = order.buyPrice;
-
-		// transfer fee to market
-		uint marketFee = order.buyPrice.mul(marketFeeNum).div(marketFeeDen);
-		MARKET_FEE_COLLECTOR.transfer(marketFee);
-
-		// transfer the rest to owner
-		uint ownerDue = order.buyPrice.sub(marketFee);
-		order.owner.transfer(ownerDue);
-
-		// transfer token to buyer
-		tokenInstance.transferFrom(address(this), msg.sender, tokenId);
-
-		delete orders[token][tokenId];
 	}
 
 	function _cancel(

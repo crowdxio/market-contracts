@@ -156,7 +156,7 @@ contract('testing allow/disallow orders - ', function (rpc_accounts) {
 		let listed = await market.tokenIsListed(erc721Token1.address, tokens1[0]);
 		assert.equal(listed, true, 'Token should be listed');
 
-		await market.buyMany(
+		await market.bid(
 			erc721Token1.address,
 			[ tokens1[0] ],
 			{ from: ac.BUYER2 , gas: 7000000, value: ether(1) }
@@ -252,7 +252,7 @@ contract('testing allow/disallow orders - ', function (rpc_accounts) {
 	});
 
 	it('should be able take/cancel orders for contract when orders are disallowed globally', async () => {
-		await market.buyMany(
+		await market.bid(
 			erc721Token1.address,
 			[ tokens1[2] ],
 			{ from: ac.BUYER2 , gas: 7000000, value: ether(1) }
@@ -264,7 +264,7 @@ contract('testing allow/disallow orders - ', function (rpc_accounts) {
 			{ from: ac.ADAPT_ADMIN , gas: 7000000 }
 		).should.be.fulfilled;
 
-		await market.buyMany(
+		await market.bid(
 			erc721Token2.address,
 			[ tokens2[2] ],
 			{ from: ac.BUYER2 , gas: 7000000, value: ether(1) }

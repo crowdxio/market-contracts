@@ -117,23 +117,10 @@ contract('Testing buy now - many', async function (rpc_accounts) {
 	it('BUYER1 should not be able to buy zero tokens', async function () {
 		const priceToPay = new BigNumber(ether(10));
 
-		const ret = await uniqxMarket.buyMany(
+		const ret = await uniqxMarket.bidMany(
 			adaptCollectibles.address,
 			[],
-			{
-				from: ac.BUYER1,
-				value: priceToPay,
-				gas: 7000000
-			}
-		).should.be.rejectedWith(EVMRevert);
-	});
-
-	it('BUYER1 should not be able to buy the tokens - not enough ether', async function () {
-		const priceToPay = new BigNumber(ether(1));
-
-		const ret = await uniqxMarket.buyMany(
-			adaptCollectibles.address,
-			tokens,
+			[],
 			{
 				from: ac.BUYER1,
 				value: priceToPay,
@@ -145,9 +132,10 @@ contract('Testing buy now - many', async function (rpc_accounts) {
 	it('BUYER1 should not be able to buy the tokens - too much ether', async function () {
 		const priceToPay = new BigNumber(ether(11));
 
-		const ret = await uniqxMarket.buyMany(
+		const ret = await uniqxMarket.bidMany(
 			adaptCollectibles.address,
 			tokens,
+			buyPrices,
 			{
 				from: ac.BUYER1,
 				value: priceToPay,
@@ -163,9 +151,10 @@ contract('Testing buy now - many', async function (rpc_accounts) {
 
 		const priceToPay = new BigNumber(ether(10));
 
-		const ret = await uniqxMarket.buyMany(
+		const ret = await uniqxMarket.bidMany(
 			adaptCollectibles.address,
 			tokens,
+			buyPrices,
 			{
 				from: ac.BUYER1,
 				value: priceToPay,
@@ -175,7 +164,8 @@ contract('Testing buy now - many', async function (rpc_accounts) {
 
 		console.log(`GAS - Buy 10 adapt tokens: ${ret.receipt.gasUsed}`);
 
-		expectEvent.inLogs(ret.logs, 'LogBuyMany');
+		expectEvent.inLogs(ret.logs, 'LogBidMany');
+		expectEvent.inLogs(ret.logs, 'LogBuy');
 
 		// TODO: get these from contract
 		const marketFee = priceToPay.dividedToIntegerBy(100);
@@ -195,9 +185,10 @@ contract('Testing buy now - many', async function (rpc_accounts) {
 	it('BUYER2 should not be able to buy the tokens - tokens already sold to buyer1', async function () {
 		const priceToPay = new BigNumber(ether(10));
 
-		const ret = await uniqxMarket.buyMany(
+		const ret = await uniqxMarket.bidMany(
 			adaptCollectibles.address,
 			tokens,
+			buyPrices,
 			{
 				from: ac.BUYER2,
 				value: priceToPay,
