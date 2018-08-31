@@ -6,14 +6,14 @@ import expectEvent from "../helpers/expectEvent";
 import EVMRevert from "../../zeppelin/test/helpers/EVMRevert";
 const moment = require('moment');
 
-const AdaptCollectibles = artifacts.require("../../../adapt/contracts/AdaptCollectibles.sol");
-const UniqxMarketERC721Instant = artifacts.require('../../contracts/UniqxMarketERC721Instant.sol');
+const TokenAdapt = artifacts.require("../../../adapt/contracts/AdaptCollectibles.sol");
+const MarketUniqxInstant = artifacts.require('../../contracts/MarketUniqxInstant.sol');
 
 contract('Testing buy now functionality - single', async function (rpc_accounts) {
 
 	const ac = accounts(rpc_accounts);
-	let uniqxMarketInstant;
-	let adaptCollectibles;
+	let market;
+	let tokenAdapt;
 
 	let token;
 	let buyPrice;
@@ -22,7 +22,7 @@ contract('Testing buy now functionality - single', async function (rpc_accounts)
 
 		console.log('Deploying the market contract...');
 
-		uniqxMarketInstant = await UniqxMarketERC721Instant.new(
+		market = await MarketUniqxInstant.new(
 			ac.MARKET_ADMIN_MSIG,
 			ac.MARKET_FEES_MSIG,
 			{
@@ -31,20 +31,20 @@ contract('Testing buy now functionality - single', async function (rpc_accounts)
 			}
 		).should.be.fulfilled;
 
-		console.log(`The market contract has been successfully deployed at ${uniqxMarketInstant.address}`);
+		console.log(`The market contract has been successfully deployed at ${market.address}`);
 
-		adaptCollectibles = await AdaptCollectibles.new(
+		tokenAdapt = await TokenAdapt.new(
 			ac.ADAPT_OWNER,
 			ac.ADAPT_ADMIN,
 			{from: ac.OPERATOR, gas: 7000000}
 		).should.be.fulfilled;
 
-		console.log(`The adapt token has been successfully deployed at ${adaptCollectibles.address}`);
+		console.log(`The adapt token has been successfully deployed at ${tokenAdapt.address}`);
 	});
 
 	it('should mint a test token', async function () {
 
-		const ret = await adaptCollectibles.massMint(
+		const ret = await tokenAdapt.massMint(
 			ac.ADAPT_ADMIN,
 			'json hash',			// json hash
 			1,				        // start
@@ -55,8 +55,8 @@ contract('Testing buy now functionality - single', async function (rpc_accounts)
 
 	it('should register the adapt token', async function () {
 
-		const ret = await uniqxMarketInstant.registerToken(
-			adaptCollectibles.address,
+		const ret = await market.registerToken(
+			tokenAdapt.address,
 			{
 				from: ac.MARKET_ADMIN_MSIG,
 				gas: 7000000
@@ -70,8 +70,8 @@ contract('Testing buy now functionality - single', async function (rpc_accounts)
 
 	it('ADAPT_ADMIN should allow the market to escrow his tokens', async function () {
 		// approve market to transfer all erc721 tokens hold by admin
-		await adaptCollectibles.setApprovalForAll(
-			uniqxMarketInstant.address,
+		await tokenAdapt.setApprovalForAll(
+			market.address,
 			true,
 			{
 				from: ac.ADAPT_ADMIN,
@@ -83,11 +83,11 @@ contract('Testing buy now functionality - single', async function (rpc_accounts)
 
 	it('ADAPT_ADMIN should be able to list a token for sale', async () => {
 
-		token = await adaptCollectibles.tokenByIndex(0);
+		token = await tokenAdapt.tokenByIndex(0);
 		buyPrice = ether(10);
 
-		const rec = await uniqxMarketInstant.create(
-			adaptCollectibles.address,
+		const rec = await market.create(
+			tokenAdapt.address,
 			token,
 			buyPrice,
 			{
@@ -100,8 +100,8 @@ contract('Testing buy now functionality - single', async function (rpc_accounts)
 	it('BUYER1 should not be able to buy the token - not enough ether', async function () {
 		const priceToPay = new BigNumber(ether(1));
 
-		const ret = await uniqxMarketInstant.buy(
-			adaptCollectibles.address,
+		const ret = await market.buy(
+			tokenAdapt.address,
 			token,
 			{
 				from: ac.BUYER1,
@@ -114,8 +114,8 @@ contract('Testing buy now functionality - single', async function (rpc_accounts)
 	it('BUYER1 should not be able to buy the token - too much ether', async function () {
 		const priceToPay = new BigNumber(ether(11));
 
-		const ret = await uniqxMarketInstant.buy(
-			adaptCollectibles.address,
+		const ret = await market.buy(
+			tokenAdapt.address,
 			token,
 			{
 				from: ac.BUYER1,
@@ -132,8 +132,8 @@ contract('Testing buy now functionality - single', async function (rpc_accounts)
 
 		const priceToPay = new BigNumber(ether(10));
 
-		const ret = await uniqxMarketInstant.buy(
-			adaptCollectibles.address,
+		const ret = await market.buy(
+			tokenAdapt.address,
 			token,
 			{
 				from: ac.BUYER1,
@@ -156,14 +156,14 @@ contract('Testing buy now functionality - single', async function (rpc_accounts)
 		marketBalanceAfter.should.be.bignumber.equal(marketBalanceBefore.plus(marketFee));
 		ownerBalanceAfter.should.be.bignumber.equal(ownerBalanceBefore.plus(ownerDue));
 
-		assert.equal(await adaptCollectibles.ownerOf(token), ac.BUYER1, 'unexpected owner  - should be buyer1');
+		assert.equal(await tokenAdapt.ownerOf(token), ac.BUYER1, 'unexpected owner  - should be buyer1');
 	});
 
 	it('BUYER2 should not be able to buy the token - token already sold to buyer1', async function () {
 		const priceToPay = new BigNumber(ether(10));
 
-		await uniqxMarketInstant.buy(
-			adaptCollectibles.address,
+		await market.buy(
+			tokenAdapt.address,
 			token,
 			{
 				from: ac.BUYER2,

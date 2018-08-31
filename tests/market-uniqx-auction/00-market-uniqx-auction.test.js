@@ -8,17 +8,17 @@ import latestTime from '../../zeppelin/test/helpers/latestTime';
 const moment = require('moment');
 import * as abiDecoder from 'abi-decoder';
 
-const AdaptCollectibles = artifacts.require("../../../adapt/contracts/AdaptCollectibles.sol");
-const UniqxMarketERC721 = artifacts.require('../../contracts/UniqxMarketERC721Auction.sol');
+const TokenAdapt = artifacts.require("../../../adapt/contracts/AdaptCollectibles.sol");
+const MarketUniqxAuction = artifacts.require('../../contracts/MarketUniqxAuction.sol');
 
-const AdaptCollectiblesJson = require("../../build/contracts/AdaptCollectibles.json");
-const UniqxMarketERC721Json = require('../../build/contracts/UniqxMarketERC721Auction.json');
+const TokenAdaptJson = require("../../build/contracts/AdaptCollectibles.json");
+const MarketUniqxAuctionJson = require('../../build/contracts/MarketUniqxAuction.json');
 
 contract('Testing Auction listing - main flow', async function (rpc_accounts) {
 
 	const ac = accounts(rpc_accounts);
 	let uniqxMarket;
-	let adaptCollectibles;
+	let tokenAdapt;
 
 	const tokensCount = 11;
 	let tokens = [];
@@ -30,7 +30,7 @@ contract('Testing Auction listing - main flow', async function (rpc_accounts) {
 
 		console.log('Deploying the market contract...');
 
-		uniqxMarket = await UniqxMarketERC721.new(
+		uniqxMarket = await MarketUniqxAuction.new(
 			ac.MARKET_ADMIN_MSIG,
 			ac.MARKET_FEES_MSIG,
 			{
@@ -42,20 +42,20 @@ contract('Testing Auction listing - main flow', async function (rpc_accounts) {
 		console.log(`The market contract has been successfully deployed at ${uniqxMarket.address}`);
 
 		// MC: let's change to the generic ERC21 token instead of ADAPT
-		adaptCollectibles = await AdaptCollectibles.new(
+		tokenAdapt = await TokenAdapt.new(
 			ac.ADAPT_OWNER,
 			ac.ADAPT_ADMIN,
 			{from: ac.OPERATOR, gas: 7000000}
 		).should.be.fulfilled;
 
-		console.log(`The adapt token has been successfully deployed at ${adaptCollectibles.address}`);
+		console.log(`The adapt token has been successfully deployed at ${tokenAdapt.address}`);
 	});
 
 	it('should watch and parse the the logs', async function () {
 
 		// market
 
-		abiDecoder.addABI(UniqxMarketERC721Json['abi']);
+		abiDecoder.addABI(MarketUniqxAuctionJson['abi']);
 
 		const marketFilter = web3.eth.filter(
 			{
@@ -79,17 +79,17 @@ contract('Testing Auction listing - main flow', async function (rpc_accounts) {
 
 		// adapt
 
-		abiDecoder.addABI(AdaptCollectiblesJson['abi']);
+		abiDecoder.addABI(TokenAdaptJson['abi']);
 
-		const adaptCollectiblesFilter = web3.eth.filter(
+		const tokenAdaptFilter = web3.eth.filter(
 			{
 				fromBlock: 1,
 				toBlock: 'latest',
-				address: adaptCollectibles.address,
+				address: tokenAdapt.address,
 			}
 		);
 
-		adaptCollectiblesFilter.watch(async (error, result ) => {
+		tokenAdaptFilter.watch(async (error, result ) => {
 			if (error) {
 				console.log(error);
 				return;
@@ -103,7 +103,7 @@ contract('Testing Auction listing - main flow', async function (rpc_accounts) {
 
 	it('should mint some test tokens', async function () {
 
-		const ret = await adaptCollectibles.massMint(
+		const ret = await tokenAdapt.massMint(
 			ac.ADAPT_ADMIN,
 			'json hash',			// json hash
 			1,				        // start
@@ -117,7 +117,7 @@ contract('Testing Auction listing - main flow', async function (rpc_accounts) {
 	it('should register the adapt token', async function () {
 
 		const ret = await uniqxMarket.registerToken(
-			adaptCollectibles.address,
+			tokenAdapt.address,
 			{
 				from: ac.MARKET_ADMIN_MSIG,
 				gas: 7000000
@@ -131,7 +131,7 @@ contract('Testing Auction listing - main flow', async function (rpc_accounts) {
 
 	it('should allow the market to escrow the adapt tokens', async function () {
 		// approve market to transfer all erc721 tokens hold by admin
-		await adaptCollectibles.setApprovalForAll(
+		await tokenAdapt.setApprovalForAll(
 			uniqxMarket.address,
 			true,
 			{
@@ -145,14 +145,14 @@ contract('Testing Auction listing - main flow', async function (rpc_accounts) {
 
 		const threeDaysLater = moment().add(3, 'days').unix();
 		for (let i = 0; i < tokensCount - 1; i++) {
-			tokens[i] = await adaptCollectibles.tokenByIndex(i);
+			tokens[i] = await tokenAdapt.tokenByIndex(i);
 			buyPrices[i] = ether(9);
 			startPrices[i] = ether(1);
 			endTimes[i] = threeDaysLater;
 		}
 
 		const rec = await uniqxMarket.createMany(
-			adaptCollectibles.address,
+			tokenAdapt.address,
 			tokens,
 			buyPrices,
 			startPrices,
@@ -171,7 +171,7 @@ contract('Testing Auction listing - main flow', async function (rpc_accounts) {
 
 	it('should mint 1 test token', async function () {
 
-		const ret = await adaptCollectibles.mint(
+		const ret = await tokenAdapt.mint(
 			ac.ADAPT_ADMIN,
 			'json hash',			// json hash
 			11,				        // copy
@@ -185,12 +185,12 @@ contract('Testing Auction listing - main flow', async function (rpc_accounts) {
 
 		const fourDaysLater = moment().add(4, 'days').unix();
 
-		tokens[10] = await adaptCollectibles.tokenByIndex(10);
+		tokens[10] = await tokenAdapt.tokenByIndex(10);
 		buyPrices[10] = ether(9);
 		startPrices[10] = ether(1);
 
 		let rec = await uniqxMarket.createMany(
-			adaptCollectibles.address,
+			tokenAdapt.address,
 			[ tokens[10] ],
 			[ buyPrices[10] ],
 			[ startPrices[10] ],
@@ -206,7 +206,7 @@ contract('Testing Auction listing - main flow', async function (rpc_accounts) {
 
 	it('should be able to cancel 2 tokens', async () => {
 		const rec = await uniqxMarket.cancelMany(
-			adaptCollectibles.address,
+			tokenAdapt.address,
 			[tokens[0], tokens[1]],
 			{
 				from: ac.ADAPT_ADMIN,
@@ -227,7 +227,7 @@ contract('Testing Auction listing - main flow', async function (rpc_accounts) {
 		const fourDaysLater = moment().add(4, 'days').unix();
 
 		let rec = await uniqxMarket.createMany(
-			adaptCollectibles.address,
+			tokenAdapt.address,
 			[ tokens[0] ],
 			[ ether(2) ],
 			[ ether(1) ],
@@ -243,7 +243,7 @@ contract('Testing Auction listing - main flow', async function (rpc_accounts) {
 
 	it('BUYER1 should be able to place bids on 3 tokens', async function () {
 		const ret = await uniqxMarket.bidMany(
-			adaptCollectibles.address,
+			tokenAdapt.address,
 			[tokens[2], tokens[3], tokens[4]],
 			[ether(2), ether(2), ether(2)],
 			{
@@ -260,7 +260,7 @@ contract('Testing Auction listing - main flow', async function (rpc_accounts) {
 
 	it('BUYER2 should be able to overbid BUYER1', async function () {
 		const ret = await uniqxMarket.bidMany(
-			adaptCollectibles.address,
+			tokenAdapt.address,
 			[tokens[4]],
 			[ether(4)],
 			{
@@ -278,7 +278,7 @@ contract('Testing Auction listing - main flow', async function (rpc_accounts) {
 
 	it('BUYER2 should be able to place a bid big enough to buy the token', async function () {
 		const ret = await uniqxMarket.bidMany(
-			adaptCollectibles.address,
+			tokenAdapt.address,
 			[tokens[5]],
 			[ether(9)],
 			{
@@ -300,7 +300,7 @@ contract('Testing Auction listing - main flow', async function (rpc_accounts) {
 		increaseTimeTo(threeDaysLater + duration.minutes(1));
 
 		const ret = await uniqxMarket.completeMany(
-			adaptCollectibles.address,
+			tokenAdapt.address,
 			[tokens[2], tokens[3]],
 			{
 				from: ac.BUYER1,
@@ -316,7 +316,7 @@ contract('Testing Auction listing - main flow', async function (rpc_accounts) {
 	it('should allow BUYER2 to finalize the auctions he won', async function () {
 
 		const ret = await uniqxMarket.completeMany(
-			adaptCollectibles.address,
+			tokenAdapt.address,
 			[tokens[4]],
 			{
 				from: ac.BUYER2,
@@ -333,7 +333,7 @@ contract('Testing Auction listing - main flow', async function (rpc_accounts) {
 		increaseTimeTo(threeDaysLater + duration.minutes(1));
 
 		const ret = await uniqxMarket.completeMany(
-			adaptCollectibles.address,
+			tokenAdapt.address,
 			tokens.slice(6),
 			{
 				from: ac.ADAPT_ADMIN,

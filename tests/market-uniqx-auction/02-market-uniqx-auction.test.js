@@ -9,15 +9,13 @@ import { duration, increaseTimeTo } from "../../zeppelin/test/helpers/increaseTi
 import latestTime from '../../zeppelin/test/helpers/latestTime';
 import EVMRevert from "../../zeppelin/test/helpers/EVMRevert";
 
-
-const UniqxMarketERC721 = artifacts.require('../../contracts/UniqxMarketERC721Auction.sol');
-const tokenContract = artifacts.require("../../../adapt/contracts/AdaptCollectibles.sol");
-
+const TokenAdapt = artifacts.require("../../../adapt/contracts/AdaptCollectibles.sol");
+const MarketUniqxAuction = artifacts.require('../../contracts/MarketUniqxAuction.sol');
 
 contract('Freeride testing', async function (rpc_accounts) {
 
 	const ac = accounts(rpc_accounts);
-	let erc721Token, market, erc721Market;
+	let tokenAdapt, market;
 	let tokesCount = 10;
 	let tokens = [];
 	let prices = [];
@@ -27,7 +25,7 @@ contract('Freeride testing', async function (rpc_accounts) {
 
 	it('should be able to deploy the smart contracts', async () => {
 
-		market = await UniqxMarketERC721.new(
+		market = await MarketUniqxAuction.new(
 			ac.MARKET_ADMIN_MSIG,
 			ac.MARKET_FEES_MSIG,
 			{ from: ac.OPERATOR, gas: 7000000 }
@@ -38,17 +36,17 @@ contract('Freeride testing', async function (rpc_accounts) {
 
 	it('should be able to register an ERC721 contract', async () => {
 
-		erc721Token = await tokenContract.new(
+		tokenAdapt = await TokenAdapt.new(
 			ac.ADAPT_OWNER,
 			ac.ADAPT_ADMIN,
 			{ from: ac.OPERATOR, gas: 7000000 }
 		).should.be.fulfilled;
 
-		console.log("ERC721 test contract deployed at addresses " + erc721Token.address);
+		console.log("ERC721 test contract deployed at addresses " + tokenAdapt.address);
 
 
 		let rec = await market.registerToken(
-			erc721Token.address,
+			tokenAdapt.address,
 			{ from: ac.MARKET_ADMIN_MSIG , gas: 7000000 }
 		).should.be.fulfilled;
 
@@ -57,7 +55,7 @@ contract('Freeride testing', async function (rpc_accounts) {
 
 	it('should be able to mass mint new tokens', async function () {
 
-		await erc721Token.massMint(
+		await tokenAdapt.massMint(
 			ac.ADAPT_ADMIN,
 			'123',			// json hash
 			0,				// start
@@ -69,13 +67,13 @@ contract('Freeride testing', async function (rpc_accounts) {
 	it('should be able to enable the market to transfer tokens', async function () {
 
 		for (let i = 0; i < tokesCount; i++) {
-			tokens[i] = await erc721Token.tokenByIndex(i);
+			tokens[i] = await tokenAdapt.tokenByIndex(i);
 			console.log('token: ', tokens[i].toString(10));
 			prices[i] = ether(1);
 		}
 
 		// approve market to transfer all erc721 tokens hold by admin
-		await erc721Token.setApprovalForAll(
+		await tokenAdapt.setApprovalForAll(
 			market.address,
 			true,
 			{ from: ac.ADAPT_ADMIN }
@@ -87,7 +85,7 @@ contract('Freeride testing', async function (rpc_accounts) {
 		const threeDaysLater = moment().add(3, 'days').unix();
 
 		const rec = await market.createMany(
-			erc721Token.address,
+			tokenAdapt.address,
 			[ tokens[0], tokens[1], tokens[2]],
 			[ ether(2), ether(2), ether(2) ],
 			[ ether(1), ether(1), ether(1) ],
@@ -98,7 +96,7 @@ contract('Freeride testing', async function (rpc_accounts) {
 
 		expectEvent.inLogs(rec.logs, 'LogCreateMany');
 		for (let i = 0; i < 3; i++) {
-			const listed = await market.tokenIsListed(erc721Token.address, tokens[i]);
+			const listed = await market.tokenIsListed(tokenAdapt.address, tokens[i]);
 			assert.equal(listed, true);
 		}
 	});
@@ -106,7 +104,7 @@ contract('Freeride testing', async function (rpc_accounts) {
 	it('should allow buyer1 to place a bid for tokens 0, 1', async function () {
 
 		const rec = await market.bidMany(
-			erc721Token.address,
+			tokenAdapt.address,
 			[ tokens[0], tokens[1]],
 			[ ether(1.1), ether(1.1)],
 			{ from: ac.BUYER1 , gas: 7000000, value: ether(2.2) }
@@ -121,14 +119,14 @@ contract('Freeride testing', async function (rpc_accounts) {
 		const buyer1BalanceShouldBeAfterOutbided = buyer1Balance .add(ether(1.1));
 
 		const rec = await market.bidMany(
-			erc721Token.address,
+			tokenAdapt.address,
 			[ tokens[0] ],
 			[ ether(2) ],
 			{ from: ac.BUYER2 , gas: 7000000, value: ether(2) }
 		).should.be.fulfilled;
 
 		expectEvent.inLogs(rec.logs, 'LogBuy');
-		const listed = await market.tokenIsListed(erc721Token.address, tokens[0]);
+		const listed = await market.tokenIsListed(tokenAdapt.address, tokens[0]);
 		assert.equal(listed, listed);
 
 		const balanceBuyer1AfterOutbided = await pGetBalance(ac.BUYER1);
@@ -138,7 +136,7 @@ contract('Freeride testing', async function (rpc_accounts) {
 	it('should allow buyer3 to outbid buyer1 on token 1', async function () {
 
 		const rec = await market.bidMany(
-			erc721Token.address,
+			tokenAdapt.address,
 			[ tokens[1] ],
 			[ ether(1.2) ],
 			{ from: ac.BUYER3 , gas: 7000000, value: ether(1.2) }
@@ -150,19 +148,19 @@ contract('Freeride testing', async function (rpc_accounts) {
 	it('should not allow buyer3 to settle the auction yet while is still open', async function () {
 
 		const rec = await market.completeMany(
-			erc721Token.address,
+			tokenAdapt.address,
 			[tokens[1]],
 			{ from: ac.BUYER3 , gas: 7000000}
 		).should.be.rejectedWith(EVMRevert);
 
-		const owner = await erc721Token.ownerOf(tokens[1]);
+		const owner = await tokenAdapt.ownerOf(tokens[1]);
 		assert.notEqual(owner, ac.BUYER3);
 	});
 
 	it('should not allow to cancel an auction if it was bidden and is still active', async () => {
 
 		await market.cancelMany(
-			erc721Token.address,
+			tokenAdapt.address,
 			[ tokens[1] ],
 			{ from: ac.ADAPT_ADMIN , gas: 7000000 }
 		).should.be.rejectedWith(EVMRevert);
@@ -176,14 +174,14 @@ contract('Freeride testing', async function (rpc_accounts) {
 		increaseTimeTo(moment().add(7, 'days').unix());
 
 		const rec = await market.completeMany(
-			erc721Token.address,
+			tokenAdapt.address,
 			[tokens[1]],
 			{ from: ac.BUYER3 , gas: 7000000}
 		).should.be.fulfilled;
 
 		expectEvent.inLogs(rec.logs, 'LogBuy');
 
-		const owner = await erc721Token.ownerOf(tokens[1]);
+		const owner = await tokenAdapt.ownerOf(tokens[1]);
 		assert.equal(owner, ac.BUYER3);
 		let balanceMarketFees2 = await pGetBalance(ac.MARKET_FEES_MSIG);
 		let balanceAdaptAdmin2 = await pGetBalance(ac.ADAPT_ADMIN);
@@ -209,7 +207,7 @@ contract('Freeride testing', async function (rpc_accounts) {
 		const oneDayLater = latestTime() + duration.days(1);
 
 		let rec = await market.createMany(
-			erc721Token.address,
+			tokenAdapt.address,
 			[ tokens[3] ],
 			[ ether(2) ],
 			[ ether(1) ],
@@ -218,17 +216,17 @@ contract('Freeride testing', async function (rpc_accounts) {
 		).should.be.fulfilled;
 
 		expectEvent.inLogs(rec.logs, 'LogCreateMany');
-		let listed = await market.tokenIsListed(erc721Token.address, tokens[3]);
+		let listed = await market.tokenIsListed(tokenAdapt.address, tokens[3]);
 		assert.equal(listed, true);
 
 		rec = await market.cancelMany(
-			erc721Token.address,
+			tokenAdapt.address,
 			[ tokens[3] ],
 			{ from: ac.ADAPT_ADMIN , gas: 7000000 }
 		).should.be.fulfilled;
 
 		expectEvent.inLogs(rec.logs, 'LogCancelMany');
-		listed = await market.tokenIsListed(erc721Token.address, tokens[3]);
+		listed = await market.tokenIsListed(tokenAdapt.address, tokens[3]);
 		assert.equal(listed, false);
 	});
 
@@ -237,7 +235,7 @@ contract('Freeride testing', async function (rpc_accounts) {
 		const oneDayInThePast = latestTime() - duration.days(1);
 
 		let rec = await market.createMany(
-			erc721Token.address,
+			tokenAdapt.address,
 			[ tokens[3] ],
 			[ ether(2) ],
 			[ ether(1) ],
@@ -251,7 +249,7 @@ contract('Freeride testing', async function (rpc_accounts) {
 		const lessThanAnHourInTheFuture = latestTime() - duration.minutes(59);
 
 		let rec = await market.createMany(
-			erc721Token.address,
+			tokenAdapt.address,
 			[ tokens[3] ],
 			[ ether(2) ],
 			[ ether(1) ],
@@ -265,7 +263,7 @@ contract('Freeride testing', async function (rpc_accounts) {
 		const oneDayLater = latestTime() + duration.days(1);
 
 		let rec = await market.createMany(
-			erc721Token.address,
+			tokenAdapt.address,
 			[ tokens[3] ],
 			[ ether(2) ],
 			[ ether(1) ],
@@ -274,11 +272,11 @@ contract('Freeride testing', async function (rpc_accounts) {
 		).should.be.fulfilled;
 
 		expectEvent.inLogs(rec.logs, 'LogCreateMany');
-		let listed = await market.tokenIsListed(erc721Token.address, tokens[3]);
+		let listed = await market.tokenIsListed(tokenAdapt.address, tokens[3]);
 		assert.equal(listed, true);
 
 		rec = await market.bidMany(
-			erc721Token.address,
+			tokenAdapt.address,
 			[ tokens[3] ],
 			[ ether(1.1) ],
 			{ from: ac.BUYER1 , gas: 7000000, value: ether(1.1) }
@@ -289,12 +287,12 @@ contract('Freeride testing', async function (rpc_accounts) {
 		increaseTimeTo(oneDayLater + duration.minutes(1));
 
 		rec = await market.completeMany( // anyone can settle
-			erc721Token.address,
+			tokenAdapt.address,
 			[tokens[3]],
 			{ from: ac.BUYER3 , gas: 7000000}
 		).should.be.fulfilled;
 
-		const owner = await erc721Token.ownerOf(tokens[3]);
+		const owner = await tokenAdapt.ownerOf(tokens[3]);
 		assert.equal(owner, ac.BUYER1);
 	});
 
@@ -303,7 +301,7 @@ contract('Freeride testing', async function (rpc_accounts) {
 		const oneDayLater = latestTime() + duration.days(1);
 
 		let rec = await market.createMany(
-			erc721Token.address,
+			tokenAdapt.address,
 			[ tokens[4] ],
 			[ ether(2) ],
 			[ ether(1) ],
@@ -312,18 +310,18 @@ contract('Freeride testing', async function (rpc_accounts) {
 		).should.be.fulfilled;
 
 		expectEvent.inLogs(rec.logs, 'LogCreateMany');
-		let listed = await market.tokenIsListed(erc721Token.address, tokens[4]);
+		let listed = await market.tokenIsListed(tokenAdapt.address, tokens[4]);
 		assert.equal(listed, true);
 
 		increaseTimeTo(oneDayLater + duration.minutes(1));
 
 		rec = await market.completeMany(
-			erc721Token.address,
+			tokenAdapt.address,
 			[tokens[4]],
 			{ from: ac.BUYER3 , gas: 7000000}
 		).should.be.fulfilled;
 
-		let owner = await erc721Token.ownerOf(tokens[4]);
+		let owner = await tokenAdapt.ownerOf(tokens[4]);
 		assert.equal(owner, ac.ADAPT_ADMIN);
 	});
 });

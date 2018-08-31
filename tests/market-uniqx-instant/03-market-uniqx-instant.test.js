@@ -1,31 +1,29 @@
 import {
-	accounts, assert, BigNumber, getBalanceAsync, getBalanceAsyncStr, parseAdaptTokenEvent
+	accounts, assert, BigNumber, getBalanceAsync
 } from '../common/common';
 import ether from "../helpers/ether";
 import expectEvent from "../helpers/expectEvent";
 const moment = require('moment');
 import EVMRevert from "../../zeppelin/test/helpers/EVMRevert";
 
-const AdaptCollectibles = artifacts.require("../../../adapt/contracts/AdaptCollectibles.sol");
-const UniqxMarketERC721 = artifacts.require('../../contracts/UniqxMarketERC721Auction.sol');
+const TokenAdapt = artifacts.require("../../../adapt/contracts/AdaptCollectibles.sol");
+const MarketUniqxInstant = artifacts.require('../../contracts/MarketUniqxInstant.sol');
 
-contract('Testing buy now - many', async function (rpc_accounts) {
+contract('Testing buy now functionality - many', async function (rpc_accounts) {
 
 	const ac = accounts(rpc_accounts);
-	let uniqxMarket;
-	let adaptCollectibles;
+	let market;
+	let tokenAdapt;
 
 	const tokensCount = 10;
 	let tokens = [];
-	let buyPrices = [];
-	let startPrices = [];
-	let endTimes = [];
+	let prices = [];
 
 	it('should successfully deploy the market contract and the adapt token', async function () {
 
 		console.log('Deploying the market contract...');
 
-		uniqxMarket = await UniqxMarketERC721.new(
+		market = await MarketUniqxInstant.new(
 			ac.MARKET_ADMIN_MSIG,
 			ac.MARKET_FEES_MSIG,
 			{
@@ -34,19 +32,19 @@ contract('Testing buy now - many', async function (rpc_accounts) {
 			}
 		).should.be.fulfilled;
 
-		console.log(`The market contract has been successfully deployed at ${uniqxMarket.address}`);
+		console.log(`The market contract has been successfully deployed at ${market.address}`);
 
-		adaptCollectibles = await AdaptCollectibles.new(
+		tokenAdapt = await TokenAdapt.new(
 			ac.ADAPT_OWNER,
 			ac.ADAPT_ADMIN,
 			{ from: ac.OPERATOR, gas: 7000000 }
 		).should.be.fulfilled;
 
-		console.log(`The adapt token has been successfully deployed at ${adaptCollectibles.address}`);
+		console.log(`The adapt token has been successfully deployed at ${tokenAdapt.address}`);
 	});
 
 	it('should mint some test tokens', async function () {
-		const ret = await adaptCollectibles.massMint(
+		const ret = await tokenAdapt.massMint(
 			ac.ADAPT_ADMIN,
 			'json hash',			// json hash
 			1,				        // start
@@ -59,8 +57,8 @@ contract('Testing buy now - many', async function (rpc_accounts) {
 
 	it('should register the adapt token', async function () {
 
-		const ret = await uniqxMarket.registerToken(
-			adaptCollectibles.address,
+		const ret = await market.registerToken(
+			tokenAdapt.address,
 			{
 				from: ac.MARKET_ADMIN_MSIG,
 				gas: 7000000
@@ -71,7 +69,7 @@ contract('Testing buy now - many', async function (rpc_accounts) {
 
 		expectEvent.inLogs(ret.logs, 'LogRegisterToken');
 
-		const status = await uniqxMarket.getTokenContractStatus(adaptCollectibles.address);
+		const status = await market.getTokenContractStatus(tokenAdapt.address);
 		assert.equal(status[0], true, 'unexpected registration status - should be registered');
 		assert.equal(status[0], true, 'unexpected orders status - should be enabled');
 	});
@@ -79,8 +77,8 @@ contract('Testing buy now - many', async function (rpc_accounts) {
 
 	it('ADAPT_ADMIN should allow the market to escrow his tokens', async function () {
 		// approve market to transfer all erc721 tokens hold by admin
-		await adaptCollectibles.setApprovalForAll(
-			uniqxMarket.address,
+		await tokenAdapt.setApprovalForAll(
+			market.address,
 			true,
 			{
 				from: ac.ADAPT_ADMIN,
@@ -90,25 +88,19 @@ contract('Testing buy now - many', async function (rpc_accounts) {
 	});
 
 
-	it('ADAPT_ADMIN should be able to list 10 adapt tokens for auction', async () => {
-
-		const threeDaysLater = moment().add(3, 'days').unix();
+	it('ADAPT_ADMIN should be able to list 10 adapt tokens for sale - fixed price', async () => {
 
 		for (let i = 0; i < tokensCount; i++) {
-			tokens[i] = await adaptCollectibles.tokenByIndex(i);
-			buyPrices[i] = ether(1);
-			startPrices[i] = ether(0.1);
-			endTimes[i] = threeDaysLater;
+			tokens[i] = await tokenAdapt.tokenByIndex(i);
+			prices[i] = ether(1);
 		}
 
-		const rec = await uniqxMarket.createMany(
-			adaptCollectibles.address,
+		const rec = await market.createMany(
+			tokenAdapt.address,
 			tokens,
-			buyPrices,
-			startPrices,
-			endTimes,
+			prices,
 			{
-				from: ac.ADAPT_ADMIN,
+				from: ac.ADAPT_ADMIN ,
 				gas: 7000000
 			}
 		).should.be.fulfilled;
@@ -117,10 +109,23 @@ contract('Testing buy now - many', async function (rpc_accounts) {
 	it('BUYER1 should not be able to buy zero tokens', async function () {
 		const priceToPay = new BigNumber(ether(10));
 
-		const ret = await uniqxMarket.bidMany(
-			adaptCollectibles.address,
+		const ret = await market.buyMany(
+			tokenAdapt.address,
 			[],
-			[],
+			{
+				from: ac.BUYER1,
+				value: priceToPay,
+				gas: 7000000
+			}
+		).should.be.rejectedWith(EVMRevert);
+	});
+
+	it('BUYER1 should not be able to buy the tokens - not enough ether', async function () {
+		const priceToPay = new BigNumber(ether(1));
+
+		const ret = await market.buyMany(
+			tokenAdapt.address,
+			tokens,
 			{
 				from: ac.BUYER1,
 				value: priceToPay,
@@ -132,10 +137,9 @@ contract('Testing buy now - many', async function (rpc_accounts) {
 	it('BUYER1 should not be able to buy the tokens - too much ether', async function () {
 		const priceToPay = new BigNumber(ether(11));
 
-		const ret = await uniqxMarket.bidMany(
-			adaptCollectibles.address,
+		const ret = await market.buyMany(
+			tokenAdapt.address,
 			tokens,
-			buyPrices,
 			{
 				from: ac.BUYER1,
 				value: priceToPay,
@@ -151,10 +155,9 @@ contract('Testing buy now - many', async function (rpc_accounts) {
 
 		const priceToPay = new BigNumber(ether(10));
 
-		const ret = await uniqxMarket.bidMany(
-			adaptCollectibles.address,
+		const ret = await market.buyMany(
+			tokenAdapt.address,
 			tokens,
-			buyPrices,
 			{
 				from: ac.BUYER1,
 				value: priceToPay,
@@ -164,8 +167,7 @@ contract('Testing buy now - many', async function (rpc_accounts) {
 
 		console.log(`GAS - Buy 10 adapt tokens: ${ret.receipt.gasUsed}`);
 
-		expectEvent.inLogs(ret.logs, 'LogBidMany');
-		expectEvent.inLogs(ret.logs, 'LogBuy');
+		expectEvent.inLogs(ret.logs, 'LogBuyMany');
 
 		// TODO: get these from contract
 		const marketFee = priceToPay.dividedToIntegerBy(100);
@@ -178,17 +180,16 @@ contract('Testing buy now - many', async function (rpc_accounts) {
 		ownerBalanceAfter.should.be.bignumber.equal(ownerBalanceBefore.plus(ownerDue));
 
 		for (let token of tokens) {
-			assert.equal(await adaptCollectibles.ownerOf(token), ac.BUYER1, 'unexpected owner  - should be buyer1');
+			assert.equal(await tokenAdapt.ownerOf(token), ac.BUYER1, 'unexpected owner  - should be buyer1');
 		}
 	});
 
 	it('BUYER2 should not be able to buy the tokens - tokens already sold to buyer1', async function () {
 		const priceToPay = new BigNumber(ether(10));
 
-		const ret = await uniqxMarket.bidMany(
-			adaptCollectibles.address,
+		const ret = await market.buyMany(
+			tokenAdapt.address,
 			tokens,
-			buyPrices,
 			{
 				from: ac.BUYER2,
 				value: priceToPay,

@@ -6,14 +6,14 @@ import expectEvent from "../helpers/expectEvent";
 import EVMRevert from "../../zeppelin/test/helpers/EVMRevert";
 const moment = require('moment');
 
-const AdaptCollectibles = artifacts.require("../../../adapt/contracts/AdaptCollectibles.sol");
-const UniqxMarketERC721Instant = artifacts.require('../../contracts/UniqxMarketERC721Instant.sol');
+const TokenAdapt = artifacts.require("../../../adapt/contracts/AdaptCollectibles.sol");
+const MarketUniqxInstant = artifacts.require('../../contracts/MarketUniqxInstant.sol');
 
 contract('Testing token listing and updating - single', async function (rpc_accounts) {
 
 	const ac = accounts(rpc_accounts);
-	let uniqxMarketInstant;
-	let adaptCollectibles;
+	let market;
+	let tokenAdapt;
 
 	let token;
 	let buyPrice;
@@ -22,7 +22,7 @@ contract('Testing token listing and updating - single', async function (rpc_acco
 
 		console.log('Deploying the market contract...');
 
-		uniqxMarketInstant = await UniqxMarketERC721Instant.new(
+		market = await MarketUniqxInstant.new(
 			ac.MARKET_ADMIN_MSIG,
 			ac.MARKET_FEES_MSIG,
 			{
@@ -31,34 +31,34 @@ contract('Testing token listing and updating - single', async function (rpc_acco
 			}
 		).should.be.fulfilled;
 
-		console.log(`The market contract has been successfully deployed at ${uniqxMarketInstant.address}`);
+		console.log(`The market contract has been successfully deployed at ${market.address}`);
 
-		adaptCollectibles = await AdaptCollectibles.new(
+		tokenAdapt = await TokenAdapt.new(
 			ac.ADAPT_OWNER,
 			ac.ADAPT_ADMIN,
 			{from: ac.OPERATOR, gas: 7000000}
 		).should.be.fulfilled;
 
-		console.log(`The adapt token has been successfully deployed at ${adaptCollectibles.address}`);
+		console.log(`The adapt token has been successfully deployed at ${tokenAdapt.address}`);
 	});
 
 	it('should mint a test token', async function () {
 
-		const ret = await adaptCollectibles.massMint(
+		const ret = await tokenAdapt.massMint(
 			ac.ADAPT_ADMIN,
 			'json hash',			// json hash
 			1,				        // start
 			1,		                // count
 			{from: ac.ADAPT_ADMIN}
 		).should.be.fulfilled;
-		token = await adaptCollectibles.tokenByIndex(0);
+		token = await tokenAdapt.tokenByIndex(0);
 		buyPrice = ether(1);
 	});
 
 	it('should register the adapt token', async function () {
 
-		const ret = await uniqxMarketInstant.registerToken(
-			adaptCollectibles.address,
+		const ret = await market.registerToken(
+			tokenAdapt.address,
 			{
 				from: ac.MARKET_ADMIN_MSIG,
 				gas: 7000000
@@ -72,7 +72,7 @@ contract('Testing token listing and updating - single', async function (rpc_acco
 
 	it('ADAPT_ADMIN should be able to transfer his token to ACCOUNT1', async function () {
 
-		const ret = await adaptCollectibles.transferFrom(
+		const ret = await tokenAdapt.transferFrom(
 			ac.ADAPT_ADMIN,
 			ac.ACCOUNT1,
 			token,
@@ -83,13 +83,13 @@ contract('Testing token listing and updating - single', async function (rpc_acco
 		).should.be.fulfilled;
 
 		expectEvent.inLogs(ret.logs, 'Transfer');
-		const owner = await adaptCollectibles.ownerOf(token);
+		const owner = await tokenAdapt.ownerOf(token);
 		assert.equal(owner, ac.ACCOUNT1, 'unexpected owner - ACCOUNT1 should own the token');
 	});
 
 	it('the SELLER should NOT be able to list a token for sale unless he gets approval', async () => {
-		await uniqxMarketInstant.create(
-			adaptCollectibles.address,
+		await market.create(
+			tokenAdapt.address,
 			token,
 			buyPrice,
 			{
@@ -100,7 +100,7 @@ contract('Testing token listing and updating - single', async function (rpc_acco
 	});
 
 	it('ACCOUNT1 should be able to approve the SELLER to list his tokens', async function () {
-		await adaptCollectibles.setApprovalForAll(
+		await tokenAdapt.setApprovalForAll(
 			ac.SELLER,
 			true,
 			{
@@ -111,7 +111,7 @@ contract('Testing token listing and updating - single', async function (rpc_acco
 	});
 
 	it('ADAPT_ADMIN should be able to approve the SELLER to list his tokens', async function () {
-		await adaptCollectibles.setApprovalForAll(
+		await tokenAdapt.setApprovalForAll(
 			ac.SELLER,
 			true,
 			{
@@ -123,8 +123,8 @@ contract('Testing token listing and updating - single', async function (rpc_acco
 
 	it('ACCOUNT1 should be able to approve the MARKET escrow his tokens', async function () {
 		// approve market to transfer all erc721 tokens hold by admin
-		await adaptCollectibles.setApprovalForAll(
-			uniqxMarketInstant.address,
+		await tokenAdapt.setApprovalForAll(
+			market.address,
 			true,
 			{
 				from: ac.ACCOUNT1,
@@ -135,8 +135,8 @@ contract('Testing token listing and updating - single', async function (rpc_acco
 
 	it('ADAPT_ADMIN should be able to approve the MARKET escrow his tokens', async function () {
 		// approve market to transfer all erc721 tokens hold by admin
-		await adaptCollectibles.setApprovalForAll(
-			uniqxMarketInstant.address,
+		await tokenAdapt.setApprovalForAll(
+			market.address,
 			true,
 			{
 				from: ac.ADAPT_ADMIN,
@@ -146,8 +146,8 @@ contract('Testing token listing and updating - single', async function (rpc_acco
 	});
 
 	it('the SELLER should not be able to list a zero value token', async function () {
-		await uniqxMarketInstant.create(
-			adaptCollectibles.address,
+		await market.create(
+			tokenAdapt.address,
 			token,
 			0,
 			{
@@ -159,8 +159,8 @@ contract('Testing token listing and updating - single', async function (rpc_acco
 
 	it('the SELLER should be able to list an adapt token for sale', async () => {
 
-		const ret = await uniqxMarketInstant.create(
-			adaptCollectibles.address,
+		const ret = await market.create(
+			tokenAdapt.address,
 			token,
 			buyPrice,
 			{
@@ -173,10 +173,10 @@ contract('Testing token listing and updating - single', async function (rpc_acco
 
 		expectEvent.inLogs(ret.logs, 'LogCreate');
 
-		const owner = await adaptCollectibles.ownerOf(token);
-		assert.equal(owner, uniqxMarketInstant.address, 'unexpected owner - market should own the token');
+		const owner = await tokenAdapt.ownerOf(token);
+		assert.equal(owner, market.address, 'unexpected owner - market should own the token');
 
-		const info = await uniqxMarketInstant.getOrderInfo(adaptCollectibles.address, token);
+		const info = await market.getOrderInfo(tokenAdapt.address, token);
 		//console.log(`order info: ${JSON.stringify(info, null, '\t')}`);
 
 		assert.equal(info[0], ac.ACCOUNT1, 'unexpected owner');
@@ -187,8 +187,8 @@ contract('Testing token listing and updating - single', async function (rpc_acco
 
 	it('ADAPT_ADMIN should not be able to update an adapt token listed by the SELLER', async function () {
 
-		const ret = await uniqxMarketInstant.update(
-			adaptCollectibles.address,
+		const ret = await market.update(
+			tokenAdapt.address,
 			token,
 			ether(2),
 			{
@@ -200,8 +200,8 @@ contract('Testing token listing and updating - single', async function (rpc_acco
 
 	it('the SELLER should be able to update an adapt token listed by him', async function () {
 
-		const ret = await uniqxMarketInstant.update(
-			adaptCollectibles.address,
+		const ret = await market.update(
+			tokenAdapt.address,
 			token,
 			ether(2),
 			{
@@ -210,7 +210,7 @@ contract('Testing token listing and updating - single', async function (rpc_acco
 			}
 		).should.be.fulfilled;
 
-		const info = await uniqxMarketInstant.getOrderInfo(adaptCollectibles.address, token);
+		const info = await market.getOrderInfo(tokenAdapt.address, token);
 		assert.equal(info[0], ac.ACCOUNT1, 'unexpected owner');
 		const price = new BigNumber(info[1]);
 		price.should.be.bignumber.equal(ether(2));
@@ -218,8 +218,8 @@ contract('Testing token listing and updating - single', async function (rpc_acco
 
 	it('ACCOUNT1 should be able to update an adapt token listed by the SELLER', async function () {
 
-		const ret = await uniqxMarketInstant.update(
-			adaptCollectibles.address,
+		const ret = await market.update(
+			tokenAdapt.address,
 			token,
 			ether(3),
 			{
@@ -228,7 +228,7 @@ contract('Testing token listing and updating - single', async function (rpc_acco
 			}
 		).should.be.fulfilled;
 
-		const info = await uniqxMarketInstant.getOrderInfo(adaptCollectibles.address, token);
+		const info = await market.getOrderInfo(tokenAdapt.address, token);
 		assert.equal(info[0], ac.ACCOUNT1, 'unexpected owner');
 		const price = new BigNumber(info[1]);
 		price.should.be.bignumber.equal(ether(3));

@@ -6,18 +6,18 @@ import expectEvent from "../helpers/expectEvent";
 const moment = require('moment');
 import * as abiDecoder from 'abi-decoder';
 
-const AdaptCollectibles = artifacts.require("../../../adapt/contracts/AdaptCollectibles.sol");
-const UniqxMarketERC721 = artifacts.require('../../contracts/UniqxMarketERC721Instant.sol');
+const TokenAdapt = artifacts.require("../../../adapt/contracts/AdaptCollectibles.sol");
+const MarketUniqxInstant = artifacts.require('../../contracts/MarketUniqxInstant.sol');
 
-const AdaptCollectiblesJson = require("../../build/contracts/AdaptCollectibles.json");
-const UniqxMarketERC721Json = require('../../build/contracts/UniqxMarketERC721Instant.json');
+const TokenAdaptJson = require("../../build/contracts/AdaptCollectibles.json");
+const MarketUniqxInstantJson = require('../../build/contracts/MarketUniqxInstant.json');
 // MC: you don't need to import the JSON's explicitly, you can get them as AdaptCollectibles.abi
 
 contract('Testing FixedPrice listing - main flow', async function (rpc_accounts) {
 
 	const ac = accounts(rpc_accounts);
-	let uniqxMarket;
-	let adaptCollectibles;
+	let market;
+	let tokenAdapt;
 
 	const tokensCount = 11;
 	let tokens = [];
@@ -27,7 +27,7 @@ contract('Testing FixedPrice listing - main flow', async function (rpc_accounts)
 
 		console.log('Deploying the market contract...');
 
-		uniqxMarket = await UniqxMarketERC721.new(
+		market = await MarketUniqxInstant.new(
 			ac.MARKET_ADMIN_MSIG,
 			ac.MARKET_FEES_MSIG,
 			{
@@ -36,30 +36,30 @@ contract('Testing FixedPrice listing - main flow', async function (rpc_accounts)
 			}
 		).should.be.fulfilled;
 
-		console.log(`The market contract has been successfully deployed at ${uniqxMarket.address}`);
+		console.log(`The market contract has been successfully deployed at ${market.address}`);
 
 		// MC: we should change this to the generic ERC721 contract instead of ADAPT
 		// MC: this needs to work with any contract and this is the cleanest way to enforce
-		adaptCollectibles = await AdaptCollectibles.new(
+		tokenAdapt = await TokenAdapt.new(
 			ac.ADAPT_OWNER,
 			ac.ADAPT_ADMIN,
 			{ from: ac.OPERATOR, gas: 7000000 }
 		).should.be.fulfilled;
 
-		console.log(`The adapt token has been successfully deployed at ${adaptCollectibles.address}`);
+		console.log(`The adapt token has been successfully deployed at ${tokenAdapt.address}`);
 	});
 
 	it('should watch and parse the logs', async function () {
 
 		// market
-		abiDecoder.addABI(UniqxMarketERC721Json['abi']);
+		abiDecoder.addABI(MarketUniqxInstantJson['abi']);
 		// MC: is it worth having the same instance of the abiDecoder according to the problems we discovered on it ?
 
 		const marketFilter = web3.eth.filter(
 			{
 				fromBlock: 1,
 				toBlock: 'latest',
-				address: uniqxMarket.address,
+				address: market.address,
 			}
 		);
 
@@ -82,17 +82,17 @@ contract('Testing FixedPrice listing - main flow', async function (rpc_accounts)
 		});
 
 		// adapt
-		abiDecoder.addABI(AdaptCollectiblesJson['abi']);
+		abiDecoder.addABI(TokenAdaptJson['abi']);
 
-		const adaptCollectiblesFilter = web3.eth.filter(
+		const tokenAdaptFilter = web3.eth.filter(
 			{
 				fromBlock: 1,
 				toBlock: 'latest',
-				address: adaptCollectibles.address,
+				address: tokenAdapt.address,
 			}
 		);
 
-		adaptCollectiblesFilter.watch(async (error, result ) => {
+		tokenAdaptFilter.watch(async (error, result ) => {
 			if (error) {
 				console.log(error);
 				return;
@@ -104,7 +104,7 @@ contract('Testing FixedPrice listing - main flow', async function (rpc_accounts)
 	});
 
 	it('should mint some test tokens', async function () {
-		const ret = await adaptCollectibles.massMint(
+		const ret = await tokenAdapt.massMint(
 			ac.ADAPT_ADMIN,
 			'json hash',			// json hash
 			1,				        // start
@@ -117,8 +117,8 @@ contract('Testing FixedPrice listing - main flow', async function (rpc_accounts)
 
 	it('should register the adapt token', async function () {
 
-		const ret = await uniqxMarket.registerToken(
-			adaptCollectibles.address,
+		const ret = await market.registerToken(
+			tokenAdapt.address,
 			{
 				from: ac.MARKET_ADMIN_MSIG,
 				gas: 7000000
@@ -136,8 +136,8 @@ contract('Testing FixedPrice listing - main flow', async function (rpc_accounts)
 
 	it('should allow the market to escrow the adapt tokens', async function () {
 		// approve market to transfer all erc721 tokens hold by admin
-		await adaptCollectibles.setApprovalForAll(
-			uniqxMarket.address,
+		await tokenAdapt.setApprovalForAll(
+			market.address,
 			true,
 			{
 				from: ac.ADAPT_ADMIN,
@@ -150,12 +150,12 @@ contract('Testing FixedPrice listing - main flow', async function (rpc_accounts)
 	it('should be able to list 10 adapt tokens for sale - fixed price', async () => {
 
 		for (let i = 0; i < tokensCount - 1; i++) {
-			tokens[i] = await adaptCollectibles.tokenByIndex(i);
+			tokens[i] = await tokenAdapt.tokenByIndex(i);
 			prices[i] = ether(1);
 		}
 
-		const rec = await uniqxMarket.createMany(
-			adaptCollectibles.address,
+		const rec = await market.createMany(
+			tokenAdapt.address,
 			tokens,
 			prices,
 			{
@@ -173,7 +173,7 @@ contract('Testing FixedPrice listing - main flow', async function (rpc_accounts)
 
 	it('should mint 1 test token', async function () {
 
-		const ret = await adaptCollectibles.mint(
+		const ret = await tokenAdapt.mint(
 			ac.ADAPT_ADMIN,
 			'json hash',			// json hash
 			11,				        // copy
@@ -185,11 +185,11 @@ contract('Testing FixedPrice listing - main flow', async function (rpc_accounts)
 
 	it('should be able to list 1 token - fixed price', async () => {
 
-		tokens[10] = await adaptCollectibles.tokenByIndex(10);
+		tokens[10] = await tokenAdapt.tokenByIndex(10);
 		prices[10] = ether(1);
 
-		let rec = await uniqxMarket.create(
-			adaptCollectibles.address,
+		let rec = await market.create(
+			tokenAdapt.address,
 			tokens[10],
 			prices[10],
 			{ from: ac.ADAPT_ADMIN , gas: 7000000 }
@@ -202,8 +202,8 @@ contract('Testing FixedPrice listing - main flow', async function (rpc_accounts)
 	});
 
 	it('should be able to cancel 2 tokens', async () => {
-		const rec = await uniqxMarket.cancelMany(
-			adaptCollectibles.address,
+		const rec = await market.cancelMany(
+			tokenAdapt.address,
 			[tokens[0], tokens[1]],
 			{
 				from: ac.ADAPT_ADMIN ,
@@ -223,8 +223,8 @@ contract('Testing FixedPrice listing - main flow', async function (rpc_accounts)
 
 		const fourDaysLater = moment().add(4, 'days').unix();
 
-		let rec = await uniqxMarket.createMany(
-			adaptCollectibles.address,
+		let rec = await market.createMany(
+			tokenAdapt.address,
 			[ tokens[0] ],
 			[ prices[0] ],
 			{ from: ac.ADAPT_ADMIN , gas: 7000000 }
@@ -253,8 +253,8 @@ contract('Testing FixedPrice listing - main flow', async function (rpc_accounts)
 		console.log(`ownerBalanceBefore: ${ownerBalanceBefore.toString(10)}`);
 		console.log(`marketBalanceBefore: ${marketBalanceBefore.toString(10)}`);
 
-		const ret = await uniqxMarket.buyMany(
-			adaptCollectibles.address,
+		const ret = await market.buyMany(
+			tokenAdapt.address,
 			tokensToBuy,
 			{
 				from: ac.BUYER1,
@@ -266,7 +266,7 @@ contract('Testing FixedPrice listing - main flow', async function (rpc_accounts)
 		expectEvent.inLogs(ret.logs, 'LogBuyMany');
 
 		for (let token of tokensToBuy) {
-			const owner = await adaptCollectibles.ownerOf(token);
+			const owner = await tokenAdapt.ownerOf(token);
 			assert.equal(owner, ac.BUYER1, 'owner should be buyer1');
 		}
 

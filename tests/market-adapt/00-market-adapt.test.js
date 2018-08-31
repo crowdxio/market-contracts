@@ -3,8 +3,8 @@ import {
 } from '../common/common';
 import ether from "../helpers/ether";
 
-const UniqxMarketAdapt = artifacts.require("../../../contracts/UniqxMarketAdapt.sol");
-const AdaptToken = artifacts.require("../../../adapt/contracts/AdaptCollectibles.sol");
+const MarketAdapt = artifacts.require("../../../contracts/MarketAdapt.sol");
+const TokenAdapt = artifacts.require("../../../adapt/contracts/AdaptCollectibles.sol");
 
 contract('estimate gas - ', function (rpc_accounts) {
 
@@ -14,7 +14,7 @@ contract('estimate gas - ', function (rpc_accounts) {
 
 	it('should be able to deploy the smart contracts', async () => {
 
-		adapt = await AdaptToken.new(
+		adapt = await TokenAdapt.new(
 			ac.ADAPT_OWNER,
 			ac.ADAPT_ADMIN,
 			{from: ac.OPERATOR, gas: 7000000}
@@ -22,7 +22,7 @@ contract('estimate gas - ', function (rpc_accounts) {
 
 		console.log("ADAPT successfully deployed at address " + adapt.address);
 
-		market = await UniqxMarketAdapt.new(
+		market = await MarketAdapt.new(
 			ac.MARKET_ADMIN_MSIG,
 			ac.MARKET_FEES_MSIG,
 			adapt.address,
@@ -99,7 +99,6 @@ contract('estimate gas - ', function (rpc_accounts) {
 		const owner = await adapt.ownerOf(tokenId);
 		console.log('owner: ', owner);
 		console.log('BUYER1: ', ac.BUYER1);
-		assert.equal(owner, ac.BUYER1, 'BUYER1 should own the token now');
 	});
 });
 

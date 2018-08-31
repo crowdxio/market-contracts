@@ -5,8 +5,8 @@ import ether from "../helpers/ether";
 import expectEvent from "../helpers/expectEvent";
 import EVMRevert from "../../zeppelin/test/helpers/EVMRevert";
 
-const UniqxMarketAdapt = artifacts.require("../../../contracts/UniqxMarketAdapt.sol");
-const AdaptToken = artifacts.require("../../../adapt/contracts/AdaptCollectibles.sol");
+const MarketAdapt = artifacts.require("../../../contracts/MarketAdapt.sol");
+const TokenAdapt = artifacts.require("../../../adapt/contracts/AdaptCollectibles.sol");
 
 contract('Market - a simple walk-through the functionality', function (rpc_accounts) {
 
@@ -23,7 +23,7 @@ contract('Market - a simple walk-through the functionality', function (rpc_accou
 
 	it('should be able to deploy the smart contracts', async () => {
 
-		adapt = await AdaptToken.new(
+		adapt = await TokenAdapt.new(
 			ac.ADAPT_OWNER,
 			ac.ADAPT_ADMIN,
 			{ from: ac.OPERATOR, gas: 7000000 }
@@ -31,7 +31,7 @@ contract('Market - a simple walk-through the functionality', function (rpc_accou
 
 		console.log("ADAPT successfully deployed at address " + adapt.address);
 
-		market = await UniqxMarketAdapt.new(
+		market = await MarketAdapt.new(
 			ac.MARKET_ADMIN_MSIG,
 			ac.MARKET_FEES_MSIG,
 			adapt.address,

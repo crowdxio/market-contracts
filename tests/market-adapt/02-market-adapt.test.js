@@ -8,8 +8,10 @@ import latestTime from '../../zeppelin/test/helpers/latestTime';
 import { duration, increaseTimeTo } from '../../zeppelin/test/helpers/increaseTime';
 import * as abiDecoder from 'abi-decoder';
 
-const UniqxMarketAdapt = artifacts.require("../../../contracts/UniqxMarketAdapt.sol");
-const AdaptToken = artifacts.require("../../../adapt/contracts/AdaptCollectibles.sol");
+const MarketAdapt = artifacts.require("../../../contracts/MarketAdapt.sol");
+const TokenAdapt = artifacts.require("../../../adapt/contracts/AdaptCollectibles.sol");
+
+const MarketAdaptJson = require('../../build/contracts/MarketAdapt.json');
 
 contract('Adapt Market - test logging', function (rpc_accounts) {
 
@@ -26,7 +28,7 @@ contract('Adapt Market - test logging', function (rpc_accounts) {
 
 	it('should be able to deploy the smart contracts', async () => {
 
-		adapt = await AdaptToken.new(
+		adapt = await TokenAdapt.new(
 			ac.ADAPT_OWNER,
 			ac.ADAPT_ADMIN,
 			{ from: ac.OPERATOR, gas: 7000000 }
@@ -34,7 +36,7 @@ contract('Adapt Market - test logging', function (rpc_accounts) {
 
 		console.log("ADAPT successfully deployed at address " + adapt.address);
 
-		market = await UniqxMarketAdapt.new(
+		market = await MarketAdapt.new(
 			ac.MARKET_ADMIN_MSIG,
 			ac.MARKET_FEES_MSIG,
 			adapt.address,
@@ -46,7 +48,6 @@ contract('Adapt Market - test logging', function (rpc_accounts) {
 
 	it('should watch and parse the the logs', async function () {
 
-		const MarketAdaptJson = require('../../build/contracts/UniqxMarketAdapt.json');
 		abiDecoder.addABI(MarketAdaptJson['abi']);
 
 		const marketFilter = web3.eth.filter(

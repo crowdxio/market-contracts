@@ -7,7 +7,7 @@ import "../zeppelin/contracts/token/ERC721/ERC721BasicToken.sol";
 import { SafeMath } from "../zeppelin/contracts/math/SafeMath.sol";
 import { AdaptCollectibles } from "../adapt/contracts/AdaptCollectibles.sol";
 
-contract UniqxMarketAdapt is NoOwner, Pausable, ReentrancyGuard {
+contract MarketAdapt is NoOwner, Pausable, ReentrancyGuard {
 
 	using SafeMath for uint;
 

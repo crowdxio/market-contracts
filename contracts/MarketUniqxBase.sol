@@ -6,7 +6,7 @@ import "../zeppelin/contracts/ReentrancyGuard.sol";
 import {SafeMath} from "../zeppelin/contracts/math/SafeMath.sol";
 import {ERC721Token} from "../zeppelin/contracts/token/ERC721/ERC721Token.sol";
 
-contract UniqxMarketBase is NoOwner, Pausable, ReentrancyGuard {
+contract MarketUniqxBase is NoOwner, Pausable, ReentrancyGuard {
 
 	using SafeMath for uint;
 
