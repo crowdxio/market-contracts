@@ -127,7 +127,6 @@ async function parseUniqxInstantMarketEvent(event, timestamp) {
 	switch (name) {
 
 		case 'LogCreate': {
-
 			const token        = parameters[0].value;
 			const tokenId      = parameters[1].value;
 			const owner        = parameters[2].value;
@@ -146,7 +145,6 @@ async function parseUniqxInstantMarketEvent(event, timestamp) {
 		}
 
 		case 'LogCreateMany': {
-
 			const token         = parameters[0].value;
 			const tokenIds      = parameters[1].value;
 			const owners        = parameters[2].value;
@@ -161,22 +159,24 @@ async function parseUniqxInstantMarketEvent(event, timestamp) {
 			break;
 		}
 
-		case 'LogBuy': {
-			const token         = parameters[0].value;
-			const tokenId       = new BigNumber(parameters[1].value, 10).toString(16);
-			const buyer         = parameters[2].value;
-			console.log(`Token Sold: token=${token}, tokenId=0x${tokenId}, buyer=${buyer}, soldAt=${moment.unix(timestamp).utc().format()}`);
+		case 'LogUpdate': {
+			const token     = parameters[0].value;
+			const tokenId   = new BigNumber(parameters[1].value, 10).toString(16);
+			const newPrice  = parameters[2].value;
+
+			console.log(`Token Updated: token=${token}, tokenId=0x${tokenId}, newPrice=${newPrice}, updatedAt=${moment.unix(timestamp).utc().format()}`);
 			break;
+
 		}
 
-		case 'LogBuyMany': {
-			const token         = parameters[0].value;
-			const tokenIds      = parameters[1].value;
-			const buyer         = parameters[2].value;
+		case 'LogUpdateMany': {
+			const token     = parameters[0].value;
+			const tokenIds  = parameters[1].value;
+			const newPrices = parameters[2].value;
 			const tokensCount = tokenIds.length;
 			for(let i = 0; i < tokensCount; i++) {
 				const tokenId = new BigNumber(tokenIds[i], 10).toString(16);
-				console.log(`Token Sold: token=${token}, tokenId=0x${tokenId}, buyer=${buyer}, soldAt=${moment.unix(timestamp).utc().format()}`);
+				console.log(`Token Updated: token=${token}, tokenId=0x${tokenId}, newPrice=${newPrices[i]}, updatedAt=${moment.unix(timestamp).utc().format()}`);
 			}
 			break;
 		}
@@ -196,6 +196,26 @@ async function parseUniqxInstantMarketEvent(event, timestamp) {
 			for(let i = 0; i < tokensCount; i++) {
 				const tokenId = new BigNumber(tokenIds[i], 10).toString(16);
 				console.log(`Token Canceled: token=${token}, tokenId=0x${tokenId}, cancelledAt=${moment.unix(timestamp).utc().format()}`);
+			}
+			break;
+		}
+
+		case 'LogBuy': {
+			const token         = parameters[0].value;
+			const tokenId       = new BigNumber(parameters[1].value, 10).toString(16);
+			const buyer         = parameters[2].value;
+			console.log(`Token Sold: token=${token}, tokenId=0x${tokenId}, buyer=${buyer}, soldAt=${moment.unix(timestamp).utc().format()}`);
+			break;
+		}
+
+		case 'LogBuyMany': {
+			const token         = parameters[0].value;
+			const tokenIds      = parameters[1].value;
+			const buyer         = parameters[2].value;
+			const tokensCount   = tokenIds.length;
+			for(let i = 0; i < tokensCount; i++) {
+				const tokenId = new BigNumber(tokenIds[i], 10).toString(16);
+				console.log(`Token Sold: token=${token}, tokenId=0x${tokenId}, buyer=${buyer}, soldAt=${moment.unix(timestamp).utc().format()}`);
 			}
 			break;
 		}
@@ -221,13 +241,58 @@ async function parseUniqxAuctionMarketEvent(event, timestamp) {
 			const owners        = parameters[2].value;
 			const seller        = parameters[3].value;
 			const buyPrices     = parameters[4].value;
-			const endPrices     = parameters[5].value;
+			const startPrices   = parameters[5].value;
 			const endTimes      = parameters[6].value;
 
 			const tokensCount = tokenIds.length;
 			for(let i = 0; i < tokensCount; i++) {
 				const tokenId = new BigNumber(tokenIds[i], 10).toString(16);
-				console.log(`Token Listed Auction: token=${token}, tokenId=0x${tokenId}, listedAt=${moment.unix(timestamp).utc().format()}, owner=${owners[i]}, seller=${seller}, buyPrices=${buyPrices[i]}, endPrice=${endPrices[i]}, endTime=${moment.unix(endTimes[i]).utc().format()}`);
+				console.log(`Token Listed Auction: token=${token}, tokenId=0x${tokenId}, listedAt=${moment.unix(timestamp).utc().format()}, owner=${owners[i]}, seller=${seller}, buyPrices=${buyPrices[i]}, startPrice=${startPrices[i]}, endTime=${moment.unix(endTimes[i]).utc().format()}`);
+			}
+			break;
+		}
+
+		case 'LogUpdate': {
+			const token             = parameters[0].value;
+			const tokenId           = new BigNumber(parameters[1].value, 10).toString(16);
+			const newBuyPrice       = parameters[2].value;
+			const newStartPrice     = parameters[3].value;
+			const newEndTime        = parameters[4].value;
+
+			console.log(`Token Updated: token=${token}, tokenId=0x${tokenId}, newBuyPrice=${newBuyPrice}, newStartPrice=${newStartPrice}, newEndTime=${newEndTime}, updatedAt=${moment.unix(timestamp).utc().format()}`);
+			break;
+		}
+
+		case 'LogUpdateMany': {
+			const token             = parameters[0].value;
+			const tokenIds          = parameters[1].value;
+			const newBuyPrices      = parameters[2].value;
+			const newStartPrices    = parameters[3].value;
+			const newEndTimes       = parameters[4].value;
+
+			const tokensCount       = tokenIds.length;
+			for(let i = 0; i < tokensCount; i++) {
+				const tokenId = new BigNumber(tokenIds[i], 10).toString(16);
+				console.log(`Token Updated: token=${token}, tokenId=0x${tokenId}, newPrice=${newBuyPrices[i]}, newStartPrice=${newStartPrices[i]}, newEndTime=${newEndTimes[i]}, updatedAt=${moment.unix(timestamp).utc().format()}`);
+			}
+			break;
+		}
+
+		case 'LogCancel': {
+			const token         = parameters[0].value;
+			const tokenId = new BigNumber(parameters[1].value, 10).toString(16);
+			console.log(`Token Canceled: token=${token}, tokenId=0x${tokenId}, cancelledAt=${moment.unix(timestamp).utc().format()}`);
+			break;
+		}
+
+		case 'LogCancelMany': {
+			const token         = parameters[0].value;
+			const tokenIds      = parameters[1].value;
+
+			const tokensCount = tokenIds.length;
+			for(let i = 0; i < tokensCount; i++) {
+				const tokenId = new BigNumber(tokenIds[i], 10).toString(16);
+				console.log(`Token Canceled: token=${token}, tokenId=0x${tokenId}, cancelledAt=${moment.unix(timestamp).utc().format()}`);
 			}
 			break;
 		}
@@ -253,18 +318,6 @@ async function parseUniqxAuctionMarketEvent(event, timestamp) {
 			const token         = parameters[0].value;
 			const tokenId       = new BigNumber(parameters[1].value, 10).toString(16);
 			console.log(`Token Unsold: token=${token}, tokenId=0x${tokenId}, unsoldAt=${moment.unix(timestamp).utc().format()}`);
-			break;
-		}
-
-		case 'LogCancelMany': {
-			const token         = parameters[0].value;
-			const tokenIds      = parameters[1].value;
-
-			const tokensCount = tokenIds.length;
-			for(let i = 0; i < tokensCount; i++) {
-				const tokenId = new BigNumber(tokenIds[i], 10).toString(16);
-				console.log(`Token Canceled: token=${token}, tokenId=0x${tokenId}, cancelledAt=${moment.unix(timestamp).utc().format()}`);
-			}
 			break;
 		}
 

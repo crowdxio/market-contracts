@@ -459,6 +459,9 @@ contract MarketUniqxAuction is MarketUniqxBase
 
 		require(now < order.endTime, "Auction must be open");
 		require(order.highestBid == 0, "Only zero bids auctions can be updated");
+		require(newBuyPrice > 0, "Buy price must be greater than zero");
+		require(newStartPrice <= newBuyPrice, "Start price must be less than or equal to the buy price");
+		require(newEndTime > now + AUCTION_MIN_DURATION, "A minimum auction duration is enforced by the market");
 
 		order.buyPrice      = newBuyPrice;
 		order.startPrice    = newStartPrice;

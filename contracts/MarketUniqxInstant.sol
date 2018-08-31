@@ -347,6 +347,8 @@ contract MarketUniqxInstant is MarketUniqxBase {
 			"Only the owner or the seller can update a token"
 		);
 
+		require(newPrice > 0, "The new price must be greater than zero");
+
 		order.buyPrice = newPrice;
 	}
 

@@ -92,7 +92,7 @@ contract('Testing auction - bid - buy - single', async function (rpc_accounts) {
 		).should.be.fulfilled;
 	});
 
-	it('ADAPT_ADMIN should be able to list 10 adapt tokens for sale - auction', async () => {
+	it('ADAPT_ADMIN should be able to list the tokens', async () => {
 		await market.createMany(
 			tokenAdapt.address,
 			tokens,
