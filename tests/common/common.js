@@ -235,6 +235,20 @@ async function parseUniqxAuctionMarketEvent(event, timestamp) {
 
 	switch (name) {
 
+		case 'LogCreate': {
+			const token         = parameters[0].value;
+			const tokenId = new BigNumber(parameters[1].value, 10).toString(16);
+			const owner         = parameters[2].value;
+			const seller        = parameters[3].value;
+			const buyPrice      = parameters[4].value;
+			const startPrice    = parameters[5].value;
+			const endTime       = parameters[6].value;
+
+			console.log(`Token Listed Auction: token=${token}, tokenId=0x${tokenId}, listedAt=${moment.unix(timestamp).utc().format()}, owner=${owner}, seller=${seller}, buyPrices=${buyPrice}, startPrice=${startPrice}, endTime=${moment.unix(endTimes[i]).utc().format()}`);
+			break;
+		}
+
+
 		case 'LogCreateMany': {
 			const token         = parameters[0].value;
 			const tokenIds      = parameters[1].value;
