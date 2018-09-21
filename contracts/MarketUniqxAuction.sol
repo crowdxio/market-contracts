@@ -504,7 +504,6 @@ contract MarketUniqxAuction is MarketUniqxBase
 
 		require(
 			msg.sender == order.owner ||
-			tokenInstance.getApproved(tokenId) == msg.sender ||
 			tokenInstance.isApprovedForAll(order.owner, msg.sender),
 			"Only the owner or the seller can update a token"
 		);
@@ -584,7 +583,6 @@ contract MarketUniqxAuction is MarketUniqxBase
 
 		require(
 			msg.sender == order.owner ||
-			tokenInstance.getApproved(tokenId) == msg.sender ||
 			tokenInstance.isApprovedForAll(order.owner, msg.sender),
 			"Only the owner or the seller can cancel a token"
 		);

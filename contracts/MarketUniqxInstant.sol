@@ -349,7 +349,6 @@ contract MarketUniqxInstant is MarketUniqxBase {
 
 		require(
 			order.owner == msg.sender ||
-			tokenInstance.getApproved(tokenId) == msg.sender ||
 			tokenInstance.isApprovedForAll(order.owner, msg.sender),
 			"Only the owner or the seller can update a token"
 		);
@@ -404,7 +403,6 @@ contract MarketUniqxInstant is MarketUniqxBase {
 
 		require(
 			order.owner == msg.sender ||
-			tokenInstance.getApproved(tokenId) == msg.sender ||
 			tokenInstance.isApprovedForAll(order.owner, msg.sender),
 			"Only the owner or the seller can cancel a token"
 		);
