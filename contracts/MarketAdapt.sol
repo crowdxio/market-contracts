@@ -12,7 +12,7 @@ contract MarketAdapt is NoOwner, Pausable, ReentrancyGuard {
 	using SafeMath for uint;
 
 	// constants
-	uint public constant RESERVATION_TIME 	= 3 days;
+	uint public constant RESERVATION_TIME 	= 7 days;
 	uint public constant MIN_DONATION 		= 10000000000000 wei;
 	uint public constant MARKET_FEE_NUM 	= 4;
 	uint public constant MARKET_FEE_DEN 	= 100;
