@@ -6,5 +6,4 @@ build/
 *allFiredEvents*
 */**/*.abi
 */**/*.bin
-scripts/**/*.js
-scripts/**/*.map
+*.swp

@@ -1,10 +1,10 @@
 import {
-	accounts, assert, should, BigNumber, Bluebird
-} from './common/common';
-import ether from "./helpers/ether";
+	accounts, assert, should, BigNumber, Bluebird, OrderStatus
+} from '../common/common';
+import ether from "../helpers/ether";
 
-const UniqxMarketAdapt = artifacts.require("../contracts/UniqxMarketAdapt.sol");
-const AdaptToken = artifacts.require("../adapt/contracts/AdaptCollectibles.sol");
+const MarketAdapt = artifacts.require("../../../contracts/MarketAdapt.sol");
+const TokenAdapt = artifacts.require("../../../adapt/contracts/AdaptCollectibles.sol");
 
 contract('estimate gas - ', function (rpc_accounts) {
 
@@ -14,7 +14,7 @@ contract('estimate gas - ', function (rpc_accounts) {
 
 	it('should be able to deploy the smart contracts', async () => {
 
-		adapt = await AdaptToken.new(
+		adapt = await TokenAdapt.new(
 			ac.ADAPT_OWNER,
 			ac.ADAPT_ADMIN,
 			{from: ac.OPERATOR, gas: 7000000}
@@ -22,7 +22,7 @@ contract('estimate gas - ', function (rpc_accounts) {
 
 		console.log("ADAPT successfully deployed at address " + adapt.address);
 
-		market = await UniqxMarketAdapt.new(
+		market = await MarketAdapt.new(
 			ac.MARKET_ADMIN_MSIG,
 			ac.MARKET_FEES_MSIG,
 			adapt.address,
@@ -63,7 +63,7 @@ contract('estimate gas - ', function (rpc_accounts) {
 			{ from: ac.ADAPT_ADMIN }
 		).should.be.fulfilled;
 
-		let rec = await market.make(
+		let rec = await market.createMany(
 			tokens,
 			prices,
 			reservations,
@@ -72,10 +72,34 @@ contract('estimate gas - ', function (rpc_accounts) {
 
 		console.log('Publish complete - Gas Used = ' + rec.receipt.gasUsed);
 
-		let tokenStatus = await market.getOrderStatus(tokens[0]);
+		let orderStatus = await market.getOrderStatus(tokens[0]);
+		console.log('Order status: ', orderStatus);
 
-		console.log('token status ', JSON.stringify(tokenStatus));
-	})
+	});
+
+	it('BUYER1 should be able to donate more than is required and take the first token', async function () {
+
+		const tokenId = await adapt.tokenByIndex(0);
+
+		let result = await market.buy(tokenId, { from: ac.BUYER1 , value: ether(1.1), gas: 7000000 }).should.be.fulfilled;
+
+		console.log('Take order completed! Gas used: ' + result.receipt.gasUsed);
+
+		// order status should be Sold
+		//const orderStatus = await market.getOrderStatus(tokenId);
+		//console.log('Order status: ', JSON.stringify(orderStatus));
+		//assert.equal(orderStatus, OrderStatus.Sold, 'The order status should be \'Sold\' now');
+
+		//const orderInfo = await market.getOrderInfo(tokenId);
+		//console.log('order info:', JSON.stringify(orderInfo));
+		//orderInfo[3].should.be.bignumber.equal(ether(1.1));
+		//orderInfo[4].should.be.bignumber.greaterThan(0);
+
+		// BUYER1 should own the token now
+		const owner = await adapt.ownerOf(tokenId);
+		console.log('owner: ', owner);
+		console.log('BUYER1: ', ac.BUYER1);
+	});
 });
 
 
