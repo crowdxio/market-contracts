@@ -46,7 +46,7 @@
 		"eth-gas-reporter": "^0.1.10",
 		"ethereumjs-testrpc-sc": "^6.1.2",
 		"ganache-cli": "6.1.0",
-		"solidity-coverage": "^0.4.14",
+		"solidity-coverage": "^0.5.11",
 		"truffle": "4.1.11"
 	}
 }
