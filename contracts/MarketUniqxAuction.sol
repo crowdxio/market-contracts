@@ -67,13 +67,6 @@ contract MarketUniqxAuction is MarketUniqxBase {
 		uint bid
 	);
 
-	event LogBidMany(
-		address token,
-		uint[] tokenIds,
-		address bidder,
-		uint[] bids
-	);
-
 	event LogRetake(
 		address token,
 		uint tokenId
@@ -216,8 +209,6 @@ contract MarketUniqxAuction is MarketUniqxBase {
 			tokenId,
 			msg.value
 		);
-
-		emit LogBid(token, tokenId, msg.sender, msg.value);
 	}
 
 	function cancel(
