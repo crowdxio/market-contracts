@@ -74,7 +74,8 @@ contract('Testing auction functionality', async function (rpc_accounts) {
 
 		console.log(`GAS - Register Token: ${ret.receipt.gasUsed}`);
 
-		expectEvent.inLogs(ret.logs, 'LogRegisterToken');
+		ret.logs.length.should.be.equal(1);
+		await expectEvent.inLog(ret.logs[0], 'LogRegisterToken', { token: tokenAdapt.address });
 
 		const status = await market.getTokenContractStatus(tokenAdapt.address);
 		assert.equal(status[0], true, 'unexpected registration status - should be registered');
@@ -127,7 +128,11 @@ contract('Testing auction functionality', async function (rpc_accounts) {
 			}
 		).should.be.fulfilled;
 
-		expectEvent.inLogs(rec.logs, 'LogCancelMany');
+		rec.logs.length.should.be.equal(1);
+		await expectEvent.inLog(rec.logs[0], 'LogCancelMany', {
+			token: tokenAdapt.address,
+			tokenIds: [ tokens[0] ]
+		});
 
 		const owner = await tokenAdapt.ownerOf(tokens[0]);
 		assert.equal(owner, ac.ADAPT_ADMIN, 'unexpected owner');
@@ -223,7 +228,13 @@ contract('Testing auction functionality', async function (rpc_accounts) {
 			}
 		).should.be.fulfilled;
 
-		expectEvent.inLogs(ret.logs, 'LogBid');
+		ret.logs.length.should.be.equal(1);
+		await expectEvent.inLog(ret.logs[0], 'LogBid', {
+			token: tokenAdapt.address,
+			tokenId: tokens[1],
+			bidder: ac.BUYER1,
+			bid: bid
+		});
 
 		const info = await market.getOrderInfo(tokenAdapt.address, tokens[1]);
 		console.log(`order info: ${JSON.stringify(info, null, '\t')}`);
@@ -287,7 +298,13 @@ contract('Testing auction functionality', async function (rpc_accounts) {
 			}
 		).should.be.fulfilled;
 
-		expectEvent.inLogs(ret.logs, 'LogBid');
+		ret.logs.length.should.be.equal(1);
+		await expectEvent.inLog(ret.logs[0], 'LogBid', {
+			token: tokenAdapt.address,
+			tokenId: tokens[1],
+			bidder: ac.BUYER2,
+			bid: bid
+		});
 
 		const info = await market.getOrderInfo(tokenAdapt.address, tokens[1]);
 		console.log(`order info: ${JSON.stringify(info, null, '\t')}`);
@@ -310,7 +327,13 @@ contract('Testing auction functionality', async function (rpc_accounts) {
 			}
 		).should.be.fulfilled;
 
-		expectEvent.inLogs(ret.logs, 'LogBid');
+		ret.logs.length.should.be.equal(1);
+		await expectEvent.inLog(ret.logs[0], 'LogBid', {
+			token: tokenAdapt.address,
+			tokenId: tokens[1],
+			bidder: ac.BUYER2,
+			bid: bid
+		});
 
 		const info = await market.getOrderInfo(tokenAdapt.address, tokens[1]);
 		console.log(`order info: ${JSON.stringify(info, null, '\t')}`);
@@ -334,8 +357,18 @@ contract('Testing auction functionality', async function (rpc_accounts) {
 			}
 		).should.be.fulfilled;
 
-		expectEvent.inLogs(ret.logs, 'LogBid');
-		expectEvent.inLogs(ret.logs, 'LogBuy');
+		ret.logs.length.should.be.equal(2);
+		await expectEvent.inLog(ret.logs[0], 'LogBid', {
+			token: tokenAdapt.address,
+			tokenId: tokens[1],
+			bidder: ac.BUYER3,
+			bid: bid
+		});
+		await expectEvent.inLog(ret.logs[1], 'LogBuy', {
+			token: tokenAdapt.address,
+			tokenId: tokens[1],
+			buyer: ac.BUYER3
+		});
 
 		const owner = await tokenAdapt.ownerOf(tokens[1]);
 		assert.equal(owner, ac.BUYER3, 'unexpected owner');
@@ -365,9 +398,10 @@ contract('Testing auction functionality', async function (rpc_accounts) {
 		const bid = new BigNumber(ether(1.5));
 		const overall = new BigNumber(ether(3));
 
+		const tokens_ = [tokens[2], tokens[3]];
 		const ret = await market.bidMany(
 			tokenAdapt.address,
-			[tokens[2], tokens[3]],
+			tokens_,
 			[bid, bid],
 			{
 				from: ac.BUYER3,
@@ -376,7 +410,15 @@ contract('Testing auction functionality', async function (rpc_accounts) {
 			}
 		).should.be.fulfilled;
 
-		expectEvent.inLogs(ret.logs, 'LogBid');
+		ret.logs.length.should.be.equal(2);
+		for (let i = 0; i < 2; i++) {
+			await expectEvent.inLog(ret.logs[i], 'LogBid', {
+				token: tokenAdapt.address,
+				tokenId: tokens_[i],
+				bidder: ac.BUYER3,
+				bid: bid
+			});
+		}
 
 		let info = await market.getOrderInfo(tokenAdapt.address, tokens[2]);
 		let highestBid = new BigNumber(info[5]);
@@ -408,16 +450,24 @@ contract('Testing auction functionality', async function (rpc_accounts) {
 
 	it('BUYER3 can take the tokens he won', async function () {
 
+		const tokens_ = [tokens[2], tokens[3]];
 		const ret = await market.completeMany(
 			tokenAdapt.address,
-			[tokens[2], tokens[3]],
+			tokens_,
 			{
 				from: ac.BUYER3,
 				gas: 7000000
 			}
 		).should.be.fulfilled;
 
-		expectEvent.inLogs(ret.logs, 'LogBuy');
+		ret.logs.length.should.be.equal(2);
+		for (let i = 0; i < 2; i++) {
+			await expectEvent.inLog(ret.logs[i], 'LogBuy', {
+				token: tokenAdapt.address,
+				tokenId: tokens_[i],
+				buyer: ac.BUYER3
+			});
+		}
 
 		let owner = await tokenAdapt.ownerOf(tokens[2]);
 		assert.equal(owner, ac.BUYER3, 'unexpected owner');
@@ -438,7 +488,13 @@ contract('Testing auction functionality', async function (rpc_accounts) {
 			}
 		).should.be.fulfilled;
 
-		expectEvent.inLogs(ret.logs, 'LogRetake');
+		ret.logs.length.should.be.equal(tokens.length - 4);
+		for (let i = 0; i < tokens.length - 4; i++) {
+			await expectEvent.inLog(ret.logs[i], 'LogRetake', {
+				token: tokenAdapt.address,
+				tokenId: tokens[4 + i],
+			});
+		}
 
 		for(let i = 4; i < tokensCount; i++) {
 			let owner = await tokenAdapt.ownerOf(tokens[i]);

@@ -4,7 +4,7 @@ const BigNumber = web3.BigNumber;
 import * as _ from 'lodash';
 
 
-const BNtoBigNumber = (obj) => {
+const BNtoBigNumberIfAny = (obj) => {
   if (!obj) {
     return undefined;
   }
@@ -15,7 +15,7 @@ const BNtoBigNumber = (obj) => {
 
   if (Array.isArray(obj)) {
     for (let i = 0; i < obj.length; i++) {
-      obj[i] = BNtoBigNumber(obj[i]);
+      obj[i] = BNtoBigNumberIfAny(obj[i]);
     }
     return obj;
   }
@@ -23,28 +23,31 @@ const BNtoBigNumber = (obj) => {
   return obj;
 };
 
-const parseBNtoBigNumber = (obj) => {
+const normalizeBNToBigNumber = (obj) => {
 	Object.keys(obj).forEach(function(key) {
-		obj[key] = BNtoBigNumber(obj[key]);
+		obj[key] = BNtoBigNumberIfAny(obj[key]);
 	})
+};
+
+const isEqualArgs = (args1, args2) => {
+	normalizeBNToBigNumber(args1);
+	normalizeBNToBigNumber(args2);
+
+	return _.isEqual(args1, args2);
 };
 
 const inLogs = async (logs, eventName, args) => {
   const event = logs.find(e => e.event === eventName);
   assert.exists(event);
 
-  parseBNtoBigNumber(event.args);
   if (args) {
-	  assert.isTrue(_.isEqual(args, event.args));
+	  assert.isTrue(isEqualArgs(args, event.args));
   }
-
 };
 
 const inLog = async (log, eventName, args) => {
-	assert.equal(log.event, eventName);
-
-	parseBNtoBigNumber(log.args);
-	assert.isTrue(_.isEqual(args, log.args));
+	assert.equal(log.event, eventName, `Unexpected arguments in ${log.event}. Expected ${eventName}.`);
+	assert.isTrue(isEqualArgs(args, log.args), `Unexpected arguments in ${log.args}. Expected ${args}.`);
 };
 
 

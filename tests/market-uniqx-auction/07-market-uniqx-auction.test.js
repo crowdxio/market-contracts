@@ -69,7 +69,8 @@ contract('Testing buy now - single', async function (rpc_accounts) {
 			}
 		).should.be.fulfilled;
 
-		expectEvent.inLogs(ret.logs, 'LogRegisterToken');
+		ret.logs.length.should.be.equal(1);
+		await expectEvent.inLog(ret.logs[0], 'LogRegisterToken', { token: tokenAdapt.address });
 
 		console.log(`GAS - Register Token: ${ret.receipt.gasUsed}`);
 	});
@@ -131,7 +132,18 @@ contract('Testing buy now - single', async function (rpc_accounts) {
 			}
 		).should.be.fulfilled;
 
-		expectEvent.inLogs(ret.logs, 'LogBuy');
+		ret.logs.length.should.be.equal(2);
+		await expectEvent.inLog(ret.logs[0], 'LogBid', {
+			token: tokenAdapt.address,
+			tokenId: token,
+			bidder: ac.BUYER1,
+			bid: priceToPay
+		});
+		await expectEvent.inLog(ret.logs[1], 'LogBuy', {
+			token: tokenAdapt.address,
+			tokenId: token,
+			buyer: ac.BUYER1
+		});
 
 		// TODO: get these from contract
 		const marketFee = priceToPay.dividedToIntegerBy(100);

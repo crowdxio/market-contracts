@@ -1,5 +1,5 @@
 import {
-	accounts, assert, should, BigNumber, Bluebird
+	accounts, assert, should, BigNumber, Bluebird, OrderStatus
 } from '../common/common';
 import ether from "../helpers/ether";
 import expectEvent from "../helpers/expectEvent";
@@ -67,7 +67,7 @@ contract('Market - a simple walk-through the functionality', function (rpc_accou
 			tokens[i] = await adapt.tokenByIndex(i);
 			console.log('token: ', tokens[i].toString(10));
 			prices[i] = ether(1);
-			reservations[i] = 0x0;
+			reservations[i] = '0x0000000000000000000000000000000000000000';
 		}
 	});
 
@@ -92,7 +92,14 @@ contract('Market - a simple walk-through the functionality', function (rpc_accou
 		let ownerToken1 = await adapt.ownerOf(tokens[0]);
 		assert.equal(ownerToken1, market.address, 'MARKET should tmp own the token');
 
-		await expectEvent.inLogs(logs, 'LogCreateMany');
+		logs.length.should.be.equal(1);
+		await expectEvent.inLog(logs[0], 'LogCreateMany', {
+			tokenIds: [ tokens[0], tokens[1], tokens[2] ],
+			buyPrices: [ prices[0], prices[1], prices[2] ],
+			reservations: [ reservations[0], reservations[1], reservations[2] ],
+			owners: Array(...Array(3)).map(() =>  ac.ADAPT_ADMIN),
+			seller: ac.ADAPT_ADMIN,
+		});
 	});
 
 	it('should be able to fulfill a valid take request', async () => {
@@ -105,7 +112,12 @@ contract('Market - a simple walk-through the functionality', function (rpc_accou
 			{ from: ac.BUYER1, value: prices[0] }
 		).should.be.fulfilled;
 
-		await expectEvent.inLogs(logs, 'LogBuy');
+		logs.length.should.be.equal(1);
+		await expectEvent.inLog(logs[0], 'LogBuy', {
+			tokenId: tokens[0],
+			buyer: ac.BUYER1,
+			price: prices[0]
+		});
 
 		let ownerToken1 = await adapt.ownerOf(tokens[0]);
 		assert.equal(ownerToken1, ac.BUYER1, 'BUYER1 should now be the owner of token1');
@@ -134,12 +146,20 @@ contract('Market - a simple walk-through the functionality', function (rpc_accou
 		let balanceMarketFees1 = await pGetBalance(ac.MARKET_FEES_MSIG);
 		let balanceAdaptAdmin1 = await pGetBalance(ac.ADAPT_ADMIN);
 
+		const tokens_ = [ tokens[1], tokens[2] ];
 		const { logs } = await market.buyMany(
-			[ tokens[1], tokens[2] ],
+			tokens_,
 			{ from: ac.BUYER1, value: ether(2) }
 		).should.be.fulfilled;
 
-		await expectEvent.inLogs(logs, 'LogBuy');
+		logs.length.should.be.equal(2);
+		for (let i = 0; i < 2; i++) {
+			await expectEvent.inLog(logs[i], 'LogBuy', {
+				tokenId: tokens_[i],
+				buyer: ac.BUYER1,
+				price: ether(1)
+			});
+		}
 
 		let ownerToken1 = await adapt.ownerOf(tokens[1]);
 		assert.equal(ownerToken1, ac.BUYER1, 'BUYER1 should now be the owner of token1');
@@ -212,7 +232,10 @@ contract('Market - a simple walk-through the functionality', function (rpc_accou
 			{ from: ac.ADAPT_ADMIN }
 		).should.be.fulfilled;
 
-		await expectEvent.inLogs(logs, 'LogCancelMany');
+		logs.length.should.be.equal(1);
+		await expectEvent.inLog(logs[0], 'LogCancelMany', {
+			tokens: [ tokens[3] ]
+		});
 
 		ownerToken3 = await adapt.ownerOf(tokens[3]);
 		assert.equal(ownerToken3, ac.ADAPT_ADMIN, 'ADAPT_ADMIN should now own the item');
@@ -257,7 +280,10 @@ contract('Market - a simple walk-through the functionality', function (rpc_accou
 			{ from: ac.ACCOUNT3 , gas: 7000000 }
 		).should.be.fulfilled;
 
-		await expectEvent.inLogs(logs, 'LogCancelMany');
+		logs.length.should.be.equal(1);
+		await expectEvent.inLog(logs[0], 'LogCancelMany', {
+			tokens: [ tokens[6] ]
+		});
 
 		ownerToken = await adapt.ownerOf(tokens[6]);
 		assert.equal(ownerToken, ac.ADAPT_ADMIN, 'the original owner(ac.ADAPT_ADMIN) own the token');

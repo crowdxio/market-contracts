@@ -63,7 +63,10 @@ contract('Testing cancel functionality - single', async function (rpc_accounts) 
 			}
 		).should.be.fulfilled;
 
-		expectEvent.inLogs(ret.logs, 'LogRegisterToken');
+		ret.logs.length.should.be.equal(1);
+		await expectEvent.inLog(ret.logs[0], 'LogRegisterToken', {
+			token: tokenAdapt.address
+		});
 
 		console.log(`GAS - Register Token: ${ret.receipt.gasUsed}`);
 	});
@@ -119,7 +122,12 @@ contract('Testing cancel functionality - single', async function (rpc_accounts) 
 			}
 		).should.be.fulfilled;
 
-		expectEvent.inLogs(ret.logs, 'LogCancel');
+		ret.logs.length.should.be.equal(1);
+		await expectEvent.inLog(ret.logs[0], 'LogCancel', {
+			token: tokenAdapt.address,
+			tokenId: token
+		});
+
 
 		const owner = await tokenAdapt.ownerOf(token);
 		assert.equal(owner, ac.ADAPT_ADMIN, 'unexpected owner - should be ADAPT_ADMIN');

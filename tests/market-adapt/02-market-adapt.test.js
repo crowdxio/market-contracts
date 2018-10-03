@@ -103,7 +103,7 @@ contract('Adapt Market - test logging', function (rpc_accounts) {
 		for (let i = 0; i < tokesCount; i++) {
 			tokens[i] = await adapt.tokenByIndex(i);
 			prices[i] = ether(1);
-			reservations[i] = 0x0;
+			reservations[i] = '0x0000000000000000000000000000000000000000';
 		}
 		reservations[3] = ac.BUYER2;
 		reservations[4] = ac.BUYER2;
@@ -118,7 +118,14 @@ contract('Adapt Market - test logging', function (rpc_accounts) {
 		let ownerToken1 = await adapt.ownerOf(tokens[0]);
 		assert.equal(ownerToken1, market.address, 'MARKET should tmp own the token');
 
-		await expectEvent.inLogs(logs, 'LogCreateMany');
+		logs.length.should.be.equal(1);
+		await expectEvent.inLog(logs[0], 'LogCreateMany', {
+			tokenIds: tokens,
+			buyPrices: prices,
+			reservations: reservations,
+			owners: Array(...Array(tokens.length)).map(() =>  ac.ADAPT_ADMIN),
+			seller: ac.ADAPT_ADMIN,
+		});
 	});
 
 	it('should be able to cancel 2 tokens', async () => {

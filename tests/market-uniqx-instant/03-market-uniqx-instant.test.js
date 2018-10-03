@@ -3,7 +3,6 @@ import {
 } from '../common/common';
 import ether from "../helpers/ether";
 import expectEvent from "../helpers/expectEvent";
-const moment = require('moment');
 import EVMRevert from "../../zeppelin/test/helpers/EVMRevert";
 
 const TokenAdapt = artifacts.require("../../../adapt/contracts/AdaptCollectibles.sol");
@@ -67,7 +66,10 @@ contract('Testing buy now functionality - many', async function (rpc_accounts) {
 
 		console.log(`GAS - Register Token: ${ret.receipt.gasUsed}`);
 
-		expectEvent.inLogs(ret.logs, 'LogRegisterToken');
+		ret.logs.length.should.be.equal(1);
+		await expectEvent.inLog(ret.logs[0], 'LogRegisterToken', {
+			token: tokenAdapt.address
+		});
 
 		const status = await market.getTokenContractStatus(tokenAdapt.address);
 		assert.equal(status[0], true, 'unexpected registration status - should be registered');
@@ -167,7 +169,12 @@ contract('Testing buy now functionality - many', async function (rpc_accounts) {
 
 		console.log(`GAS - Buy 10 adapt tokens: ${ret.receipt.gasUsed}`);
 
-		expectEvent.inLogs(ret.logs, 'LogBuyMany');
+		ret.logs.length.should.be.equal(1);
+		await expectEvent.inLog(ret.logs[0], 'LogBuyMany', {
+			token: tokenAdapt.address,
+			tokenIds: tokens,
+			buyer: ac.BUYER1,
+		});
 
 		// TODO: get these from contract
 		const marketFee = priceToPay.dividedToIntegerBy(100);

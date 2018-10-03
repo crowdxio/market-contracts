@@ -24,7 +24,7 @@ contract MarketUniqxBase is Pausable, ReentrancyGuard {
 	event LogEnableTokenOrders(address token);
 	event LogDisableTokenOrders(address token);
 
-	event LogCancel(address token, uint tokenIds);
+	event LogCancel(address token, uint tokenId);
 	event LogCancelMany(address token, uint[] tokenIds);
 
 	event LogBuy(address token, uint tokenId, address buyer);

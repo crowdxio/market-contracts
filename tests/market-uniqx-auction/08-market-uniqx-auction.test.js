@@ -147,7 +147,13 @@ contract('Testing auction - bid - buy - single', async function (rpc_accounts) {
 			}
 		).should.be.fulfilled;
 
-		expectEvent.inLogs(ret.logs, 'LogBid');
+		ret.logs.length.should.be.equal(1);
+		await expectEvent.inLog(ret.logs[0], 'LogBid', {
+			token: tokenAdapt.address,
+			tokenId: tokens[0],
+			bidder: ac.BUYER1,
+			bid:bid
+		});
 
 		const info = await market.getOrderInfo(tokenAdapt.address, tokens[0]);
 		console.log(`order info: ${JSON.stringify(info, null, '\t')}`);
@@ -197,7 +203,14 @@ contract('Testing auction - bid - buy - single', async function (rpc_accounts) {
 			}
 		).should.be.fulfilled;
 
-		expectEvent.inLogs(ret.logs, 'LogBid');
+		ret.logs.length.should.be.equal(1);
+		await expectEvent.inLog(ret.logs[0], 'LogBid', {
+			token: tokenAdapt.address,
+			tokenId: tokens[0],
+			bidder: ac.BUYER2,
+			bid:bid
+		});
+
 
 		const info = await market.getOrderInfo(tokenAdapt.address, tokens[0]);
 		console.log(`order info: ${JSON.stringify(info, null, '\t')}`);
@@ -219,7 +232,13 @@ contract('Testing auction - bid - buy - single', async function (rpc_accounts) {
 			}
 		).should.be.fulfilled;
 
-		expectEvent.inLogs(ret.logs, 'LogBid');
+		ret.logs.length.should.be.equal(1);
+		await expectEvent.inLog(ret.logs[0], 'LogBid', {
+			token: tokenAdapt.address,
+			tokenId: tokens[0],
+			bidder: ac.BUYER2,
+			bid:bid
+		});
 
 		const info = await market.getOrderInfo(tokenAdapt.address, tokens[0]);
 		console.log(`order info: ${JSON.stringify(info, null, '\t')}`);
@@ -242,8 +261,18 @@ contract('Testing auction - bid - buy - single', async function (rpc_accounts) {
 			}
 		).should.be.fulfilled;
 
-		expectEvent.inLogs(ret.logs, 'LogBid');
-		expectEvent.inLogs(ret.logs, 'LogBuy');
+		ret.logs.length.should.be.equal(2);
+		await expectEvent.inLog(ret.logs[0], 'LogBid', {
+			token: tokenAdapt.address,
+			tokenId: tokens[1],
+			bidder: ac.BUYER3,
+			bid: bid
+		});
+		await expectEvent.inLog(ret.logs[1], 'LogBuy', {
+			token: tokenAdapt.address,
+			tokenId: tokens[1],
+			buyer: ac.BUYER3
+		});
 
 		const owner = await tokenAdapt.ownerOf(tokens[1]);
 		assert.equal(owner, ac.BUYER3, 'unexpected owner');
@@ -297,7 +326,12 @@ contract('Testing auction - bid - buy - single', async function (rpc_accounts) {
 			}
 		).should.be.fulfilled;
 
-		expectEvent.inLogs(ret.logs, 'LogBuy');
+		ret.logs.length.should.be.equal(1);
+		await expectEvent.inLog(ret.logs[0], 'LogBuy', {
+			token: tokenAdapt.address,
+			tokenId: tokens[0],
+			buyer: ac.BUYER2
+		});
 
 		let owner = await tokenAdapt.ownerOf(tokens[0]);
 		assert.equal(owner, ac.BUYER2, 'unexpected owner');
@@ -314,7 +348,11 @@ contract('Testing auction - bid - buy - single', async function (rpc_accounts) {
 			}
 		).should.be.fulfilled;
 
-		expectEvent.inLogs(ret.logs, 'LogRetake');
+		ret.logs.length.should.be.equal(1);
+		await expectEvent.inLog(ret.logs[0], 'LogRetake', {
+			token: tokenAdapt.address,
+			tokenId: tokens[2]
+		});
 
 		for(let i = 4; i < tokensCount; i++) {
 			let owner = await tokenAdapt.ownerOf(tokens[i]);

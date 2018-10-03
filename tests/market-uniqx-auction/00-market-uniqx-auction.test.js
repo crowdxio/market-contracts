@@ -413,8 +413,8 @@ contract('Testing Auction listing - main flow', async function (rpc_accounts) {
 			}
 		).should.be.fulfilled;
 
-		rec.logs.length.should.be.equal(5);
-		for (let i = 0; i < 5; i++) {
+		rec.logs.length.should.be.equal(tokens.length - 6);
+		for (let i = 0; i < tokens.length - 6; i++) {
 			await expectEvent.inLog(rec.logs[i], 'LogRetake', {
 				token: tokenAdapt.address,
 				tokenId: tokens[6 + i],

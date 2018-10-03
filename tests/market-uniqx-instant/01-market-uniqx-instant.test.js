@@ -50,14 +50,21 @@ contract('testing allow/disallow orders - ', function (rpc_accounts) {
 			{ from: ac.MARKET_ADMIN_MSIG , gas: 7000000 }
 		).should.be.fulfilled;
 
-		await expectEvent.inLogs(rec.logs, 'LogRegisterToken');
+
+		rec.logs.length.should.be.equal(1);
+		await expectEvent.inLog(rec.logs[0], 'LogRegisterToken', {
+			token: tokenAdapt1.address
+		});
 
 		rec = await market.registerToken(
 			tokenAdapt2.address,
 			{ from: ac.MARKET_ADMIN_MSIG , gas: 7000000 }
 		).should.be.fulfilled;
 
-		expectEvent.inLogs(rec.logs, 'LogRegisterToken');
+		rec.logs.length.should.be.equal(1);
+		await expectEvent.inLog(rec.logs[0], 'LogRegisterToken', {
+			token: tokenAdapt2.address
+		});
 	});
 
 	it('should be able to mass mint new tokens', async function () {
@@ -122,7 +129,10 @@ contract('testing allow/disallow orders - ', function (rpc_accounts) {
 			{ from: ac.MARKET_ADMIN_MSIG , gas: 7000000 }
 		).should.be.fulfilled;
 
-		await expectEvent.inLogs(logs, 'LogDisableTokenOrders');
+		logs.length.should.be.equal(1);
+		await expectEvent.inLog(logs[0], 'LogDisableTokenOrders', {
+			token: tokenAdapt1.address
+		});
 	});
 
 	it('should not be able make orders for contract with orders disallowed', async () => {
@@ -183,7 +193,10 @@ contract('testing allow/disallow orders - ', function (rpc_accounts) {
 			{ from: ac.MARKET_ADMIN_MSIG , gas: 7000000 }
 		).should.be.fulfilled;
 
-		await expectEvent.inLogs(logs, 'LogEnableTokenOrders');
+		logs.length.should.be.equal(1);
+		await expectEvent.inLog(logs[0], 'LogEnableTokenOrders', {
+			token: tokenAdapt1.address
+		});
 	});
 
 	it('should be able make orders for contract with allowed orders', async () => {
@@ -199,7 +212,8 @@ contract('testing allow/disallow orders - ', function (rpc_accounts) {
 		const { logs } = await market.disableOrders({from: ac.MARKET_ADMIN_MSIG}
 		).should.be.fulfilled;
 
-		await expectEvent.inLogs(logs, 'LogDisableOrders');
+		logs.length.should.be.equal(1);
+		await expectEvent.inLog(logs[0], 'LogDisableOrders', {});
 	});
 
 	it('should not be able make orders for any contracts when orders are disallowed globally', async () => {

@@ -72,7 +72,8 @@ contract('Testing buy now - many', async function (rpc_accounts) {
 
 		console.log(`GAS - Register Token: ${ret.receipt.gasUsed}`);
 
-		expectEvent.inLogs(ret.logs, 'LogRegisterToken');
+		ret.logs.length.should.be.equal(1);
+		await expectEvent.inLog(ret.logs[0], 'LogRegisterToken', { token: tokenAdapt.address });
 
 		const status = await market.getTokenContractStatus(tokenAdapt.address);
 		assert.equal(status[0], true, 'unexpected registration status - should be registered');
@@ -168,8 +169,20 @@ contract('Testing buy now - many', async function (rpc_accounts) {
 			}
 		).should.be.fulfilled;
 
-		expectEvent.inLogs(ret.logs, 'LogBid');
-		expectEvent.inLogs(ret.logs, 'LogBuy');
+		ret.logs.length.should.be.equal(2 * tokens.length);
+		for (let i = 0; i < tokens.length; i++) {
+			await expectEvent.inLog(ret.logs[i*2], 'LogBid', {
+				token: tokenAdapt.address,
+				tokenId: tokens[i],
+				bidder: ac.BUYER1,
+				bid: buyPrices[i]
+			});
+			await expectEvent.inLog(ret.logs[i*2 + 1], 'LogBuy', {
+				token: tokenAdapt.address,
+				tokenId: tokens[i],
+				buyer: ac.BUYER1,
+			});
+		}
 
 		// TODO: get these from contract
 		const marketFee = priceToPay.dividedToIntegerBy(100);

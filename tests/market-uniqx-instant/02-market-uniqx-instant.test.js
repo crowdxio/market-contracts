@@ -71,7 +71,10 @@ contract('Testing token listing - many', async function (rpc_accounts) {
 			}
 		).should.be.fulfilled;
 
-		expectEvent.inLogs(ret.logs, 'LogRegisterToken');
+		ret.logs.length.should.be.equal(1);
+		await expectEvent.inLog(ret.logs[0], 'LogRegisterToken', {
+			token: tokenAdapt.address
+		});
 
 		console.log(`GAS - Register Token: ${ret.receipt.gasUsed}`);
 	});
@@ -192,7 +195,17 @@ contract('Testing token listing - many', async function (rpc_accounts) {
 
 		console.log(`GAS - List ${tokensCount} adapt tokens fixed price: ${ret.receipt.gasUsed}`);
 
-		expectEvent.inLogs(ret.logs, 'LogCreateMany');
+		const owners = Array(...Array(tokens.length)).map(() =>  ac.ADAPT_ADMIN);
+		owners[0] = ac.ACCOUNT1;
+
+		ret.logs.length.should.be.equal(1);
+		await expectEvent.inLog(ret.logs[0], 'LogCreateMany', {
+			token: tokenAdapt.address,
+			tokenIds: tokens,
+			owners: owners,
+			seller: ac.SELLER,
+			buyPrices: buyPrices,
+		});
 
 		for (let i = 0; i < tokensCount; i++) {
 			const owner = await tokenAdapt.ownerOf(tokens[i]);

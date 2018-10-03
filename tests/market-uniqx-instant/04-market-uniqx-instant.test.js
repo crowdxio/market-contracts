@@ -4,7 +4,6 @@ import {
 import ether from "../helpers/ether";
 import expectEvent from "../helpers/expectEvent";
 import EVMRevert from "../../zeppelin/test/helpers/EVMRevert";
-const moment = require('moment');
 
 const TokenAdapt = artifacts.require("../../../adapt/contracts/AdaptCollectibles.sol");
 const MarketUniqxInstant = artifacts.require('../../contracts/MarketUniqxInstant.sol');
@@ -65,7 +64,10 @@ contract('Testing token listing and updating - single', async function (rpc_acco
 			}
 		).should.be.fulfilled;
 
-		expectEvent.inLogs(ret.logs, 'LogRegisterToken');
+		ret.logs.length.should.be.equal(1);
+		await expectEvent.inLog(ret.logs[0], 'LogRegisterToken', {
+			token: tokenAdapt.address
+		});
 
 		console.log(`GAS - Register Token: ${ret.receipt.gasUsed}`);
 	});
@@ -171,7 +173,14 @@ contract('Testing token listing and updating - single', async function (rpc_acco
 
 		console.log(`GAS - List 1 token: ${ret.receipt.gasUsed}`);
 
-		expectEvent.inLogs(ret.logs, 'LogCreate');
+		ret.logs.length.should.be.equal(1);
+		await expectEvent.inLog(ret.logs[0], 'LogCreate', {
+			token: tokenAdapt.address,
+			tokenId: token,
+			owner: ac.ACCOUNT1,
+			seller: ac.SELLER,
+			buyPrice: buyPrice
+		});
 
 		const owner = await tokenAdapt.ownerOf(token);
 		assert.equal(owner, market.address, 'unexpected owner - market should own the token');
