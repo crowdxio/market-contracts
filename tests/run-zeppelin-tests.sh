@@ -14,12 +14,13 @@ if [ -f ${MOCKS_BAK} ]; then
 fi
 
 declare -a ZEPPELIN_TESTS=(
+"${ROOT_DIR}/zeppelin/test/token/ERC721/ERC721Token.test.js"
+"${ROOT_DIR}/zeppelin/test/token/ERC721/ERC721MintBurn.behaviour.js"
+"${ROOT_DIR}/zeppelin/test/token/ERC721/ERC721BasicToken.test.js"
+"${ROOT_DIR}/zeppelin/test/token/ERC721/ERC721BasicToken.behaviour.js"
 "${ROOT_DIR}/zeppelin/test/ownership/Ownable.test.js"
-"${ROOT_DIR}/zeppelin/test/ownership/HasNoTokens.test.js"
-"${ROOT_DIR}/zeppelin/test/ownership/HasNoContracts.test.js"
 "${ROOT_DIR}/zeppelin/test/lifecycle/Pausable.test.js"
 "${ROOT_DIR}/zeppelin/test/math/SafeMath.test.js"
-"${ROOT_DIR}/zeppelin/test/token/ERC20/SafeERC20.test.js"
 "${ROOT_DIR}/zeppelin/test/ReentrancyGuard.test.js"
 )
 
