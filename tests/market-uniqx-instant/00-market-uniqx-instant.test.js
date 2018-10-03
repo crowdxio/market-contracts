@@ -125,7 +125,10 @@ contract('Testing FixedPrice listing - main flow', async function (rpc_accounts)
 			}
 		).should.be.fulfilled;
 
-		expectEvent.inLogs(ret.logs, 'LogRegisterToken');
+		ret.logs.length.should.be.equal(1);
+		await expectEvent.inLog(ret.logs[0], 'LogRegisterToken', {
+			token: tokenAdapt.address
+		});
 
 		// MC: we should also have a check if the token is actually stored as registered
 		// MC: the presence of the event does not guarantee registration
@@ -159,15 +162,21 @@ contract('Testing FixedPrice listing - main flow', async function (rpc_accounts)
 			tokens,
 			prices,
 			{
-				from: ac.ADAPT_ADMIN ,
+				from: ac.ADAPT_ADMIN,
 				gas: 7000000
 			}
 		).should.be.fulfilled;
 
 		console.log(`GAS - List ${tokensCount - 1} adapt tokens - fixed price: ${rec.receipt.gasUsed}`);
 
-		// MC: we should check here for each and every order the exact details by reading data back
-		expectEvent.inLogs(rec.logs, 'LogCreateMany');
+		rec.logs.length.should.be.equal(1);
+		await expectEvent.inLog(rec.logs[0], 'LogCreateMany', {
+			token: tokenAdapt.address,
+			tokenIds: tokens,
+			owners: Array(...Array(tokens.length)).map(() =>  ac.ADAPT_ADMIN),
+			seller: ac.ADAPT_ADMIN,
+			buyPrices: prices,
+		});
 	});
 
 
@@ -197,8 +206,14 @@ contract('Testing FixedPrice listing - main flow', async function (rpc_accounts)
 
 		console.log(`GAS - List 1 adapt token - fixed price: ${rec.receipt.gasUsed}`);
 
-		// MC: should check the details of the orders here; both content of logs and content of data
-		expectEvent.inLogs(rec.logs, 'LogCreate');
+		rec.logs.length.should.be.equal(1);
+		await expectEvent.inLog(rec.logs[0], 'LogCreate', {
+			token: tokenAdapt.address,
+			tokenId: tokens[10],
+			owner: ac.ADAPT_ADMIN,
+			seller: ac.ADAPT_ADMIN,
+			buyPrice: prices[10]
+		});
 	});
 
 	it('should be able to cancel 2 tokens', async () => {
@@ -213,7 +228,11 @@ contract('Testing FixedPrice listing - main flow', async function (rpc_accounts)
 
 		console.log(`GAS - Cancel 2 adapt tokens: ${rec.receipt.gasUsed}`);
 
-		expectEvent.inLogs(rec.logs, 'LogCancelMany');
+		rec.logs.length.should.be.equal(1);
+		await expectEvent.inLog(rec.logs[0], 'LogCancelMany', {
+			token: tokenAdapt.address,
+			tokenIds: [ tokens[0], tokens[1] ]
+		});
 
 		console.log(`Market balance: ${await getBalanceAsyncStr(ac.MARKET_FEES_MSIG)}`);
 		// MC: if you want to check that a balance has chanced, do so by comparison not printing only
@@ -232,8 +251,14 @@ contract('Testing FixedPrice listing - main flow', async function (rpc_accounts)
 
 		console.log(`GAS - Re-list for fixed price 1 adapt token after it was cancel: ${rec.receipt.gasUsed}`);
 
-		// MC: should check the details of the orders here; both content of logs and content of data
-		expectEvent.inLogs(rec.logs, 'LogCreateMany');
+		rec.logs.length.should.be.equal(1);
+		await expectEvent.inLog(rec.logs[0], 'LogCreateMany', {
+			token: tokenAdapt.address,
+			tokenIds: [ tokens[0] ],
+			owners: [ ac.ADAPT_ADMIN ],
+			seller: ac.ADAPT_ADMIN,
+			buyPrices: [ prices[0] ]
+		});
 	});
 
 	it('should be able to buy 9 tokens', async () => {
@@ -263,7 +288,12 @@ contract('Testing FixedPrice listing - main flow', async function (rpc_accounts)
 			}
 		).should.be.fulfilled;
 
-		expectEvent.inLogs(ret.logs, 'LogBuyMany');
+		ret.logs.length.should.be.equal(1);
+		await expectEvent.inLog(ret.logs[0], 'LogBuyMany', {
+			token: tokenAdapt.address,
+			tokenIds: tokensToBuy,
+			buyer: ac.BUYER1,
+		});
 
 		for (let token of tokensToBuy) {
 			const owner = await tokenAdapt.ownerOf(token);

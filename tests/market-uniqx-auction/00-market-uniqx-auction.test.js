@@ -1,5 +1,5 @@
 import {
-	accounts, assert, BigNumber, getBalanceAsync, getBalanceAsyncStr, parseAdaptTokenEvent, parseUniqxAuctionMarketEvent
+	accounts, BigNumber, getBalanceAsync, getBalanceAsyncStr, parseAdaptTokenEvent, parseUniqxAuctionMarketEvent
 } from '../common/common';
 import ether from "../helpers/ether";
 import expectEvent from "../helpers/expectEvent";
@@ -117,7 +117,7 @@ contract('Testing Auction listing - main flow', async function (rpc_accounts) {
 
 	it('should register the adapt token', async function () {
 
-		const ret = await uniqxMarket.registerToken(
+		const rec = await uniqxMarket.registerToken(
 			tokenAdapt.address,
 			{
 				from: ac.MARKET_ADMIN_MSIG,
@@ -125,9 +125,10 @@ contract('Testing Auction listing - main flow', async function (rpc_accounts) {
 			}
 		).should.be.fulfilled;
 
-		expectEvent.inLogs(ret.logs, 'LogRegisterToken');
+		rec.logs.length.should.be.equal(1);
+		await expectEvent.inLog(rec.logs[0], 'LogRegisterToken', { token: tokenAdapt.address });
 
-		console.log(`GAS - Register Token: ${ret.receipt.gasUsed}`);
+		console.log(`GAS - Register Token: ${rec.receipt.gasUsed}`);
 	});
 
 	it('should allow the market to escrow the adapt tokens', async function () {
@@ -166,8 +167,21 @@ contract('Testing Auction listing - main flow', async function (rpc_accounts) {
 
 		console.log(`GAS - List for auction ${tokensCount - 1} adapt tokens: ${rec.receipt.gasUsed}`);
 
-		// MC: should check the details of the orders here; both content of logs and content of data
-		expectEvent.inLogs(rec.logs, 'LogCreateMany');
+		const endTimeAsBNArray = [];
+		for (const et of endTimes) {
+			endTimeAsBNArray.push(new BigNumber(et));
+		}
+
+		rec.logs.length.should.be.equal(1);
+		await expectEvent.inLog(rec.logs[0], 'LogCreateMany', {
+			token: tokenAdapt.address,
+			tokenIds: tokens,
+			owners: Array(...Array(tokens.length)).map(() =>  ac.ADAPT_ADMIN),
+			seller: ac.ADAPT_ADMIN,
+			buyPrices: buyPrices,
+			startPrices: startPrices,
+			endTimes: endTimeAsBNArray
+		});
 	});
 
 	it('should mint 1 test token', async function () {
@@ -201,8 +215,16 @@ contract('Testing Auction listing - main flow', async function (rpc_accounts) {
 
 		console.log(`GAS - List for auction 1 adapt token: ${rec.receipt.gasUsed}`);
 
-		// MC: should check the details of the orders here; both content of logs and content of data
-		expectEvent.inLogs(rec.logs, 'LogCreateMany');
+		rec.logs.length.should.be.equal(1);
+		await expectEvent.inLog(rec.logs[0], 'LogCreateMany', {
+			token: tokenAdapt.address,
+			tokenIds: [ tokens[10] ],
+			owners: [ ac.ADAPT_ADMIN ],
+			seller: ac.ADAPT_ADMIN,
+			buyPrices: [ buyPrices[10] ],
+			startPrices: [ startPrices[10] ],
+			endTimes: [ new BigNumber(fourDaysLater) ]
+		});
 	});
 
 	it('should be able to cancel 2 tokens', async () => {
@@ -217,8 +239,12 @@ contract('Testing Auction listing - main flow', async function (rpc_accounts) {
 
 		console.log(`GAS - Cancel 2 adapt tokens: ${rec.receipt.gasUsed}`);
 
-		// MC: should check insistence of orders and content of logs
-		expectEvent.inLogs(rec.logs, 'LogCancelMany');
+		rec.logs.length.should.be.equal(1);
+		await expectEvent.inLog(rec.logs[0], 'LogCancelMany', {
+			token: tokenAdapt.address,
+			tokenIds: [ tokens[0], tokens[1] ]
+		});
+
 		// MC: should enforce the change in balance with an assert
 		console.log(`Market balance: ${await getBalanceAsyncStr(ac.MARKET_FEES_MSIG)}`);
 	});
@@ -238,14 +264,23 @@ contract('Testing Auction listing - main flow', async function (rpc_accounts) {
 
 		console.log(`GAS - Re-list for auction 1 adapt token after it was cancel: ${rec.receipt.gasUsed}`);
 
-		// MC: should check the details of the orders here; both content of logs and content of data
-		expectEvent.inLogs(rec.logs, 'LogCreateMany');
+		rec.logs.length.should.be.equal(1);
+		await expectEvent.inLog(rec.logs[0], 'LogCreateMany', {
+			token: tokenAdapt.address,
+			tokenIds: [ tokens[0] ],
+			owners: [ ac.ADAPT_ADMIN ],
+			seller: ac.ADAPT_ADMIN,
+			buyPrices: [ ether(2) ],
+			startPrices: [ ether(1) ],
+			endTimes: [ new BigNumber(fourDaysLater) ]
+		});
 	});
 
 	it('BUYER1 should be able to place bids on 3 tokens', async function () {
-		const ret = await uniqxMarket.bidMany(
+		const tokens_ = [ tokens[2], tokens[3], tokens[4] ];
+		const rec = await uniqxMarket.bidMany(
 			tokenAdapt.address,
-			[tokens[2], tokens[3], tokens[4]],
+			tokens_,
 			[ether(2), ether(2), ether(2)],
 			{
 				from: ac.BUYER1,
@@ -254,13 +289,22 @@ contract('Testing Auction listing - main flow', async function (rpc_accounts) {
 			}
 		).should.be.fulfilled;
 
-		expectEvent.inLogs(ret.logs, 'LogBid');
-		// MC: should check content of orders and content of logs
-		console.log(`GAS - Bid 2 adapt tokens: ${ret.receipt.gasUsed}`);
+		rec.logs.length.should.be.equal(3);
+		for (let i = 0; i < 3; i++) {
+			await expectEvent.inLog(rec.logs[i], 'LogBid', {
+				token: tokenAdapt.address,
+				tokenId: tokens_[i],
+				bidder: ac.BUYER1,
+				bid: ether(2)
+			});
+		}
+
+
+		console.log(`GAS - Bid 2 adapt tokens: ${rec.receipt.gasUsed}`);
 	});
 
 	it('BUYER2 should be able to overbid BUYER1', async function () {
-		const ret = await uniqxMarket.bidMany(
+		const rec = await uniqxMarket.bidMany(
 			tokenAdapt.address,
 			[tokens[4]],
 			[ether(4)],
@@ -271,14 +315,20 @@ contract('Testing Auction listing - main flow', async function (rpc_accounts) {
 			}
 		).should.be.fulfilled;
 
-		expectEvent.inLogs(ret.logs, 'LogBid');
-		// MC: should check content of orders and content of logs
-		console.log(`GAS - Bid 2 adapt tokens: ${ret.receipt.gasUsed}`);
+		rec.logs.length.should.be.equal(1);
+		await expectEvent.inLog(rec.logs[0], 'LogBid', {
+			token: tokenAdapt.address,
+			tokenId: tokens[4],
+			bidder: ac.BUYER2,
+			bid: ether(4)
+		});
+
+		console.log(`GAS - Bid 2 adapt tokens: ${rec.receipt.gasUsed}`);
 	});
 
 
 	it('BUYER2 should be able to place a bid big enough to buy the token', async function () {
-		const ret = await uniqxMarket.bidMany(
+		const rec = await uniqxMarket.bidMany(
 			tokenAdapt.address,
 			[tokens[5]],
 			[ether(9)],
@@ -289,10 +339,20 @@ contract('Testing Auction listing - main flow', async function (rpc_accounts) {
 			}
 		).should.be.fulfilled;
 
-		expectEvent.inLogs(ret.logs, 'LogBid');
-		expectEvent.inLogs(ret.logs, 'LogBuy');
-		// MC: should check content of orders and content of logs
-		console.log(`GAS - Bid 2 adapt tokens: ${ret.receipt.gasUsed}`);
+		rec.logs.length.should.be.equal(2);
+		await expectEvent.inLog(rec.logs[0], 'LogBid', {
+			token: tokenAdapt.address,
+			tokenId: tokens[5],
+			bidder: ac.BUYER2,
+			bid: ether(9)
+		});
+		await expectEvent.inLog(rec.logs[1], 'LogBuy', {
+			token: tokenAdapt.address,
+			tokenId: tokens[5],
+			buyer: ac.BUYER2
+		});
+
+		console.log(`GAS - Bid 2 adapt tokens: ${rec.receipt.gasUsed}`);
 	});
 
 
@@ -300,23 +360,30 @@ contract('Testing Auction listing - main flow', async function (rpc_accounts) {
 		const threeDaysLater = latestTime() + duration.days(3);
 		await increaseTimeTo(threeDaysLater + duration.minutes(1));
 
-		const ret = await uniqxMarket.completeMany(
+		const tokens_ = [tokens[2], tokens[3]];
+		const rec = await uniqxMarket.completeMany(
 			tokenAdapt.address,
-			[tokens[2], tokens[3]],
+			tokens_,
 			{
 				from: ac.BUYER1,
 				gas: 7000000
 			}
 		).should.be.fulfilled;
 
-		// MC: should check content of orders and content of logs
-		expectEvent.inLogs(ret.logs, 'LogBuy');
+		rec.logs.length.should.be.equal(2);
+		for (let i = 0; i < 2; i++) {
+			await expectEvent.inLog(rec.logs[i], 'LogBuy', {
+				token: tokenAdapt.address,
+				tokenId: tokens_[i],
+				buyer: ac.BUYER1
+			});
+		}
 	});
 
 
 	it('should allow BUYER2 to finalize the auctions he won', async function () {
 
-		const ret = await uniqxMarket.completeMany(
+		const rec = await uniqxMarket.completeMany(
 			tokenAdapt.address,
 			[tokens[4]],
 			{
@@ -325,15 +392,19 @@ contract('Testing Auction listing - main flow', async function (rpc_accounts) {
 			}
 		).should.be.fulfilled;
 
-		// MC: should check content of orders and content of logs
-		expectEvent.inLogs(ret.logs, 'LogBuy');
+		rec.logs.length.should.be.equal(1);
+		await expectEvent.inLog(rec.logs[0], 'LogBuy', {
+			token: tokenAdapt.address,
+			tokenId: tokens[4],
+			buyer: ac.BUYER2
+		});
 	});
 
 	it('should allow the owner to take the unsold tokens back', async function () {
 		const threeDaysLater = latestTime() + duration.days(3);
 		await increaseTimeTo(threeDaysLater + duration.minutes(1));
 
-		const ret = await uniqxMarket.completeMany(
+		const rec = await uniqxMarket.completeMany(
 			tokenAdapt.address,
 			tokens.slice(6),
 			{
@@ -342,7 +413,12 @@ contract('Testing Auction listing - main flow', async function (rpc_accounts) {
 			}
 		).should.be.fulfilled;
 
-		// MC: should check content of orders and content of logs
-		expectEvent.inLogs(ret.logs, 'LogRetake');
+		rec.logs.length.should.be.equal(5);
+		for (let i = 0; i < 5; i++) {
+			await expectEvent.inLog(rec.logs[i], 'LogRetake', {
+				token: tokenAdapt.address,
+				tokenId: tokens[6 + i],
+			});
+		}
 	});
 });

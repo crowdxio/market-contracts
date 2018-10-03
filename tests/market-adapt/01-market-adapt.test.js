@@ -190,8 +190,7 @@ contract('Market - a simple walk-through the functionality', function (rpc_accou
 		).should.be.rejectedWith(EVMRevert);
 
 		const tokenStatus = await market.getOrderStatus(tokens[3]);
-		assert.equal(tokenStatus, 1, 'The order should remain in \'Listed\' state');
-		// MC: please use enums instead of constants like these!
+		assert.equal(tokenStatus, OrderStatus.Listed, 'The order should remain in \'Listed\' state');
 	});
 
 	it('should disallow to publish a token which was sold', async () => {
