@@ -34,9 +34,9 @@ if [ -f ${MOCKS_BAK} ]; then
 fi
 
 if [ ${RESULT} -eq 0 ]; then
-  printf "${GREEN}\xE2\x9C\x94 "${SCRIPT_DIR}/run-project-tests.sh${NC}\n"
+  printf "${GREEN}\xE2\x9C\x94 ${SCRIPT_DIR}/run-project-tests.sh${NC}\n"
 else
-  printf "${RED}\xE2\x9D\x8C "${SCRIPT_DIR}/run-project-tests.sh${NC}\n"
+  printf "${RED}\xE2\x9D\x8C ${SCRIPT_DIR}/run-project-tests.sh${NC}\n"
 fi
 
 exit ${RESULT}

@@ -271,7 +271,7 @@ contract('Testing auction - bid - buy - single', async function (rpc_accounts) {
 	it('BUYER1 should not be able to place a bid on an ended auction', async function () {
 
 		const threeDaysLater = latestTime() + duration.days(3);
-		increaseTimeTo(threeDaysLater + duration.minutes(1));
+		await increaseTimeTo(threeDaysLater + duration.minutes(1));
 
 		const bid = new BigNumber(ether(1.6));
 

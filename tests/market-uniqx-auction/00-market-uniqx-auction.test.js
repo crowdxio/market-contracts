@@ -298,7 +298,7 @@ contract('Testing Auction listing - main flow', async function (rpc_accounts) {
 
 	it('seek 3 days forward - should allow BUYER1 to finalize the auctions he won', async function () {
 		const threeDaysLater = latestTime() + duration.days(3);
-		increaseTimeTo(threeDaysLater + duration.minutes(1));
+		await increaseTimeTo(threeDaysLater + duration.minutes(1));
 
 		const ret = await uniqxMarket.completeMany(
 			tokenAdapt.address,
@@ -331,7 +331,7 @@ contract('Testing Auction listing - main flow', async function (rpc_accounts) {
 
 	it('should allow the owner to take the unsold tokens back', async function () {
 		const threeDaysLater = latestTime() + duration.days(3);
-		increaseTimeTo(threeDaysLater + duration.minutes(1));
+		await increaseTimeTo(threeDaysLater + duration.minutes(1));
 
 		const ret = await uniqxMarket.completeMany(
 			tokenAdapt.address,

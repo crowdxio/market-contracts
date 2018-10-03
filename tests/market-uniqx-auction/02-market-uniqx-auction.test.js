@@ -171,7 +171,7 @@ contract('Freeride testing', async function (rpc_accounts) {
 		let balanceMarketFees1 = await pGetBalance(ac.MARKET_FEES_MSIG);
 		let balanceAdaptAdmin1 = await pGetBalance(ac.ADAPT_ADMIN);
 
-		increaseTimeTo(moment().add(7, 'days').unix());
+		await increaseTimeTo(moment().add(7, 'days').unix());
 
 		const rec = await market.completeMany(
 			tokenAdapt.address,
@@ -284,7 +284,7 @@ contract('Freeride testing', async function (rpc_accounts) {
 
 		expectEvent.inLogs(rec.logs, 'LogBid');
 
-		increaseTimeTo(oneDayLater + duration.minutes(1));
+		await increaseTimeTo(oneDayLater + duration.minutes(1));
 
 		rec = await market.completeMany( // anyone can settle
 			tokenAdapt.address,
@@ -313,7 +313,7 @@ contract('Freeride testing', async function (rpc_accounts) {
 		let listed = await market.tokenIsListed(tokenAdapt.address, tokens[4]);
 		assert.equal(listed, true);
 
-		increaseTimeTo(oneDayLater + duration.minutes(1));
+		await increaseTimeTo(oneDayLater + duration.minutes(1));
 
 		rec = await market.completeMany(
 			tokenAdapt.address,

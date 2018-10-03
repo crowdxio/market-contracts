@@ -265,7 +265,7 @@ contract('Testing update auction - single & many', async function (rpc_accounts)
 	it('3 days later - ADAPT_ADMIN should NOT be able update a token - Auction must be open', async function () {
 
 		const threeDaysLater = latestTime() + duration.days(3);
-		increaseTimeTo(threeDaysLater + duration.minutes(1));
+		await increaseTimeTo(threeDaysLater + duration.minutes(1));
 
 		await market.update(
 			tokenAdapt.address,
