@@ -6,14 +6,14 @@ import expectEvent from "../helpers/expectEvent";
 import EVMRevert from "../../zeppelin/test/helpers/EVMRevert";
 
 const MarketAdapt = artifacts.require("../../../contracts/MarketAdapt.sol");
-const TokenAdapt = artifacts.require("../../../adapt/contracts/AdaptCollectibles.sol");
+const TokenErc721 = artifacts.require("../../../adapt/contracts/AdaptCollectibles.sol");
 
 contract('Market - a simple walk-through the functionality', function (rpc_accounts) {
 
 	let ac = accounts(rpc_accounts);
 	let adapt, market;
 
-	let tokesCount = 10;
+	let tokensCount = 10;
 	let tokens = [];
 	let prices = [];
 	let reservations = [];
@@ -23,7 +23,7 @@ contract('Market - a simple walk-through the functionality', function (rpc_accou
 
 	it('should be able to deploy the smart contracts', async () => {
 
-		adapt = await TokenAdapt.new(
+		adapt = await TokenErc721.new(
 			ac.ADAPT_OWNER,
 			ac.ADAPT_ADMIN,
 			{ from: ac.OPERATOR, gas: 7000000 }
@@ -47,7 +47,7 @@ contract('Market - a simple walk-through the functionality', function (rpc_accou
 			ac.ADAPT_ADMIN,
 			'0xabcd',
 			1,
-			tokesCount,
+			tokensCount,
 			{ from: ac.ADAPT_ADMIN }
 		).should.be.fulfilled;
 
@@ -55,7 +55,7 @@ contract('Market - a simple walk-through the functionality', function (rpc_accou
 			ac.ADAPT_ADMIN,
 			'0xef01',
 			1,
-			tokesCount,
+			tokensCount,
 			{ from: ac.ADAPT_ADMIN }
 		).should.be.fulfilled;
 
@@ -63,7 +63,7 @@ contract('Market - a simple walk-through the functionality', function (rpc_accou
 		console.log(ac.ADAPT_ADMIN, 'balance= ', balance.toString(10));
 
 
-		for (let i = 0; i < tokesCount; i++) {
+		for (let i = 0; i < tokensCount; i++) {
 			tokens[i] = await adapt.tokenByIndex(i);
 			console.log('token: ', tokens[i].toString(10));
 			prices[i] = ether(1);

@@ -4,17 +4,17 @@ import {
 import ether from "../helpers/ether";
 
 const MarketAdapt = artifacts.require("../../../contracts/MarketAdapt.sol");
-const TokenAdapt = artifacts.require("../../../adapt/contracts/AdaptCollectibles.sol");
+const TokenErc721 = artifacts.require("../../../adapt/contracts/AdaptCollectibles.sol");
 
 contract('estimate gas - ', function (rpc_accounts) {
 
 	let ac = accounts(rpc_accounts);
 	let adapt, market;
-	const tokesCount = 10;
+	const tokensCount = 10;
 
 	it('should be able to deploy the smart contracts', async () => {
 
-		adapt = await TokenAdapt.new(
+		adapt = await TokenErc721.new(
 			ac.ADAPT_OWNER,
 			ac.ADAPT_ADMIN,
 			{from: ac.OPERATOR, gas: 7000000}
@@ -37,7 +37,7 @@ contract('estimate gas - ', function (rpc_accounts) {
 			ac.ADAPT_ADMIN,
 			'123',       // json hash
 			0,                  // start
-			tokesCount,         // count
+			tokensCount,         // count
 			{ from: ac.ADAPT_ADMIN }
 		).should.be.fulfilled;
 		console.log('Minting complete - Gas Used = ' + rec.receipt.gasUsed);
@@ -49,7 +49,7 @@ contract('estimate gas - ', function (rpc_accounts) {
 		let prices = [];
 		let reservations = [];
 
-		for (let i = 0; i < tokesCount; i++) {
+		for (let i = 0; i < tokensCount; i++) {
 			tokens[i] = await adapt.tokenByIndex(i);
 			console.log('token: ', tokens[i].toString(10));
 			prices[i] = ether(1);

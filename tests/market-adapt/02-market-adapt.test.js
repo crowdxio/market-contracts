@@ -9,16 +9,14 @@ import { duration, increaseTimeTo } from '../../zeppelin/test/helpers/increaseTi
 import * as abiDecoder from 'abi-decoder';
 
 const MarketAdapt = artifacts.require("../../../contracts/MarketAdapt.sol");
-const TokenAdapt = artifacts.require("../../../adapt/contracts/AdaptCollectibles.sol");
-
-const MarketAdaptJson = require('../../build/contracts/MarketAdapt.json');
+const TokenErc721 = artifacts.require("../../../adapt/contracts/AdaptCollectibles.sol");
 
 contract('Adapt Market - test logging', function (rpc_accounts) {
 
 	let ac = accounts(rpc_accounts);
 	let adapt, market;
 
-	let tokesCount = 10;
+	let tokensCount = 10;
 	let tokens = [];
 	let prices = [];
 	let reservations = [];
@@ -28,7 +26,7 @@ contract('Adapt Market - test logging', function (rpc_accounts) {
 
 	it('should be able to deploy the smart contracts', async () => {
 
-		adapt = await TokenAdapt.new(
+		adapt = await TokenErc721.new(
 			ac.ADAPT_OWNER,
 			ac.ADAPT_ADMIN,
 			{ from: ac.OPERATOR, gas: 7000000 }
@@ -48,7 +46,7 @@ contract('Adapt Market - test logging', function (rpc_accounts) {
 
 	it('should watch and parse the the logs', async function () {
 
-		abiDecoder.addABI(MarketAdaptJson['abi']);
+		abiDecoder.addABI(MarketAdapt.abi);
 
 		const marketFilter = web3.eth.filter(
 			{
@@ -76,7 +74,7 @@ contract('Adapt Market - test logging', function (rpc_accounts) {
 			ac.ADAPT_ADMIN,
 			'0xabcd',
 			1,
-			tokesCount,
+			tokensCount,
 			{ from: ac.ADAPT_ADMIN }
 		).should.be.fulfilled;
 
@@ -100,7 +98,7 @@ contract('Adapt Market - test logging', function (rpc_accounts) {
 
 	it('should be able to list the tokens in the adapt market', async () => {
 
-		for (let i = 0; i < tokesCount; i++) {
+		for (let i = 0; i < tokensCount; i++) {
 			tokens[i] = await adapt.tokenByIndex(i);
 			prices[i] = ether(1);
 			reservations[i] = '0x0000000000000000000000000000000000000000';

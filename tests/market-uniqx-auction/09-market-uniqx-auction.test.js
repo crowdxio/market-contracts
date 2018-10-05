@@ -2,27 +2,23 @@ import {
 	accounts,
 	assert,
 	BigNumber,
-	OrderStatus,
-	getBalanceAsync,
-	getBalanceAsyncStr,
-	parseAdaptTokenEvent, parseUniqxAuctionMarketEvent
+	parseUniqxAuctionMarketEvent,
 } from '../common/common';
 import ether from "../helpers/ether";
-import expectEvent from "../helpers/expectEvent";
 const moment = require('moment');
 import EVMRevert from "../../zeppelin/test/helpers/EVMRevert";
 import { duration, increaseTimeTo } from '../../zeppelin/test/helpers/increaseTime';
 import latestTime from '../helpers/latestTime';
 import * as abiDecoder from 'abi-decoder';
 
-const TokenAdapt = artifacts.require("../../../adapt/contracts/AdaptCollectibles.sol");
+const TokenErc721 = artifacts.require("../../contracts/ERC721TokenMock.sol");
 const MarketUniqxAuction = artifacts.require('../../contracts/MarketUniqxAuction.sol');
 
 contract('Testing update auction - single & many', async function (rpc_accounts) {
 
 	const ac = accounts(rpc_accounts);
 	let market;
-	let tokenAdapt;
+	let tokenErc721;
 
 	const tokensCount = 3;
 	let tokens = [];
@@ -30,7 +26,7 @@ contract('Testing update auction - single & many', async function (rpc_accounts)
 	let startPrices = [];
 	let endTimes = [];
 
-	it('should successfully deploy the market contract and the adapt token', async function () {
+	it('should successfully deploy the market contract and the erc721 token', async function () {
 
 		console.log('Deploying the market contract...');
 
@@ -45,13 +41,13 @@ contract('Testing update auction - single & many', async function (rpc_accounts)
 
 		console.log(`The market contract has been successfully deployed at ${market.address}`);
 
-		tokenAdapt = await TokenAdapt.new(
+		tokenErc721 = await TokenErc721.new(
 			ac.ADAPT_OWNER,
 			ac.ADAPT_ADMIN,
 			{from: ac.OPERATOR, gas: 7000000}
 		).should.be.fulfilled;
 
-		console.log(`The adapt token has been successfully deployed at ${tokenAdapt.address}`);
+		console.log(`The erc721 token has been successfully deployed at ${tokenErc721.address}`);
 	});
 
 	it('should watch and parse the the logs', async function () {
@@ -83,26 +79,24 @@ contract('Testing update auction - single & many', async function (rpc_accounts)
 
 
 	it('ADAPT_ADMIN should mint some test tokens', async function () {
-		const ret = await tokenAdapt.massMint(
-			ac.ADAPT_ADMIN,
-			'json hash',			// json hash
-			1,				        // start
-			tokensCount,		    // count
-			{ from: ac.ADAPT_ADMIN }
-		).should.be.fulfilled;
 
+		for (let i = 0; i < tokensCount; i++) {
+			await tokenErc721.mint(ac.ADAPT_ADMIN, i, {
+				from: ac.ADAPT_ADMIN
+			}).should.be.fulfilled;
+		}
 		const threeDaysLater = moment().add(3, 'days').unix();
 		for (let i = 0; i < tokensCount; i++) {
-			tokens[i] = await tokenAdapt.tokenByIndex(i);
+			tokens[i] = await tokenErc721.tokenByIndex(i);
 			buyPrices[i] = ether(5);
 			startPrices[i] = ether(1);
 			endTimes[i] = threeDaysLater;
 		}
 	});
 
-	it('MARKET_ADMIN should register the adapt token', async function () {
+	it('MARKET_ADMIN should register the erc721 token', async function () {
 		const ret = await market.registerToken(
-			tokenAdapt.address,
+			tokenErc721.address,
 			{
 				from: ac.MARKET_ADMIN_MSIG,
 				gas: 7000000
@@ -111,7 +105,7 @@ contract('Testing update auction - single & many', async function (rpc_accounts)
 	});
 
 	it('ADAPT_ADMIN should allow the market to escrow his tokens', async function () {
-		await tokenAdapt.setApprovalForAll(
+		await tokenErc721.setApprovalForAll(
 			market.address,
 			true,
 			{
@@ -123,7 +117,7 @@ contract('Testing update auction - single & many', async function (rpc_accounts)
 
 	it('ADAPT_ADMIN should be able to list the tokens', async () => {
 		await market.createMany(
-			tokenAdapt.address,
+			tokenErc721.address,
 			tokens,
 			buyPrices,
 			startPrices,
@@ -137,7 +131,7 @@ contract('Testing update auction - single & many', async function (rpc_accounts)
 
 	it('ADAPT_ADMIN should NOT be able update a token - buy price should be > 0', async function () {
 		await market.update(
-			tokenAdapt.address,
+			tokenErc721.address,
 			tokens[0],
 			0,
 			0,
@@ -151,7 +145,7 @@ contract('Testing update auction - single & many', async function (rpc_accounts)
 
 	it('ADAPT_ADMIN should NOT be able update tokens - buy prices should be > 0', async function () {
 		await market.updateMany(
-			tokenAdapt.address,
+			tokenErc721.address,
 			tokens,
 			[0, 0, 0],
 			[0, 0, 0],
@@ -165,7 +159,7 @@ contract('Testing update auction - single & many', async function (rpc_accounts)
 
 	it('ADAPT_ADMIN should NOT be able update a token - Start price must be less than or equal to the buy price', async function () {
 		await market.update(
-			tokenAdapt.address,
+			tokenErc721.address,
 			tokens[0],
 			1,
 			2,
@@ -179,7 +173,7 @@ contract('Testing update auction - single & many', async function (rpc_accounts)
 
 	it('ADAPT_ADMIN should NOT be able update tokens - Start prices must be less than or equal to the buy prices', async function () {
 		await market.updateMany(
-			tokenAdapt.address,
+			tokenErc721.address,
 			tokens,
 			[1, 1, 1],
 			[2, 2, 2],
@@ -194,7 +188,7 @@ contract('Testing update auction - single & many', async function (rpc_accounts)
 
 	it('ADAPT_ADMIN should NOT be able update a token - A minimum auction duration(1h) is enforced by the market', async function () {
 		await market.update(
-			tokenAdapt.address,
+			tokenErc721.address,
 			tokens[0],
 			2,
 			1,
@@ -209,7 +203,7 @@ contract('Testing update auction - single & many', async function (rpc_accounts)
 	it('BUYER1 should be able to place a bid', async function () {
 		const bid = new BigNumber(ether(1.2));
 		await market.bid(
-			tokenAdapt.address,
+			tokenErc721.address,
 			tokens[0],
 			{
 				from: ac.BUYER1,
@@ -221,7 +215,7 @@ contract('Testing update auction - single & many', async function (rpc_accounts)
 
 	it('ADAPT_ADMIN should NOT be able update a token - Only zero bids auctions can be updated', async function () {
 		await market.update(
-			tokenAdapt.address,
+			tokenErc721.address,
 			tokens[0],
 			ether(6),
 			ether(2),
@@ -235,7 +229,7 @@ contract('Testing update auction - single & many', async function (rpc_accounts)
 
 	it('ADAPT_ADMIN should be able update a token', async function () {
 		await market.update(
-			tokenAdapt.address,
+			tokenErc721.address,
 			tokens[1],
 			ether(6),
 			ether(2),
@@ -246,7 +240,7 @@ contract('Testing update auction - single & many', async function (rpc_accounts)
 			}
 		).should.be.fulfilled;
 
-		const info = await market.getOrderInfo(tokenAdapt.address, tokens[1]);
+		const info = await market.getOrderInfo(tokenErc721.address, tokens[1]);
 
 		assert.equal(info[0], ac.ADAPT_ADMIN, 'unexpected owner');
 
@@ -268,7 +262,7 @@ contract('Testing update auction - single & many', async function (rpc_accounts)
 		await increaseTimeTo(threeDaysLater + duration.minutes(1));
 
 		await market.update(
-			tokenAdapt.address,
+			tokenErc721.address,
 			tokens[2],
 			ether(7),
 			ether(3),
