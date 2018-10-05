@@ -55,7 +55,7 @@ contract('testing allow/disallow orders - ', function (rpc_accounts) {
 		).should.be.fulfilled;
 
 		rec.logs.length.should.be.equal(1);
-		await expectEvent.inLog(rec.logs[0], 'LogRegisterToken', { token: token1Erc721.address });
+		await expectEvent.inLog(rec.logs[0], 'LogRegisterToken', { erc721: token1Erc721.address });
 
 		rec = await market.registerToken(
 			token2Erc721.address,
@@ -63,7 +63,7 @@ contract('testing allow/disallow orders - ', function (rpc_accounts) {
 		).should.be.fulfilled;
 
 		rec.logs.length.should.be.equal(1);
-		await expectEvent.inLog(rec.logs[0], 'LogRegisterToken', { token: token2Erc721.address });
+		await expectEvent.inLog(rec.logs[0], 'LogRegisterToken', { erc721: token2Erc721.address });
 	});
 
 	it('should be able to mass mint new tokens', async function () {
@@ -133,7 +133,7 @@ contract('testing allow/disallow orders - ', function (rpc_accounts) {
 		).should.be.fulfilled;
 
 		logs.length.should.be.equal(1);
-		await expectEvent.inLog(logs[0], 'LogDisableTokenOrders', { token: token1Erc721.address });
+		await expectEvent.inLog(logs[0], 'LogDisableTokenOrders', { erc721: token1Erc721.address });
 	});
 
 	it('should not be able make orders for contract with orders disallowed', async () => {
@@ -203,7 +203,7 @@ contract('testing allow/disallow orders - ', function (rpc_accounts) {
 		).should.be.fulfilled;
 
 		logs.length.should.be.equal(1);
-		await expectEvent.inLog(logs[0], 'LogEnableTokenOrders', { token: token1Erc721.address });
+		await expectEvent.inLog(logs[0], 'LogEnableTokenOrders', { erc721: token1Erc721.address });
 	});
 
 	it('should be able make orders for contract with allowed orders', async () => {

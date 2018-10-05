@@ -72,9 +72,9 @@ contract('Testing auction functionality', async function (rpc_accounts) {
 		console.log(`GAS - Register Token: ${ret.receipt.gasUsed}`);
 
 		ret.logs.length.should.be.equal(1);
-		await expectEvent.inLog(ret.logs[0], 'LogRegisterToken', { token: tokenErc721.address });
+		await expectEvent.inLog(ret.logs[0], 'LogRegisterToken', { erc721: tokenErc721.address });
 
-		const status = await market.getTokenContractStatus(tokenErc721.address);
+		const status = await market.getTokenFlags(tokenErc721.address);
 		assert.equal(status[0], true, 'unexpected registration status - should be registered');
 		assert.equal(status[0], true, 'unexpected orders status - should be enabled');
 	});
@@ -127,7 +127,7 @@ contract('Testing auction functionality', async function (rpc_accounts) {
 
 		rec.logs.length.should.be.equal(1);
 		await expectEvent.inLog(rec.logs[0], 'LogCancelMany', {
-			token: tokenErc721.address,
+			erc721: tokenErc721.address,
 			tokenIds: [ tokens[0] ]
 		});
 
@@ -227,7 +227,7 @@ contract('Testing auction functionality', async function (rpc_accounts) {
 
 		ret.logs.length.should.be.equal(1);
 		await expectEvent.inLog(ret.logs[0], 'LogBid', {
-			token: tokenErc721.address,
+			erc721: tokenErc721.address,
 			tokenId: tokens[1],
 			bidder: ac.BUYER1,
 			bid: bid
@@ -297,7 +297,7 @@ contract('Testing auction functionality', async function (rpc_accounts) {
 
 		ret.logs.length.should.be.equal(1);
 		await expectEvent.inLog(ret.logs[0], 'LogBid', {
-			token: tokenErc721.address,
+			erc721: tokenErc721.address,
 			tokenId: tokens[1],
 			bidder: ac.BUYER2,
 			bid: bid
@@ -326,7 +326,7 @@ contract('Testing auction functionality', async function (rpc_accounts) {
 
 		ret.logs.length.should.be.equal(1);
 		await expectEvent.inLog(ret.logs[0], 'LogBid', {
-			token: tokenErc721.address,
+			erc721: tokenErc721.address,
 			tokenId: tokens[1],
 			bidder: ac.BUYER2,
 			bid: bid
@@ -356,13 +356,13 @@ contract('Testing auction functionality', async function (rpc_accounts) {
 
 		ret.logs.length.should.be.equal(2);
 		await expectEvent.inLog(ret.logs[0], 'LogBid', {
-			token: tokenErc721.address,
+			erc721: tokenErc721.address,
 			tokenId: tokens[1],
 			bidder: ac.BUYER3,
 			bid: bid
 		});
 		await expectEvent.inLog(ret.logs[1], 'LogBuy', {
-			token: tokenErc721.address,
+			erc721: tokenErc721.address,
 			tokenId: tokens[1],
 			buyer: ac.BUYER3
 		});
@@ -410,7 +410,7 @@ contract('Testing auction functionality', async function (rpc_accounts) {
 		ret.logs.length.should.be.equal(2);
 		for (let i = 0; i < 2; i++) {
 			await expectEvent.inLog(ret.logs[i], 'LogBid', {
-				token: tokenErc721.address,
+				erc721: tokenErc721.address,
 				tokenId: tokens_[i],
 				bidder: ac.BUYER3,
 				bid: bid
@@ -460,7 +460,7 @@ contract('Testing auction functionality', async function (rpc_accounts) {
 		ret.logs.length.should.be.equal(2);
 		for (let i = 0; i < 2; i++) {
 			await expectEvent.inLog(ret.logs[i], 'LogBuy', {
-				token: tokenErc721.address,
+				erc721: tokenErc721.address,
 				tokenId: tokens_[i],
 				buyer: ac.BUYER3
 			});
@@ -488,7 +488,7 @@ contract('Testing auction functionality', async function (rpc_accounts) {
 		ret.logs.length.should.be.equal(tokens.length - 4);
 		for (let i = 0; i < tokens.length - 4; i++) {
 			await expectEvent.inLog(ret.logs[i], 'LogRetake', {
-				token: tokenErc721.address,
+				erc721: tokenErc721.address,
 				tokenId: tokens[4 + i],
 			});
 		}

@@ -54,7 +54,7 @@ contract('testing allow/disallow orders - ', function (rpc_accounts) {
 
 		rec.logs.length.should.be.equal(1);
 		await expectEvent.inLog(rec.logs[0], 'LogRegisterToken', {
-			token: token1Erc721.address
+			erc721: token1Erc721.address
 		});
 
 		rec = await market.registerToken(
@@ -64,7 +64,7 @@ contract('testing allow/disallow orders - ', function (rpc_accounts) {
 
 		rec.logs.length.should.be.equal(1);
 		await expectEvent.inLog(rec.logs[0], 'LogRegisterToken', {
-			token: token2Erc721.address
+			erc721: token2Erc721.address
 		});
 	});
 
@@ -128,7 +128,7 @@ contract('testing allow/disallow orders - ', function (rpc_accounts) {
 
 		logs.length.should.be.equal(1);
 		await expectEvent.inLog(logs[0], 'LogDisableTokenOrders', {
-			token: token1Erc721.address
+			erc721: token1Erc721.address
 		});
 	});
 
@@ -192,7 +192,7 @@ contract('testing allow/disallow orders - ', function (rpc_accounts) {
 
 		logs.length.should.be.equal(1);
 		await expectEvent.inLog(logs[0], 'LogEnableTokenOrders', {
-			token: token1Erc721.address
+			erc721: token1Erc721.address
 		});
 	});
 

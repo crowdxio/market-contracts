@@ -76,7 +76,7 @@ contract('Testing Auction listing - main flow', async function (rpc_accounts) {
 			const events = abiDecoder.decodeLogs([result]);
 			await parseUniqxAuctionMarketEvent(events[0], blockTimestamp);
 		});
-		
+
 
 		abiDecoder.addABI(TokenErc721.abi);
 
@@ -121,7 +121,7 @@ contract('Testing Auction listing - main flow', async function (rpc_accounts) {
 		).should.be.fulfilled;
 
 		rec.logs.length.should.be.equal(1);
-		await expectEvent.inLog(rec.logs[0], 'LogRegisterToken', { token: tokenErc721.address });
+		await expectEvent.inLog(rec.logs[0], 'LogRegisterToken', { erc721: tokenErc721.address });
 
 		console.log(`GAS - Register Token: ${rec.receipt.gasUsed}`);
 	});
@@ -169,7 +169,7 @@ contract('Testing Auction listing - main flow', async function (rpc_accounts) {
 
 		rec.logs.length.should.be.equal(1);
 		await expectEvent.inLog(rec.logs[0], 'LogCreateMany', {
-			token: tokenErc721.address,
+			erc721: tokenErc721.address,
 			tokenIds: tokens,
 			owners: Array(...Array(tokens.length)).map(() =>  ac.ADAPT_ADMIN),
 			seller: ac.ADAPT_ADMIN,
@@ -207,7 +207,7 @@ contract('Testing Auction listing - main flow', async function (rpc_accounts) {
 
 		rec.logs.length.should.be.equal(1);
 		await expectEvent.inLog(rec.logs[0], 'LogCreateMany', {
-			token: tokenErc721.address,
+			erc721: tokenErc721.address,
 			tokenIds: [ tokens[10] ],
 			owners: [ ac.ADAPT_ADMIN ],
 			seller: ac.ADAPT_ADMIN,
@@ -233,7 +233,7 @@ contract('Testing Auction listing - main flow', async function (rpc_accounts) {
 
 		rec.logs.length.should.be.equal(1);
 		await expectEvent.inLog(rec.logs[0], 'LogCancelMany', {
-			token: tokenErc721.address,
+			erc721: tokenErc721.address,
 			tokenIds: [ tokens[0], tokens[1] ]
 		});
 
@@ -259,7 +259,7 @@ contract('Testing Auction listing - main flow', async function (rpc_accounts) {
 
 		rec.logs.length.should.be.equal(1);
 		await expectEvent.inLog(rec.logs[0], 'LogCreateMany', {
-			token: tokenErc721.address,
+			erc721: tokenErc721.address,
 			tokenIds: [ tokens[0] ],
 			owners: [ ac.ADAPT_ADMIN ],
 			seller: ac.ADAPT_ADMIN,
@@ -285,7 +285,7 @@ contract('Testing Auction listing - main flow', async function (rpc_accounts) {
 		rec.logs.length.should.be.equal(3);
 		for (let i = 0; i < 3; i++) {
 			await expectEvent.inLog(rec.logs[i], 'LogBid', {
-				token: tokenErc721.address,
+				erc721: tokenErc721.address,
 				tokenId: tokens_[i],
 				bidder: ac.BUYER1,
 				bid: ether(2)
@@ -310,7 +310,7 @@ contract('Testing Auction listing - main flow', async function (rpc_accounts) {
 
 		rec.logs.length.should.be.equal(1);
 		await expectEvent.inLog(rec.logs[0], 'LogBid', {
-			token: tokenErc721.address,
+			erc721: tokenErc721.address,
 			tokenId: tokens[4],
 			bidder: ac.BUYER2,
 			bid: ether(4)
@@ -333,13 +333,13 @@ contract('Testing Auction listing - main flow', async function (rpc_accounts) {
 
 		rec.logs.length.should.be.equal(2);
 		await expectEvent.inLog(rec.logs[0], 'LogBid', {
-			token: tokenErc721.address,
+			erc721: tokenErc721.address,
 			tokenId: tokens[5],
 			bidder: ac.BUYER2,
 			bid: ether(9)
 		});
 		await expectEvent.inLog(rec.logs[1], 'LogBuy', {
-			token: tokenErc721.address,
+			erc721: tokenErc721.address,
 			tokenId: tokens[5],
 			buyer: ac.BUYER2
 		});
@@ -365,7 +365,7 @@ contract('Testing Auction listing - main flow', async function (rpc_accounts) {
 		rec.logs.length.should.be.equal(2);
 		for (let i = 0; i < 2; i++) {
 			await expectEvent.inLog(rec.logs[i], 'LogBuy', {
-				token: tokenErc721.address,
+				erc721: tokenErc721.address,
 				tokenId: tokens_[i],
 				buyer: ac.BUYER1
 			});
@@ -386,7 +386,7 @@ contract('Testing Auction listing - main flow', async function (rpc_accounts) {
 
 		rec.logs.length.should.be.equal(1);
 		await expectEvent.inLog(rec.logs[0], 'LogBuy', {
-			token: tokenErc721.address,
+			erc721: tokenErc721.address,
 			tokenId: tokens[4],
 			buyer: ac.BUYER2
 		});
@@ -408,7 +408,7 @@ contract('Testing Auction listing - main flow', async function (rpc_accounts) {
 		rec.logs.length.should.be.equal(tokens.length - 6);
 		for (let i = 0; i < tokens.length - 6; i++) {
 			await expectEvent.inLog(rec.logs[i], 'LogRetake', {
-				token: tokenErc721.address,
+				erc721: tokenErc721.address,
 				tokenId: tokens[6 + i],
 			});
 		}

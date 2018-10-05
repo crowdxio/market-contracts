@@ -55,7 +55,7 @@ contract('Freeride testing', async function (rpc_accounts) {
 		).should.be.fulfilled;
 
 		rec.logs.length.should.be.equal(1);
-		await expectEvent.inLog(rec.logs[0], 'LogRegisterToken', { token: tokenErc721.address });
+		await expectEvent.inLog(rec.logs[0], 'LogRegisterToken', { erc721: tokenErc721.address });
 	});
 
 	it('should be able to mass mint new tokens', async function () {
@@ -102,7 +102,7 @@ contract('Freeride testing', async function (rpc_accounts) {
 
 		rec.logs.length.should.be.equal(1);
 		await expectEvent.inLog(rec.logs[0], 'LogCreateMany', {
-			token: tokenErc721.address,
+			erc721: tokenErc721.address,
 			tokenIds:[ tokens[0], tokens[1], tokens[2]],
 			owners: Array(...Array(3)).map(() =>  ac.ADAPT_ADMIN),
 			seller: ac.ADAPT_ADMIN,
@@ -129,7 +129,7 @@ contract('Freeride testing', async function (rpc_accounts) {
 		rec.logs.length.should.be.equal(2);
 		for (let i = 0; i < 2; i++) {
 			await expectEvent.inLog(rec.logs[i], 'LogBid', {
-				token: tokenErc721.address,
+				erc721: tokenErc721.address,
 				tokenId: tokens[i],
 				bidder: ac.BUYER1,
 				bid: ether(1.1)
@@ -167,7 +167,7 @@ contract('Freeride testing', async function (rpc_accounts) {
 
 		rec.logs.length.should.be.equal(1);
 		await expectEvent.inLog(rec.logs[0], 'LogBid', {
-			token: tokenErc721.address,
+			erc721: tokenErc721.address,
 			tokenId: tokens[1],
 			bidder: ac.BUYER3,
 			bid: ether(1.2)
@@ -210,7 +210,7 @@ contract('Freeride testing', async function (rpc_accounts) {
 
 		rec.logs.length.should.be.equal(1);
 		await expectEvent.inLog(rec.logs[0], 'LogBuy', {
-			token: tokenErc721.address,
+			erc721: tokenErc721.address,
 			tokenId: tokens[1],
 			buyer: ac.BUYER3
 		});
@@ -251,7 +251,7 @@ contract('Freeride testing', async function (rpc_accounts) {
 
 		rec.logs.length.should.be.equal(1);
 		await expectEvent.inLog(rec.logs[0], 'LogCreateMany', {
-			token: tokenErc721.address,
+			erc721: tokenErc721.address,
 			tokenIds: [ tokens[3] ],
 			owners: [ ac.ADAPT_ADMIN ],
 			seller: ac.ADAPT_ADMIN,
@@ -271,7 +271,7 @@ contract('Freeride testing', async function (rpc_accounts) {
 
 		rec.logs.length.should.be.equal(1);
 		await expectEvent.inLog(rec.logs[0], 'LogCancelMany', {
-			token: tokenErc721.address,
+			erc721: tokenErc721.address,
 			tokenIds: [ tokens[3] ]
 		});
 
@@ -322,7 +322,7 @@ contract('Freeride testing', async function (rpc_accounts) {
 
 		rec.logs.length.should.be.equal(1);
 		await expectEvent.inLog(rec.logs[0], 'LogCreateMany', {
-			token: tokenErc721.address,
+			erc721: tokenErc721.address,
 			tokenIds: [ tokens[3] ],
 			owners: [ ac.ADAPT_ADMIN ],
 			seller: ac.ADAPT_ADMIN,
@@ -343,7 +343,7 @@ contract('Freeride testing', async function (rpc_accounts) {
 
 		rec.logs.length.should.be.equal(1);
 		await expectEvent.inLog(rec.logs[0], 'LogBid', {
-			token: tokenErc721.address,
+			erc721: tokenErc721.address,
 			tokenId: tokens[3],
 			bidder: ac.BUYER1,
 			bid: ether(1.1)
@@ -376,7 +376,7 @@ contract('Freeride testing', async function (rpc_accounts) {
 
 		rec.logs.length.should.be.equal(1);
 		await expectEvent.inLog(rec.logs[0], 'LogCreateMany', {
-			token: tokenErc721.address,
+			erc721: tokenErc721.address,
 			tokenIds: [ tokens[4] ],
 			owners: [ ac.ADAPT_ADMIN ],
 			seller: ac.ADAPT_ADMIN,

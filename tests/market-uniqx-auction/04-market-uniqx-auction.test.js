@@ -70,9 +70,9 @@ contract('Testing buy now - many', async function (rpc_accounts) {
 		console.log(`GAS - Register Token: ${ret.receipt.gasUsed}`);
 
 		ret.logs.length.should.be.equal(1);
-		await expectEvent.inLog(ret.logs[0], 'LogRegisterToken', { token: tokenErc721.address });
+		await expectEvent.inLog(ret.logs[0], 'LogRegisterToken', { erc721: tokenErc721.address });
 
-		const status = await market.getTokenContractStatus(tokenErc721.address);
+		const status = await market.getTokenFlags(tokenErc721.address);
 		assert.equal(status[0], true, 'unexpected registration status - should be registered');
 		assert.equal(status[0], true, 'unexpected orders status - should be enabled');
 	});
@@ -169,13 +169,13 @@ contract('Testing buy now - many', async function (rpc_accounts) {
 		ret.logs.length.should.be.equal(2 * tokens.length);
 		for (let i = 0; i < tokens.length; i++) {
 			await expectEvent.inLog(ret.logs[i*2], 'LogBid', {
-				token: tokenErc721.address,
+				erc721: tokenErc721.address,
 				tokenId: tokens[i],
 				bidder: ac.BUYER1,
 				bid: buyPrices[i]
 			});
 			await expectEvent.inLog(ret.logs[i*2 + 1], 'LogBuy', {
-				token: tokenErc721.address,
+				erc721: tokenErc721.address,
 				tokenId: tokens[i],
 				buyer: ac.BUYER1,
 			});

@@ -117,10 +117,10 @@ contract('Testing FixedPrice listing - main flow', async function (rpc_accounts)
 
 		ret.logs.length.should.be.equal(1);
 		await expectEvent.inLog(ret.logs[0], 'LogRegisterToken', {
-			token: tokenErc721.address
+			erc721: tokenErc721.address
 		});
 
-		const status = await market.getTokenContractStatus(tokenErc721.address);
+		const status = await market.getTokenFlags(tokenErc721.address);
 		assert.equal(status[0], true, 'unexpected registration status - should be registered');
 		assert.equal(status[0], true, 'unexpected orders status - should be enabled');
 	});
@@ -160,7 +160,7 @@ contract('Testing FixedPrice listing - main flow', async function (rpc_accounts)
 
 		rec.logs.length.should.be.equal(1);
 		await expectEvent.inLog(rec.logs[0], 'LogCreateMany', {
-			token: tokenErc721.address,
+			erc721: tokenErc721.address,
 			tokenIds: tokens,
 			owners: Array(...Array(tokens.length)).map(() =>  ac.ADAPT_ADMIN),
 			seller: ac.ADAPT_ADMIN,
@@ -191,7 +191,7 @@ contract('Testing FixedPrice listing - main flow', async function (rpc_accounts)
 
 		rec.logs.length.should.be.equal(1);
 		await expectEvent.inLog(rec.logs[0], 'LogCreate', {
-			token: tokenErc721.address,
+			erc721: tokenErc721.address,
 			tokenId: tokens[10],
 			owner: ac.ADAPT_ADMIN,
 			seller: ac.ADAPT_ADMIN,
@@ -215,7 +215,7 @@ contract('Testing FixedPrice listing - main flow', async function (rpc_accounts)
 
 		rec.logs.length.should.be.equal(1);
 		await expectEvent.inLog(rec.logs[0], 'LogCancelMany', {
-			token: tokenErc721.address,
+			erc721: tokenErc721.address,
 			tokenIds: [ tokens[0], tokens[1] ]
 		});
 
@@ -239,7 +239,7 @@ contract('Testing FixedPrice listing - main flow', async function (rpc_accounts)
 
 		rec.logs.length.should.be.equal(1);
 		await expectEvent.inLog(rec.logs[0], 'LogCreateMany', {
-			token: tokenErc721.address,
+			erc721: tokenErc721.address,
 			tokenIds: [ tokens[0] ],
 			owners: [ ac.ADAPT_ADMIN ],
 			seller: ac.ADAPT_ADMIN,
@@ -276,7 +276,7 @@ contract('Testing FixedPrice listing - main flow', async function (rpc_accounts)
 
 		ret.logs.length.should.be.equal(1);
 		await expectEvent.inLog(ret.logs[0], 'LogBuyMany', {
-			token: tokenErc721.address,
+			erc721: tokenErc721.address,
 			tokenIds: tokensToBuy,
 			buyer: ac.BUYER1,
 		});

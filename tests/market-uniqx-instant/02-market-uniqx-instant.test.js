@@ -70,10 +70,10 @@ contract('Testing token listing - many', async function (rpc_accounts) {
 
 		ret.logs.length.should.be.equal(1);
 		await expectEvent.inLog(ret.logs[0], 'LogRegisterToken', {
-			token: tokenErc721.address
+			erc721: tokenErc721.address
 		});
 
-		const status = await market.getTokenContractStatus(tokenErc721.address);
+		const status = await market.getTokenFlags(tokenErc721.address);
 		assert.equal(status[0], true, 'unexpected registration status - should be registered');
 		assert.equal(status[0], true, 'unexpected orders status - should be enabled');
 	});
@@ -199,7 +199,7 @@ contract('Testing token listing - many', async function (rpc_accounts) {
 
 		ret.logs.length.should.be.equal(1);
 		await expectEvent.inLog(ret.logs[0], 'LogCreateMany', {
-			token: tokenErc721.address,
+			erc721: tokenErc721.address,
 			tokenIds: tokens,
 			owners: owners,
 			seller: ac.SELLER,

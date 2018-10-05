@@ -70,7 +70,7 @@ contract('Testing buy now - single', async function (rpc_accounts) {
 		).should.be.fulfilled;
 
 		ret.logs.length.should.be.equal(1);
-		await expectEvent.inLog(ret.logs[0], 'LogRegisterToken', { token: tokenErc721.address });
+		await expectEvent.inLog(ret.logs[0], 'LogRegisterToken', { erc721: tokenErc721.address });
 
 		console.log(`GAS - Register Token: ${ret.receipt.gasUsed}`);
 	});
@@ -134,13 +134,13 @@ contract('Testing buy now - single', async function (rpc_accounts) {
 
 		ret.logs.length.should.be.equal(2);
 		await expectEvent.inLog(ret.logs[0], 'LogBid', {
-			token: tokenErc721.address,
+			erc721: tokenErc721.address,
 			tokenId: token,
 			bidder: ac.BUYER1,
 			bid: priceToPay
 		});
 		await expectEvent.inLog(ret.logs[1], 'LogBuy', {
-			token: tokenErc721.address,
+			erc721: tokenErc721.address,
 			tokenId: token,
 			buyer: ac.BUYER1
 		});
