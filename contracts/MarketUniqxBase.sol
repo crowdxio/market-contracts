@@ -91,6 +91,9 @@ contract MarketUniqxBase is Pausable, ReentrancyGuard {
 		_;
 	}
 
+	// @dev Disallows direct send by setting a default function without the `payable` flag.
+	function() external {}
+
 	//------------------------------------- PUBLIC ------------------------------------------
 
 	function setMarketFee(uint _marketFeeNum, uint _marketFeeDen)
