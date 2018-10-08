@@ -1,24 +1,26 @@
 import {
-	accounts, assert, OrderStatus, BigNumber, getBalanceAsync
+	accounts,
+	assert,
+	BigNumber,
+	getBalanceAsync
 } from '../common/common';
 import ether from "../helpers/ether";
 import expectEvent from "../helpers/expectEvent";
 import EVMRevert from "../../zeppelin/test/helpers/EVMRevert";
-const moment = require('moment');
 
-const TokenAdapt = artifacts.require("../../../adapt/contracts/AdaptCollectibles.sol");
+const TokenErc721 = artifacts.require("../../contracts/ERC721TokenMock.sol");
 const MarketUniqxInstant = artifacts.require('../../contracts/MarketUniqxInstant.sol');
 
 contract('Testing buy now functionality - single', async function (rpc_accounts) {
 
 	const ac = accounts(rpc_accounts);
 	let market;
-	let tokenAdapt;
+	let tokenErc721;
 
 	let token;
 	let buyPrice;
 
-	it('should successfully deploy the market contract and the adapt token', async function () {
+	it('should successfully deploy the market contract and the erc721 token', async function () {
 
 		console.log('Deploying the market contract...');
 
@@ -33,30 +35,26 @@ contract('Testing buy now functionality - single', async function (rpc_accounts)
 
 		console.log(`The market contract has been successfully deployed at ${market.address}`);
 
-		tokenAdapt = await TokenAdapt.new(
+		tokenErc721 = await TokenErc721.new(
 			ac.ADAPT_OWNER,
 			ac.ADAPT_ADMIN,
 			{from: ac.OPERATOR, gas: 7000000}
 		).should.be.fulfilled;
 
-		console.log(`The adapt token has been successfully deployed at ${tokenAdapt.address}`);
+		console.log(`The erc721 token has been successfully deployed at ${tokenErc721.address}`);
 	});
 
 	it('should mint a test token', async function () {
 
-		const ret = await tokenAdapt.massMint(
-			ac.ADAPT_ADMIN,
-			'json hash',			// json hash
-			1,				        // start
-			1,		                // count
-			{from: ac.ADAPT_ADMIN}
-		).should.be.fulfilled;
+		await tokenErc721.mint(ac.ADAPT_ADMIN, 0, {
+			from: ac.ADAPT_ADMIN
+		}).should.be.fulfilled;
 	});
 
-	it('should register the adapt token', async function () {
+	it('should register the erc721 token', async function () {
 
 		const ret = await market.registerToken(
-			tokenAdapt.address,
+			tokenErc721.address,
 			{
 				from: ac.MARKET_ADMIN_MSIG,
 				gas: 7000000
@@ -65,15 +63,15 @@ contract('Testing buy now functionality - single', async function (rpc_accounts)
 
 		ret.logs.length.should.be.equal(1);
 		await expectEvent.inLog(ret.logs[0], 'LogRegisterToken', {
-			token: tokenAdapt.address
+			erc721: tokenErc721.address
 		});
 
 		console.log(`GAS - Register Token: ${ret.receipt.gasUsed}`);
 	});
 
 	it('ADAPT_ADMIN should allow the market to escrow his tokens', async function () {
-		// approve market to transfer all erc721 tokens hold by admin
-		await tokenAdapt.setApprovalForAll(
+		// approve market to transfer all eerc721 tokens hold by admin
+		await tokenErc721.setApprovalForAll(
 			market.address,
 			true,
 			{
@@ -86,11 +84,11 @@ contract('Testing buy now functionality - single', async function (rpc_accounts)
 
 	it('ADAPT_ADMIN should be able to list a token for sale', async () => {
 
-		token = await tokenAdapt.tokenByIndex(0);
+		token = await tokenErc721.tokenByIndex(0);
 		buyPrice = ether(10);
 
 		const rec = await market.create(
-			tokenAdapt.address,
+			tokenErc721.address,
 			token,
 			buyPrice,
 			{
@@ -104,7 +102,7 @@ contract('Testing buy now functionality - single', async function (rpc_accounts)
 		const priceToPay = new BigNumber(ether(1));
 
 		const ret = await market.buy(
-			tokenAdapt.address,
+			tokenErc721.address,
 			token,
 			{
 				from: ac.BUYER1,
@@ -118,7 +116,7 @@ contract('Testing buy now functionality - single', async function (rpc_accounts)
 		const priceToPay = new BigNumber(ether(11));
 
 		const ret = await market.buy(
-			tokenAdapt.address,
+			tokenErc721.address,
 			token,
 			{
 				from: ac.BUYER1,
@@ -136,7 +134,7 @@ contract('Testing buy now functionality - single', async function (rpc_accounts)
 		const priceToPay = new BigNumber(ether(10));
 
 		const ret = await market.buy(
-			tokenAdapt.address,
+			tokenErc721.address,
 			token,
 			{
 				from: ac.BUYER1,
@@ -145,18 +143,20 @@ contract('Testing buy now functionality - single', async function (rpc_accounts)
 			}
 		).should.be.fulfilled;
 
-		console.log(`GAS - Buy 10 adapt tokens: ${ret.receipt.gasUsed}`);
+		console.log(`GAS - Buy 10 erc721 tokens: ${ret.receipt.gasUsed}`);
 
 		ret.logs.length.should.be.equal(1);
 		await expectEvent.inLog(ret.logs[0], 'LogBuy', {
-			token: tokenAdapt.address,
+			erc721: tokenErc721.address,
 			tokenId: token,
 			buyer: ac.BUYER1,
 		});
 
 
-		// TODO: get these from contract
-		const marketFee = priceToPay.dividedToIntegerBy(100);
+		const marketFeeNum = await market.marketFeeNum.call();
+		const marketFeeDen = await market.marketFeeDen.call();
+		const feePercent = marketFeeNum.div(marketFeeDen);
+		const marketFee = priceToPay.mul(feePercent);
 		const ownerDue = priceToPay - marketFee;
 
 		const marketBalanceAfter = await getBalanceAsync(ac.MARKET_FEES_MSIG);
@@ -165,14 +165,14 @@ contract('Testing buy now functionality - single', async function (rpc_accounts)
 		marketBalanceAfter.should.be.bignumber.equal(marketBalanceBefore.plus(marketFee));
 		ownerBalanceAfter.should.be.bignumber.equal(ownerBalanceBefore.plus(ownerDue));
 
-		assert.equal(await tokenAdapt.ownerOf(token), ac.BUYER1, 'unexpected owner  - should be buyer1');
+		assert.equal(await tokenErc721.ownerOf(token), ac.BUYER1, 'unexpected owner  - should be buyer1');
 	});
 
 	it('BUYER2 should not be able to buy the token - token already sold to buyer1', async function () {
 		const priceToPay = new BigNumber(ether(10));
 
 		await market.buy(
-			tokenAdapt.address,
+			tokenErc721.address,
 			token,
 			{
 				from: ac.BUYER2,

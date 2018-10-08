@@ -11,14 +11,14 @@ import EVMRevert from "../../zeppelin/test/helpers/EVMRevert";
 import { duration, increaseTimeTo } from '../../zeppelin/test/helpers/increaseTime';
 import latestTime from '../helpers/latestTime';
 
-const TokenAdapt = artifacts.require("../../../adapt/contracts/AdaptCollectibles.sol");
+const TokenErc721 = artifacts.require("../../contracts/ERC721TokenMock.sol");
 const MarketUniqxAuction = artifacts.require('../../contracts/MarketUniqxAuction.sol');
 
 contract('Testing auction functionality', async function (rpc_accounts) {
 
 	const ac = accounts(rpc_accounts);
 	let market;
-	let tokenAdapt;
+	let tokenErc721;
 
 	const tokensCount = 10;
 	let tokens = [];
@@ -26,7 +26,7 @@ contract('Testing auction functionality', async function (rpc_accounts) {
 	let startPrices = [];
 	let endTimes = [];
 
-	it('should successfully deploy the market contract and the adapt token', async function () {
+	it('should successfully deploy the market contract and the erc721 token', async function () {
 
 		console.log('Deploying the market contract...');
 
@@ -41,31 +41,28 @@ contract('Testing auction functionality', async function (rpc_accounts) {
 
 		console.log(`The market contract has been successfully deployed at ${market.address}`);
 
-		tokenAdapt = await TokenAdapt.new(
+		tokenErc721 = await TokenErc721.new(
 			ac.ADAPT_OWNER,
 			ac.ADAPT_ADMIN,
 			{ from: ac.OPERATOR, gas: 7000000 }
 		).should.be.fulfilled;
 
-		console.log(`The adapt token has been successfully deployed at ${tokenAdapt.address}`);
+		console.log(`The erc721 token has been successfully deployed at ${tokenErc721.address}`);
 	});
 
 	it('should mint some test tokens', async function () {
-		const ret = await tokenAdapt.massMint(
-			ac.ADAPT_ADMIN,
-			'json hash',			// json hash
-			1,				        // start
-			tokensCount,		    // count
-			{ from: ac.ADAPT_ADMIN }
-		).should.be.fulfilled;
 
-		console.log(`GAS - Mass mint ${tokensCount} adapt tokens: ${ret.receipt.gasUsed}`);
+		for (let i = 0; i < tokensCount; i++) {
+			await tokenErc721.mint(ac.ADAPT_ADMIN, i, {
+				from: ac.ADAPT_ADMIN
+			}).should.be.fulfilled;
+		}
 	});
 
-	it('should register the adapt token', async function () {
+	it('should register the erc721 token', async function () {
 
 		const ret = await market.registerToken(
-			tokenAdapt.address,
+			tokenErc721.address,
 			{
 				from: ac.MARKET_ADMIN_MSIG,
 				gas: 7000000
@@ -75,9 +72,9 @@ contract('Testing auction functionality', async function (rpc_accounts) {
 		console.log(`GAS - Register Token: ${ret.receipt.gasUsed}`);
 
 		ret.logs.length.should.be.equal(1);
-		await expectEvent.inLog(ret.logs[0], 'LogRegisterToken', { token: tokenAdapt.address });
+		await expectEvent.inLog(ret.logs[0], 'LogRegisterToken', { erc721: tokenErc721.address });
 
-		const status = await market.getTokenContractStatus(tokenAdapt.address);
+		const status = await market.getTokenFlags(tokenErc721.address);
 		assert.equal(status[0], true, 'unexpected registration status - should be registered');
 		assert.equal(status[0], true, 'unexpected orders status - should be enabled');
 	});
@@ -85,7 +82,7 @@ contract('Testing auction functionality', async function (rpc_accounts) {
 
 	it('ADAPT_ADMIN should allow the market to escrow his tokens', async function () {
 		// approve market to transfer all erc721 tokens hold by admin
-		await tokenAdapt.setApprovalForAll(
+		await tokenErc721.setApprovalForAll(
 			market.address,
 			true,
 			{
@@ -95,18 +92,18 @@ contract('Testing auction functionality', async function (rpc_accounts) {
 		).should.be.fulfilled;
 	});
 
-	it('ADAPT_ADMIN should be able to list 10 adapt tokens for sale - auction', async () => {
+	it('ADAPT_ADMIN should be able to list 10 erc721 tokens for sale - auction', async () => {
 
 		const threeDaysLater = moment().add(3, 'days').unix();
 		for (let i = 0; i < tokensCount; i++) {
-			tokens[i] = await tokenAdapt.tokenByIndex(i);
+			tokens[i] = await tokenErc721.tokenByIndex(i);
 			buyPrices[i] = ether(2);
 			startPrices[i] = ether(1);
 			endTimes[i] = threeDaysLater;
 		}
 
 		await market.createMany(
-			tokenAdapt.address,
+			tokenErc721.address,
 			tokens,
 			buyPrices,
 			startPrices,
@@ -120,7 +117,7 @@ contract('Testing auction functionality', async function (rpc_accounts) {
 
 	it('ADAPT_ADMIN should be able to cancel an auction with zero bids', async function () {
 		const rec = await market.cancelMany(
-			tokenAdapt.address,
+			tokenErc721.address,
 			[tokens[0]],
 			{
 				from: ac.ADAPT_ADMIN ,
@@ -130,11 +127,11 @@ contract('Testing auction functionality', async function (rpc_accounts) {
 
 		rec.logs.length.should.be.equal(1);
 		await expectEvent.inLog(rec.logs[0], 'LogCancelMany', {
-			token: tokenAdapt.address,
+			erc721: tokenErc721.address,
 			tokenIds: [ tokens[0] ]
 		});
 
-		const owner = await tokenAdapt.ownerOf(tokens[0]);
+		const owner = await tokenErc721.ownerOf(tokens[0]);
 		assert.equal(owner, ac.ADAPT_ADMIN, 'unexpected owner');
 	});
 
@@ -142,7 +139,7 @@ contract('Testing auction functionality', async function (rpc_accounts) {
 		const bid = new BigNumber(ether(10));
 
 		const ret = await market.bidMany(
-			tokenAdapt.address,
+			tokenErc721.address,
 			[],
 			[],
 			{
@@ -157,7 +154,7 @@ contract('Testing auction functionality', async function (rpc_accounts) {
 		const bid = new BigNumber(ether(0.1));
 
 		const ret = await market.bidMany(
-			tokenAdapt.address,
+			tokenErc721.address,
 			[tokens[1]],
 			[bid],
 			{
@@ -172,7 +169,7 @@ contract('Testing auction functionality', async function (rpc_accounts) {
 		const bid = new BigNumber(ether(3));
 
 		const ret = await market.bidMany(
-			tokenAdapt.address,
+			tokenErc721.address,
 			[tokens[1]],
 			[bid],
 			{
@@ -188,7 +185,7 @@ contract('Testing auction functionality', async function (rpc_accounts) {
 		const bid = new BigNumber(ether(8));
 
 		const ret = await market.bidMany(
-			tokenAdapt.address,
+			tokenErc721.address,
 			tokens.slice(1),
 			startPrices.slice(1),
 			{
@@ -203,7 +200,7 @@ contract('Testing auction functionality', async function (rpc_accounts) {
 		const bid = new BigNumber(ether(100));
 
 		const ret = await market.bidMany(
-			tokenAdapt.address,
+			tokenErc721.address,
 			tokens.slice(1),
 			startPrices.slice(1),
 			{
@@ -218,7 +215,7 @@ contract('Testing auction functionality', async function (rpc_accounts) {
 		const bid = new BigNumber(ether(1.2));
 
 		const ret = await market.bidMany(
-			tokenAdapt.address,
+			tokenErc721.address,
 			[tokens[1]],
 			[bid],
 			{
@@ -230,13 +227,13 @@ contract('Testing auction functionality', async function (rpc_accounts) {
 
 		ret.logs.length.should.be.equal(1);
 		await expectEvent.inLog(ret.logs[0], 'LogBid', {
-			token: tokenAdapt.address,
+			erc721: tokenErc721.address,
 			tokenId: tokens[1],
 			bidder: ac.BUYER1,
 			bid: bid
 		});
 
-		const info = await market.getOrderInfo(tokenAdapt.address, tokens[1]);
+		const info = await market.getOrderInfo(tokenErc721.address, tokens[1]);
 		console.log(`order info: ${JSON.stringify(info, null, '\t')}`);
 
 		const highestBid = new BigNumber(info[5]);
@@ -245,7 +242,7 @@ contract('Testing auction functionality', async function (rpc_accounts) {
 
 	it('ADAPT_ADMIN should not be able to cancel a bidden auction', async function () {
 		const rec = await market.cancelMany(
-			tokenAdapt.address,
+			tokenErc721.address,
 			[tokens[1]],
 			{
 				from: ac.ADAPT_ADMIN ,
@@ -258,7 +255,7 @@ contract('Testing auction functionality', async function (rpc_accounts) {
 		const bid = new BigNumber(ether(1.1));
 
 		await market.bidMany(
-			tokenAdapt.address,
+			tokenErc721.address,
 			[tokens[1]],
 			[bid],
 			{
@@ -273,7 +270,7 @@ contract('Testing auction functionality', async function (rpc_accounts) {
 		const bid = new BigNumber(ether(1.2));
 
 		await market.bidMany(
-			tokenAdapt.address,
+			tokenErc721.address,
 			[tokens[1]],
 			[bid],
 			{
@@ -288,7 +285,7 @@ contract('Testing auction functionality', async function (rpc_accounts) {
 		const bid = new BigNumber(ether(1.3));
 
 		const ret = await market.bidMany(
-			tokenAdapt.address,
+			tokenErc721.address,
 			[tokens[1]],
 			[bid],
 			{
@@ -300,13 +297,13 @@ contract('Testing auction functionality', async function (rpc_accounts) {
 
 		ret.logs.length.should.be.equal(1);
 		await expectEvent.inLog(ret.logs[0], 'LogBid', {
-			token: tokenAdapt.address,
+			erc721: tokenErc721.address,
 			tokenId: tokens[1],
 			bidder: ac.BUYER2,
 			bid: bid
 		});
 
-		const info = await market.getOrderInfo(tokenAdapt.address, tokens[1]);
+		const info = await market.getOrderInfo(tokenErc721.address, tokens[1]);
 		console.log(`order info: ${JSON.stringify(info, null, '\t')}`);
 
 		const highestBid = new BigNumber(info[5]);
@@ -317,7 +314,7 @@ contract('Testing auction functionality', async function (rpc_accounts) {
 		const bid = new BigNumber(ether(1.4));
 
 		const ret = await market.bidMany(
-			tokenAdapt.address,
+			tokenErc721.address,
 			[tokens[1]],
 			[bid],
 			{
@@ -329,13 +326,13 @@ contract('Testing auction functionality', async function (rpc_accounts) {
 
 		ret.logs.length.should.be.equal(1);
 		await expectEvent.inLog(ret.logs[0], 'LogBid', {
-			token: tokenAdapt.address,
+			erc721: tokenErc721.address,
 			tokenId: tokens[1],
 			bidder: ac.BUYER2,
 			bid: bid
 		});
 
-		const info = await market.getOrderInfo(tokenAdapt.address, tokens[1]);
+		const info = await market.getOrderInfo(tokenErc721.address, tokens[1]);
 		console.log(`order info: ${JSON.stringify(info, null, '\t')}`);
 
 		const highestBid = new BigNumber(info[5]);
@@ -347,7 +344,7 @@ contract('Testing auction functionality', async function (rpc_accounts) {
 		const bid = new BigNumber(ether(2));
 
 		const ret = await market.bidMany(
-			tokenAdapt.address,
+			tokenErc721.address,
 			[tokens[1]],
 			[bid],
 			{
@@ -359,21 +356,21 @@ contract('Testing auction functionality', async function (rpc_accounts) {
 
 		ret.logs.length.should.be.equal(2);
 		await expectEvent.inLog(ret.logs[0], 'LogBid', {
-			token: tokenAdapt.address,
+			erc721: tokenErc721.address,
 			tokenId: tokens[1],
 			bidder: ac.BUYER3,
 			bid: bid
 		});
 		await expectEvent.inLog(ret.logs[1], 'LogBuy', {
-			token: tokenAdapt.address,
+			erc721: tokenErc721.address,
 			tokenId: tokens[1],
 			buyer: ac.BUYER3
 		});
 
-		const owner = await tokenAdapt.ownerOf(tokens[1]);
+		const owner = await tokenErc721.ownerOf(tokens[1]);
 		assert.equal(owner, ac.BUYER3, 'unexpected owner');
 
-		const info = await market.getOrderInfo(tokenAdapt.address, tokens[1]);
+		const info = await market.getOrderInfo(tokenErc721.address, tokens[1]);
 		//console.log(`order info: ${JSON.stringify(info, null, '\t')}`);
 		assert.equal(info[0], OrderStatus.Unknown, 'unexpected status - should be unknwon');
 	});
@@ -382,7 +379,7 @@ contract('Testing auction functionality', async function (rpc_accounts) {
 		const bid = new BigNumber(ether(2));
 
 		await market.bidMany(
-			tokenAdapt.address,
+			tokenErc721.address,
 			[tokens[1]],
 			[bid],
 			{
@@ -400,7 +397,7 @@ contract('Testing auction functionality', async function (rpc_accounts) {
 
 		const tokens_ = [tokens[2], tokens[3]];
 		const ret = await market.bidMany(
-			tokenAdapt.address,
+			tokenErc721.address,
 			tokens_,
 			[bid, bid],
 			{
@@ -413,18 +410,18 @@ contract('Testing auction functionality', async function (rpc_accounts) {
 		ret.logs.length.should.be.equal(2);
 		for (let i = 0; i < 2; i++) {
 			await expectEvent.inLog(ret.logs[i], 'LogBid', {
-				token: tokenAdapt.address,
+				erc721: tokenErc721.address,
 				tokenId: tokens_[i],
 				bidder: ac.BUYER3,
 				bid: bid
 			});
 		}
 
-		let info = await market.getOrderInfo(tokenAdapt.address, tokens[2]);
+		let info = await market.getOrderInfo(tokenErc721.address, tokens[2]);
 		let highestBid = new BigNumber(info[5]);
 		highestBid.should.be.bignumber.equal(bid);
 
-		info = await market.getOrderInfo(tokenAdapt.address, tokens[3]);
+		info = await market.getOrderInfo(tokenErc721.address, tokens[3]);
 		highestBid = new BigNumber(info[5]);
 		highestBid.should.be.bignumber.equal(bid);
 	});
@@ -437,7 +434,7 @@ contract('Testing auction functionality', async function (rpc_accounts) {
 		const bid = new BigNumber(ether(1.6));
 
 		await market.bidMany(
-			tokenAdapt.address,
+			tokenErc721.address,
 			[tokens[2]],
 			[bid],
 			{
@@ -452,7 +449,7 @@ contract('Testing auction functionality', async function (rpc_accounts) {
 
 		const tokens_ = [tokens[2], tokens[3]];
 		const ret = await market.completeMany(
-			tokenAdapt.address,
+			tokenErc721.address,
 			tokens_,
 			{
 				from: ac.BUYER3,
@@ -463,16 +460,16 @@ contract('Testing auction functionality', async function (rpc_accounts) {
 		ret.logs.length.should.be.equal(2);
 		for (let i = 0; i < 2; i++) {
 			await expectEvent.inLog(ret.logs[i], 'LogBuy', {
-				token: tokenAdapt.address,
+				erc721: tokenErc721.address,
 				tokenId: tokens_[i],
 				buyer: ac.BUYER3
 			});
 		}
 
-		let owner = await tokenAdapt.ownerOf(tokens[2]);
+		let owner = await tokenErc721.ownerOf(tokens[2]);
 		assert.equal(owner, ac.BUYER3, 'unexpected owner');
 
-		owner = await tokenAdapt.ownerOf(tokens[3]);
+		owner = await tokenErc721.ownerOf(tokens[3]);
 		assert.equal(owner, ac.BUYER3, 'unexpected owner');
 	});
 
@@ -480,7 +477,7 @@ contract('Testing auction functionality', async function (rpc_accounts) {
 	it('ADAPT_ADMIN can take his unsold tokens back', async function () {
 
 		const ret = await market.completeMany(
-			tokenAdapt.address,
+			tokenErc721.address,
 			tokens.slice(4),
 			{
 				from: ac.ADAPT_ADMIN,
@@ -491,13 +488,13 @@ contract('Testing auction functionality', async function (rpc_accounts) {
 		ret.logs.length.should.be.equal(tokens.length - 4);
 		for (let i = 0; i < tokens.length - 4; i++) {
 			await expectEvent.inLog(ret.logs[i], 'LogRetake', {
-				token: tokenAdapt.address,
+				erc721: tokenErc721.address,
 				tokenId: tokens[4 + i],
 			});
 		}
 
 		for(let i = 4; i < tokensCount; i++) {
-			let owner = await tokenAdapt.ownerOf(tokens[i]);
+			let owner = await tokenErc721.ownerOf(tokens[i]);
 			assert.equal(owner, ac.ADAPT_ADMIN, 'unexpected owner');
 		}
 	});
