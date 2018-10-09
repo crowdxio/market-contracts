@@ -1,7 +1,7 @@
 pragma solidity ^0.4.24;
 
-import {SafeMath} from "../zeppelin/contracts/math/SafeMath.sol";
-import {ERC721Token} from "../zeppelin/contracts/token/ERC721/ERC721Token.sol";
+import {SafeMath} from "openzeppelin-solidity/contracts/math/SafeMath.sol";
+import {ERC721Token} from "openzeppelin-solidity/contracts/token/ERC721/ERC721Token.sol";
 import {MarketUniqxBase} from "./MarketUniqxBase.sol";
 
 contract MarketUniqxInstant is MarketUniqxBase {
