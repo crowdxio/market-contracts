@@ -140,13 +140,27 @@ contract('Testing buy now - many', async function (rpc_accounts) {
 		).should.be.rejectedWith(EVMRevert);
 	});
 
-	it('BUYER1 should be able to buy 10 tokens', async () => {
+	it('BUYER1 should be able to buy 10 tokens and transfer to fees to an updated collector', async () => {
 
+		const futureCollectorAddress = ac.ACCOUNT1;
 		const ownerBalanceBefore = await getBalanceAsync(ac.ADAPT_ADMIN);
-		const marketBalanceBefore = await getBalanceAsync(ac.MARKET_FEES_MSIG);
+		const futureMarketBalanceBefore = await getBalanceAsync(futureCollectorAddress);
 
 		console.log(`ownerBalanceBefore: ${ownerBalanceBefore.toString(10)}`);
-		console.log(`marketBalanceBefore: ${marketBalanceBefore.toString(10)}`);
+		console.log(`futureMarketBalanceBefore: ${futureMarketBalanceBefore.toString(10)}`);
+
+		const marketFeeCollector = await market.MARKET_FEE_COLLECTOR.call();
+		assert.equal(ac.MARKET_FEES_MSIG, marketFeeCollector, 'Unexpected market msig wallet');
+
+		await market.setMarketFeeCollector(
+			futureCollectorAddress,
+			{
+				from: ac.MARKET_ADMIN_MSIG
+			}
+		).should.be.fulfilled;
+
+		const newMarketFeeCollector = await market.MARKET_FEE_COLLECTOR.call();
+		assert.equal(futureCollectorAddress, newMarketFeeCollector, 'Unexpected market msig wallet');
 
 		const priceToPay = new BigNumber(ether(10));
 
@@ -185,13 +199,13 @@ contract('Testing buy now - many', async function (rpc_accounts) {
 		console.log(`marketFee: ${marketFee}`);
 
 		const ownerBalanceAfter = await getBalanceAsync(ac.ADAPT_ADMIN);
-		const marketBalanceAfter = await getBalanceAsync(ac.MARKET_FEES_MSIG);
+		const marketBalanceAfter = await getBalanceAsync(futureCollectorAddress);
 
 		console.log(`ownerBalanceAfter: ${ownerBalanceAfter.toString(10)}`);
 		console.log(`marketBalanceAfter: ${marketBalanceAfter.toString(10)}`);
 
 		ownerBalanceAfter.should.be.bignumber.equal(ownerBalanceBefore.plus(ownerDue));
-		marketBalanceAfter.should.be.bignumber.equal(marketBalanceBefore.plus(marketFee));
+		marketBalanceAfter.should.be.bignumber.equal(futureMarketBalanceBefore.plus(marketFee));
 
 		for (let token of tokens) {
 			assert.equal(await tokenErc721.ownerOf(token), ac.BUYER1, 'unexpected owner  - should be buyer1');

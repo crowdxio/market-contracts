@@ -188,9 +188,9 @@ contract('Freeride testing', async function (rpc_accounts) {
 
 	it('should not allow to cancel an auction if it was bidden and is still active', async () => {
 
-		await market.cancelMany(
+		await market.cancel(
 			tokenErc721.address,
-			[ tokens[1] ],
+			tokens[1],
 			{ from: ac.ADAPT_ADMIN  }
 		).should.be.rejectedWith(EVMRevert);
 	});
@@ -263,17 +263,18 @@ contract('Freeride testing', async function (rpc_accounts) {
 		let listed = await market.tokenIsListed(tokenErc721.address, tokens[3]);
 		assert.equal(listed, true);
 
-		rec = await market.cancelMany(
+		rec = await market.cancel(
 			tokenErc721.address,
-			[ tokens[3] ],
+			tokens[3],
 			{ from: ac.ADAPT_ADMIN  }
 		).should.be.fulfilled;
 
 		rec.logs.length.should.be.equal(1);
-		await expectEvent.inLog(rec.logs[0], 'LogCancelMany', {
+		await expectEvent.inLog(rec.logs[0], 'LogCancel', {
 			erc721: tokenErc721.address,
-			tokenIds: [ tokens[3] ]
+			tokenId: tokens[3],
 		});
+
 
 		listed = await market.tokenIsListed(tokenErc721.address, tokens[3]);
 		assert.equal(listed, false);

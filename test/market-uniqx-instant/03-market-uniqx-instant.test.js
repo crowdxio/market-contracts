@@ -197,4 +197,72 @@ contract('Testing buy now functionality - many', async function (rpc_accounts) {
 			}
 		).should.be.rejectedWith(EVMRevert);
 	});
+
+	it('should be able to list tokens after buying', async () => {
+
+		await tokenErc721.setApprovalForAll(
+			market.address,
+			true,
+			{
+				from: ac.BUYER1
+			}
+		).should.be.fulfilled;
+
+		const rec = await market.createMany(
+			tokenErc721.address,
+			[ tokens[0], tokens[1] ],
+			[ ether(1), ether(1) ],
+			{
+				from: ac.BUYER1
+			}
+		).should.be.fulfilled;
+	});
+
+	it('should be able to update the orders for tokens 0 and 1', async() => {
+		const rec = await market.updateMany(
+			tokenErc721.address,
+			[ tokens[0], tokens[1] ],
+			[ ether(2), ether(2) ],
+			{
+				from: ac.BUYER1,
+			}
+		).should.be.fulfilled;
+
+		rec.logs.length.should.be.equal(1);
+		await expectEvent.inLog(rec.logs[0], 'LogUpdateMany', {
+			erc721: tokenErc721.address,
+			tokenIds: [ tokens[0], tokens[1] ],
+			newPrices: [ ether(2.1), ether(2.1) ],
+		});
+	});
+
+	it('BUYER2 should not be able to buy token 0 for the old price', async() => {
+		const rec = await market.buy(
+			tokenErc721.address,
+			tokens[0],
+			{
+				from: ac.BUYER2,
+				value: ether(1.5),
+			}
+		).should.be.rejectedWith(EVMRevert);
+	});
+
+	it('BUYER2 should be able to buy token 0 for the updated price', async() => {
+
+		const rec = await market.buy(
+			tokenErc721.address,
+			tokens[0],
+			{
+				from: ac.BUYER2,
+				value: ether(2)
+			}
+		).should.be.fulfilled;
+
+		rec.logs.length.should.be.equal(1);
+		await expectEvent.inLog(rec.logs[0], 'LogBuy', {
+			erc721: tokenErc721.address,
+			tokenId: tokens[0],
+			buyer: ac.BUYER2,
+		});
+	});
 });

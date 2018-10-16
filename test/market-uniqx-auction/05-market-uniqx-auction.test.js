@@ -6,7 +6,6 @@ import {
 } from '../common/common';
 import ether from '../helpers/ether';
 import expectEvent from '../helpers/expectEvent';
-const moment = require('moment');
 import EVMRevert from 'openzeppelin-solidity/test/helpers/EVMRevert';
 import { duration, increaseTimeTo } from 'openzeppelin-solidity/test/helpers/increaseTime';
 import latestTime from '../helpers/latestTime';
@@ -91,7 +90,7 @@ contract('Testing auction functionality', async function (rpc_accounts) {
 
 	it('ADAPT_ADMIN should be able to list 10 erc721 tokens for sale - auction', async () => {
 
-		const threeDaysLater = moment().add(3, 'days').unix();
+		const threeDaysLater = latestTime() + duration.days(3);
 		for (let i = 0; i < tokensCount; i++) {
 			tokens[i] = await tokenErc721.tokenByIndex(i);
 			buyPrices[i] = ether(2);

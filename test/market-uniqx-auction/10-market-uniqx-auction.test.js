@@ -1,5 +1,5 @@
 import {
-	accounts,
+	accounts, assert,
 	BigNumber,
 	getBalanceAsyncStr,
 } from '../common/common';
@@ -7,8 +7,6 @@ import ether from '../helpers/ether';
 import expectEvent from '../helpers/expectEvent';
 import latestTime from '../helpers/latestTime';
 import { duration, increaseTimeTo } from 'openzeppelin-solidity/test/helpers/increaseTime';
-
-const moment = require('moment');
 
 const TokenErc721 = artifacts.require('ERC721TokenMock');
 const MarketUniqxAuction = artifacts.require('MarketUniqxAuction');
@@ -86,7 +84,7 @@ contract('Testing Auction listing - main flow', async function (rpc_accounts) {
 
 	it('should be able to list 10 erc721 tokens for sale - auction format', async () => {
 
-		const threeDaysLater = moment().add(3, 'days').unix();
+		const threeDaysLater = latestTime() + duration.days(3);
 		for (let i = 0; i < tokensCount - 1; i++) {
 			tokens[i] = await tokenErc721.tokenByIndex(i);
 			buyPrices[i] = ether(9);
@@ -133,7 +131,7 @@ contract('Testing Auction listing - main flow', async function (rpc_accounts) {
 
 	it('should be able to list 1 token', async () => {
 
-		const fourDaysLater = moment().add(4, 'days').unix();
+		const fourDaysLater = latestTime() + duration.days(4);
 
 		tokens[10] = await tokenErc721.tokenByIndex(10);
 		buyPrices[10] = ether(9);
@@ -188,14 +186,14 @@ contract('Testing Auction listing - main flow', async function (rpc_accounts) {
 
 	it('should be able to re-list 1 token after cancelled', async () => {
 
-		const fourDaysLater = moment().add(4, 'days').unix();
+		const fourDaysLater = latestTime() + duration.days(4);
 
 		let rec = await uniqxMarket.createMany(
 			tokenErc721.address,
-			[ tokens[0] ],
-			[ ether(2) ],
-			[ ether(1) ],
-			[ fourDaysLater ],
+			[ tokens[0], tokens[1] ],
+			[ ether(2), ether(2) ],
+			[ ether(1), ether(1) ],
+			[ fourDaysLater , fourDaysLater],
 			{ from: ac.ADAPT_ADMIN  }
 		).should.be.fulfilled;
 
@@ -207,11 +205,58 @@ contract('Testing Auction listing - main flow', async function (rpc_accounts) {
 			tokenIds: [ tokens[0] ],
 			owners: [ ac.ADAPT_ADMIN ],
 			seller: ac.ADAPT_ADMIN,
-			buyPrices: [ ether(2) ],
-			startPrices: [ ether(1) ],
-			endTimes: [ new BigNumber(fourDaysLater) ]
+			buyPrices: [ ether(2), ether(2) ],
+			startPrices: [ ether(1), ether(1) ],
+			endTimes: [ new BigNumber(fourDaysLater), new BigNumber(fourDaysLater) ]
 		});
 	});
+
+	it('should be able to update the orders for tokens 0 and 1', async() => {
+		const rec = await uniqxMarket.updateMany(
+			tokenErc721.address,
+			[ tokens[0], tokens[1] ],
+			[ ether(2.1), ether(2.1) ],
+			[ ether(1.1), ether(1.1) ],
+			[ endTimes[0], endTimes[1] ],
+			{
+				from: ac.ADAPT_ADMIN,
+			}
+		).should.be.fulfilled;
+
+		rec.logs.length.should.be.equal(1);
+		await expectEvent.inLog(rec.logs[0], 'LogUpdateMany', {
+			erc721: tokenErc721.address,
+			tokenIds: tokens,
+			newBuyPrices: [ ether(2.1), ether(2.1) ],
+			newStartPrices: [ ether(1.1), ether(1.1) ],
+			newEndTimes: [ new BigNumber(endTimes[0]), new BigNumber(endTimes[1]) ]
+		});
+	});
+
+	it('BUYER1 should not be able to buy token 0 for the old price, but only bid for it', async() => {
+		const rec = await uniqxMarket.bid(
+			tokenErc721.address,
+			tokens[0],
+			{
+				from: ac.BUYER1,
+				value: ether(2),
+			}
+		).should.be.fulfilled;
+
+		rec.logs.length.should.be.equal(1);
+		await expectEvent.inLog(rec.logs[0], 'LogBid', {
+			erc721: tokenErc721.address,
+			tokenId: tokens[0],
+			bidder: ac.BUYER1,
+			bid: ether(2)
+		});
+
+		const owner = await tokenErc721.ownerOf(tokens[0]);
+		assert.notEqual(owner, ac.BUYER1, 'unexpected owner');
+
+		console.log(`GAS - Bid 2 erc721 tokens: ${rec.receipt.gasUsed}`);
+	});
+
 
 	it('BUYER1 should be able to place bids on 3 tokens', async() => {
 		const tokens_ = [ tokens[2], tokens[3], tokens[4] ];

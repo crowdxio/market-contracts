@@ -4,11 +4,9 @@ import {
 	BigNumber,
 } from '../common/common';
 import ether from '../helpers/ether';
-const moment = require('moment');
 import EVMRevert from 'openzeppelin-solidity/test/helpers/EVMRevert';
 import { duration, increaseTimeTo } from 'openzeppelin-solidity/test/helpers/increaseTime';
 import latestTime from '../helpers/latestTime';
-import * as abiDecoder from 'abi-decoder';
 
 const TokenErc721 = artifacts.require('ERC721TokenMock');
 const MarketUniqxAuction = artifacts.require('MarketUniqxAuction');
@@ -55,7 +53,7 @@ contract('Testing update auction - single & many', async function (rpc_accounts)
 				from: ac.ADAPT_ADMIN
 			}).should.be.fulfilled;
 		}
-		const threeDaysLater = moment().add(3, 'days').unix();
+		const threeDaysLater = latestTime() + duration.days(3);
 		for (let i = 0; i < tokensCount; i++) {
 			tokens[i] = await tokenErc721.tokenByIndex(i);
 			buyPrices[i] = ether(5);
@@ -155,7 +153,7 @@ contract('Testing update auction - single & many', async function (rpc_accounts)
 			tokens[0],
 			2,
 			1,
-			moment().add(59, 'minutes').unix(),
+			latestTime() + duration.minutes(59),
 			{
 				from: ac.ADAPT_ADMIN,
 			}
@@ -225,7 +223,7 @@ contract('Testing update auction - single & many', async function (rpc_accounts)
 			tokens[2],
 			ether(7),
 			ether(3),
-			moment().add(10, 'days').unix(),
+			latestTime() + duration.days(10),
 			{
 				from: ac.ADAPT_ADMIN,
 			}

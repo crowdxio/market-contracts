@@ -1,11 +1,12 @@
 import {
-	accounts,
+	accounts, assert,
 	BigNumber,
 	getBalanceAsyncStr,
 } from '../common/common';
 import ether from '../helpers/ether';
 import expectEvent from '../helpers/expectEvent';
 import latestTime from '../helpers/latestTime';
+import EVMRevert from 'openzeppelin-solidity/test/helpers/EVMRevert';
 import { duration, increaseTimeTo } from 'openzeppelin-solidity/test/helpers/increaseTime';
 
 import * as abiDecoder from 'abi-decoder';
@@ -139,26 +140,26 @@ contract('Testing Auction listing - main flow', async (rpc_accounts) => {
 		buyPrices[10] = ether(9);
 		startPrices[10] = ether(1);
 
-		let rec = await uniqxMarket.createMany(
+		let rec = await uniqxMarket.create(
 			tokenErc721.address,
-			[ tokens[10] ],
-			[ buyPrices[10] ],
-			[ startPrices[10] ],
-			[ fourDaysLater ],
+			tokens[10],
+			buyPrices[10],
+			startPrices[10],
+			fourDaysLater,
 			{ from: ac.ADAPT_ADMIN  }
 		).should.be.fulfilled;
 
 		console.log(`GAS - List for auction 1 erc721 token: ${rec.receipt.gasUsed}`);
 
 		rec.logs.length.should.be.equal(1);
-		await expectEvent.inLog(rec.logs[0], 'LogCreateMany', {
+		await expectEvent.inLog(rec.logs[0], 'LogCreate', {
 			erc721: tokenErc721.address,
-			tokenIds: [ tokens[10] ],
-			owners: [ ac.ADAPT_ADMIN ],
+			tokenId: tokens[10],
+			owner: ac.ADAPT_ADMIN,
 			seller: ac.ADAPT_ADMIN,
-			buyPrices: [ buyPrices[10] ],
-			startPrices: [ startPrices[10] ],
-			endTimes: [ new BigNumber(fourDaysLater) ]
+			buyPrice: buyPrices[10],
+			startPrice: startPrices[10],
+			endTime: new BigNumber(fourDaysLater)
 		});
 	});
 
@@ -350,5 +351,45 @@ contract('Testing Auction listing - main flow', async (rpc_accounts) => {
 				tokenId: tokens[6 + i],
 			});
 		}
+	});
+
+
+	it('Market msig should be able to set the percentage cut for the market', async() => {
+		const rec = await uniqxMarket.setMarketFee(
+			2,
+			100,
+			{
+				from: ac.MARKET_ADMIN_MSIG
+			}
+		).should.be.fulfilled;
+
+		const marketFeeNum = await uniqxMarket.marketFeeNum.call();
+		const marketFeeDen = await uniqxMarket.marketFeeDen.call();
+
+		assert.equal(marketFeeNum, 2, 'Unexpected fee numerator');
+		assert.equal(marketFeeDen, 100, 'Unexpected fee denominator');
+	});
+
+	it('should not allow other than market msig to set the percentage cut for the market', async() => {
+		const rec = await uniqxMarket.setMarketFee(
+			3,
+			100,
+			{
+				from: ac.BUYER1
+			}
+		).should.be.rejectedWith(EVMRevert);
+	});
+
+	it('should not allow other than market msig to change the msig address', async() => {
+		const rec = await uniqxMarket.setMarketFeeCollector(
+			ac.BUYER1,
+			{
+				from: ac.BUYER1
+			}
+		).should.be.rejectedWith(EVMRevert);
+	});
+
+	it('sending ether to contract should fail', async() => {
+		await uniqxMarket.send(ether(1)).should.be.rejectedWith(EVMRevert);
 	});
 });

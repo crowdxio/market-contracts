@@ -531,7 +531,6 @@ contract MarketUniqxAuction is MarketUniqxBase {
 			MARKET_FEE_COLLECTOR.transfer(marketFee);
 
 			// transfer the rest of the amount to the owner
-			require(order.highestBid > marketFee);
 			uint ownerDue = order.highestBid.sub(marketFee);
 			order.owner.transfer(ownerDue);
 

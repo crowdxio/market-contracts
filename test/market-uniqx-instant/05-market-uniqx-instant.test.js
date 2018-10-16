@@ -145,6 +145,8 @@ contract('Testing buy now functionality - single', async function (rpc_accounts)
 			buyer: ac.BUYER1,
 		});
 
+		const marketFeeCollector = await market.MARKET_FEE_COLLECTOR.call();
+		assert.equal(ac.MARKET_FEES_MSIG, marketFeeCollector, 'Unexpected market msig wallet');
 
 		const marketFeeNum = await market.marketFeeNum.call();
 		const marketFeeDen = await market.marketFeeDen.call();
@@ -172,5 +174,24 @@ contract('Testing buy now functionality - single', async function (rpc_accounts)
 				value: priceToPay
 			}
 		).should.be.rejectedWith(EVMRevert);
+	});
+
+	it('BUYER1 should be able to relist the token', async() => {
+		await tokenErc721.setApprovalForAll(
+			market.address,
+			true,
+			{
+				from: ac.BUYER1
+			}
+		).should.be.fulfilled;
+
+		const rec = await market.create(
+			tokenErc721.address,
+			token,
+			ether(2),
+			{
+				from: ac.BUYER1
+			}
+		).should.be.fulfilled;
 	});
 });

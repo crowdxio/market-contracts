@@ -6,8 +6,9 @@ import {
 } from '../common/common';
 import ether from '../helpers/ether';
 import expectEvent from '../helpers/expectEvent';
-const moment = require('moment');
 import EVMRevert from 'openzeppelin-solidity/test/helpers/EVMRevert';
+import { duration, increaseTimeTo } from 'openzeppelin-solidity/test/helpers/increaseTime';
+import latestTime from '../helpers/latestTime';
 
 const TokenErc721 = artifacts.require('ERC721TokenMock');
 const MarketUniqxAuction = artifacts.require('MarketUniqxAuction');
@@ -55,7 +56,7 @@ contract('Testing buy now - single', async function (rpc_accounts) {
 		token = await tokenErc721.tokenByIndex(0);
 		buyPrice = ether(10);
 		startPrice = ether(1);
-		endTime = moment().add(3, 'days').unix();
+		endTime = latestTime() + duration.days(3);
 	});
 
 	it('should register the erc721 token', async() => {
