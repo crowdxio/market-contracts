@@ -362,52 +362,46 @@ contract MarketUniqxAuction is MarketUniqxBase {
 		emit LogCancelMany(erc721, tokenIds);
 	}
 
-	// if there are winners it will really do the exchange (tokens <-> ETH)
-	// otherwise the owners will retake their tokens
-	function completeMany(
+	// completes the auction
+	// if there is a winner ?
+    // it will really do the exchange (token <-> ETH)
+	// otherwise the owner will retake his token
+	function complete(
 		address erc721,
-		uint[] tokenIds
+		uint tokenId
 	)
 		whenNotPaused
 		whenErc721Registered(erc721)
 		nonReentrant
 		public {
 
-		require(
-			tokenIds.length > 0,
-			"Array must have at least one entry"
-		);
-
 		ERC721Token tokenInstance = ERC721Token(erc721);
 
-		for(uint i = 0; i < tokenIds.length; i++) {
+		OrderInfo storage order = orders[erc721][tokenId];
 
-			OrderInfo storage order = orders[erc721][tokenIds[i]];
+		require(orderExists(order), "Token must be listed");
+		require(now >= order.endTime, "Auction must be ended");
 
-			require(orderExists(order), "Token must be listed");
-			require(now >= order.endTime, "Auction must be ended");
+		if (order.highestBid > 0) {
+			// transfer fee to market
+			uint marketFee = order.highestBid.mul(marketFeeNum).div(marketFeeDen);
+			MARKET_FEE_COLLECTOR.transfer(marketFee);
 
-			if (order.highestBid > 0) {
-				// transfer fee to market
-				uint marketFee = order.highestBid.mul(marketFeeNum).div(marketFeeDen);
-				MARKET_FEE_COLLECTOR.transfer(marketFee);
+			// transfer the rest of the amount to the owner
+			uint ownerDue = order.highestBid.sub(marketFee);
+			order.owner.transfer(ownerDue);
 
-				// transfer the rest of the amount to the owner
-				uint ownerDue = order.highestBid.sub(marketFee);
-				order.owner.transfer(ownerDue);
+			// transfer token to the highest bidder
+			tokenInstance.transferFrom(address(this), order.buyer, tokenId);
+			emit LogBuy(erc721, tokenId, order.buyer);
 
-				// transfer token to the highest bidder
-				tokenInstance.transferFrom(address(this), order.buyer, tokenIds[i]);
-				emit LogBuy(erc721, tokenIds[i], order.buyer);
-
-			} else {
-				// no bids, the token is unsold; transfer the token back to the owner
-				tokenInstance.transferFrom(address(this), order.owner, tokenIds[i]);
-				emit LogRetake(erc721, tokenIds[i]);
-			}
-
-			delete orders[erc721][tokenIds[i]];
+		} else {
+			// no bids, the token is unsold; transfer the token back to the owner
+			tokenInstance.transferFrom(address(this), order.owner, tokenId);
+			emit LogRetake(erc721, tokenId);
 		}
+
+		delete orders[erc721][tokenId];
 	}
 
 

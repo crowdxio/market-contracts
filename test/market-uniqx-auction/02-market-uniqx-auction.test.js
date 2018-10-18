@@ -176,9 +176,9 @@ contract('Freeride testing', async function (rpc_accounts) {
 
 	it('should not allow buyer3 to settle the auction yet while is still open', async() => {
 
-		const rec = await market.completeMany(
+		const rec = await market.complete(
 			tokenErc721.address,
-			[tokens[1]],
+			tokens[1],
 			{ from: ac.BUYER3 }
 		).should.be.rejectedWith(EVMRevert);
 
@@ -202,9 +202,9 @@ contract('Freeride testing', async function (rpc_accounts) {
 
 		await increaseTimeTo(latestTime() + duration.days(7));
 
-		const rec = await market.completeMany(
+		const rec = await market.complete(
 			tokenErc721.address,
-			[tokens[1]],
+			tokens[1],
 			{ from: ac.BUYER3 }
 		).should.be.fulfilled;
 
@@ -352,9 +352,9 @@ contract('Freeride testing', async function (rpc_accounts) {
 
 		await increaseTimeTo(oneDayLater + duration.minutes(1));
 
-		rec = await market.completeMany( // anyone can settle
+		rec = await market.complete( // anyone can settle
 			tokenErc721.address,
-			[tokens[3]],
+			tokens[3],
 			{ from: ac.BUYER3 }
 		).should.be.fulfilled;
 
@@ -391,9 +391,9 @@ contract('Freeride testing', async function (rpc_accounts) {
 
 		await increaseTimeTo(oneDayLater + duration.minutes(1));
 
-		rec = await market.completeMany(
+		rec = await market.complete(
 			tokenErc721.address,
-			[tokens[4]],
+			tokens[4],
 			{ from: ac.BUYER3 }
 		).should.be.fulfilled;
 

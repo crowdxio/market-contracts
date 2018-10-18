@@ -294,31 +294,30 @@ contract('Testing Auction listing - main flow', async (rpc_accounts) => {
 		const threeDaysLater = latestTime() + duration.days(3);
 		await increaseTimeTo(threeDaysLater + duration.minutes(1));
 
-		const tokens_ = [tokens[2], tokens[3]];
-		const rec = await uniqxMarket.completeMany(
-			tokenErc721.address,
-			tokens_,
-			{
-				from: ac.BUYER1,
-			}
-		).should.be.fulfilled;
+		for (let i = 2; i < 4; i++) {
+			const ret = await uniqxMarket.complete(
+				tokenErc721.address,
+				tokens[i],
+				{
+					from: ac.BUYER3
+				}
+			).should.be.fulfilled;
 
-		rec.logs.length.should.be.equal(2);
-		for (let i = 0; i < 2; i++) {
-			await expectEvent.inLog(rec.logs[i], 'LogBuy', {
+			ret.logs.length.should.be.equal(1);
+
+			await expectEvent.inLog(ret.logs[0], 'LogBuy', {
 				erc721: tokenErc721.address,
-				tokenId: tokens_[i],
-				buyer: ac.BUYER1
+				tokenId: tokens[i],
+				buyer: ac.BUYER3
 			});
 		}
 	});
 
-
 	it('should allow BUYER2 to finalize the auctions he won', async() => {
 
-		const rec = await uniqxMarket.completeMany(
+		const rec = await uniqxMarket.complete(
 			tokenErc721.address,
-			[tokens[4]],
+			tokens[4],
 			{
 				from: ac.BUYER2,
 			}
@@ -336,23 +335,23 @@ contract('Testing Auction listing - main flow', async (rpc_accounts) => {
 		const threeDaysLater = latestTime() + duration.days(3);
 		await increaseTimeTo(threeDaysLater + duration.minutes(1));
 
-		const rec = await uniqxMarket.completeMany(
-			tokenErc721.address,
-			tokens.slice(6),
-			{
-				from: ac.ADAPT_ADMIN,
-			}
-		).should.be.fulfilled;
+		for (let i = 6; i < tokens.length; i++) {
+			const ret = await uniqxMarket.complete(
+				tokenErc721.address,
+				tokens[i],
+				{
+					from: ac.ADAPT_ADMIN
+				}
+			).should.be.fulfilled;
 
-		rec.logs.length.should.be.equal(tokens.length - 6);
-		for (let i = 0; i < tokens.length - 6; i++) {
-			await expectEvent.inLog(rec.logs[i], 'LogRetake', {
+			ret.logs.length.should.be.equal(1);
+
+			await expectEvent.inLog(ret.logs[0], 'LogRetake', {
 				erc721: tokenErc721.address,
-				tokenId: tokens[6 + i],
+				tokenId: tokens[i],
 			});
 		}
 	});
-
 
 	it('Market msig should be able to set the percentage cut for the market', async() => {
 		const rec = await uniqxMarket.setMarketFee(

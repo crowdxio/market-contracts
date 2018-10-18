@@ -298,9 +298,9 @@ contract('Testing auction - bid - buy - single', async function (rpc_accounts) {
 
 	it('BUYER2 can take the tokens he won', async() => {
 
-		const ret = await market.completeMany(
+		const ret = await market.complete(
 			tokenErc721.address,
-			[tokens[0]],
+			tokens[0],
 			{
 				from: ac.BUYER2,
 			}
@@ -319,9 +319,9 @@ contract('Testing auction - bid - buy - single', async function (rpc_accounts) {
 
 	it('ADAPT_ADMIN can take his unsold tokens back', async() => {
 
-		const ret = await market.completeMany(
+		const ret = await market.complete(
 			tokenErc721.address,
-			[tokens[2]],
+			tokens[2],
 			{
 				from: ac.ADAPT_ADMIN,
 			}

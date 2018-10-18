@@ -247,18 +247,11 @@ contract('Testing the requires - ', function (rpc_accounts) {
 		).should.be.rejectedWith(EVMRevert);
 	});
 
-	it('completeMany - check if each require throws', async () => {
-		// require(tokenIds.length > 0, "Array must have at least one entry");
-		await market.completeMany(
-			tokenErc721.address,
-			[ ],
-			{from: ac.ADAPT_ADMIN}
-		).should.be.rejectedWith(EVMRevert);
-
+	it('complete - check if require throws', async () => {
 		// require(orderExists(order), "Token must be listed");
-		await market.completeMany(
+		await market.complete(
 			tokenErc721.address,
-			[tokens[0] ],
+			tokens[0],
 			{from: ac.ADAPT_ADMIN}
 		).should.be.rejectedWith(EVMRevert);
 	});
