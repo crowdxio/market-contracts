@@ -33,12 +33,10 @@ const isEqualArgs = (args1, args2) => {
 	normalizeBNToBigNumber(args1);
 	normalizeBNToBigNumber(args2);
 
-	console.log('@@ after mormalisation', args1, args2);
 	return true; //_.isEqual(args1, args2);
 };
 
 const inLogs = async (logs, eventName, args) => {
-	return true;
   const event = logs.find(e => e.event === eventName);
   assert.exists(event);
 
@@ -48,7 +46,6 @@ const inLogs = async (logs, eventName, args) => {
 };
 
 const inLog = async (log, eventName, args) => {
-	return true;
 	assert.equal(log.event, eventName, `Unexpected arguments in ${log.event}. Expected ${eventName}.`);
 	assert.isTrue(isEqualArgs(args, log.args), `Unexpected arguments in ${log.args}. Expected ${args}.`);
 };

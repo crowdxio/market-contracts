@@ -84,7 +84,7 @@ contract('testing allow/disallow orders - ', function (rpc_accounts) {
 	});
 
 
-	it('should be able to register the tokens tokens', async() => {
+	it('should be able to register the tokens', async() => {
 
 		let rec = await market.registerToken(
 			token1Erc721.address,
@@ -273,7 +273,7 @@ contract('testing allow/disallow orders - ', function (rpc_accounts) {
 		await expectEvent.inLog(logs[0], 'LogDisableOrders', {});
 	});
 
-	it('should not be able to disallow orders per contract for an already disallowed contract', async () => {
+	it('should not be able to disallow orders globally if already disallowed', async () => {
 		await market.disableOrders(
 			token1Erc721.address,
 			{ from: ac.MARKET_ADMIN_MSIG  }
