@@ -1,9 +1,9 @@
 pragma solidity ^0.4.24;
 
-import {Pausable} from "../zeppelin/contracts/lifecycle/Pausable.sol";
-import {ReentrancyGuard} from "../zeppelin/contracts/ReentrancyGuard.sol";
-import {SafeMath} from "../zeppelin/contracts/math/SafeMath.sol";
-import {ERC721Token} from "../zeppelin/contracts/token/ERC721/ERC721Token.sol";
+import {Pausable} from "openzeppelin-solidity/contracts/lifecycle/Pausable.sol";
+import {ReentrancyGuard} from "openzeppelin-solidity/contracts/ReentrancyGuard.sol";
+import {SafeMath} from "openzeppelin-solidity/contracts/math/SafeMath.sol";
+import {ERC721Token} from "openzeppelin-solidity/contracts/token/ERC721/ERC721Token.sol";
 
 contract MarketUniqxBase is Pausable, ReentrancyGuard {
 

@@ -4,7 +4,8 @@
 	"description": "Market for non-fungible tokens",
 	"main": "truffle.js",
 	"scripts": {
-		"test": "./tests.sh"
+		"test": "./test.sh",
+		"coverage": "./coverage.sh"
 	},
 	"keywords": [
 		"solidity",
@@ -27,7 +28,9 @@
 		"ethjs-abi": "^0.2.1",
 		"lodash": "^4.17.11",
 		"moment": "^2.22.2",
-		"truffle-contract": "^3.0.5",
+		"openzeppelin-solidity": "1.12.0",
+		"truffle-artifactor": "^3.0.7",
+		"truffle-contract": "^3.0.6",
 		"truffle-hdwallet-provider": "github:trufflesuite/truffle-hdwallet-provider",
 		"ts-node": "^6.0.2",
 		"typescript": "^2.8.3",
@@ -43,12 +46,12 @@
 		"chai": "^4.1.2",
 		"chai-as-promised": "^7.1.1",
 		"chai-bignumber": "^2.0.2",
-		"coveralls": "^3.0.0",
+		"coveralls": "^3.0.2",
 		"eth-gas-reporter": "^0.1.10",
 		"ethereumjs-testrpc-sc": "^6.1.2",
-		"ganache-cli": "6.1.0",
+		"ganache-cli": "6.1.8",
 		"solidity-coverage": "^0.5.11",
-		"truffle": "4.1.11",
+		"truffle": "^4.1.14",
 		"web3-utils": "^1.0.0-beta.36"
 	}
 }
